@@ -228,9 +228,9 @@ OpenClaw 的安全问题（CVE、恶意 skill、凭证收割、第三方 skill �
 
 1. **Skill 和 Tool 来源受控，不做无约束的公开市场。** 企业内的 Skill 和 Tool 要经过注册、审核、签名、版本管理，来源可追溯。
 2. **最小权限，而不是默认全开。** 每个 Agent、每个 Tool 拿到的权限是显式授予的最小集合，文件系统、网络、shell 的访问范围默认收紧，按需放开。
-3. **安全校验是强制的，不是可选的。** 核心阶段每个 Tool 调用都强制经过应用层白名单校验（SandboxChecker：文件路径、Shell 命令、HTTP 域名白名单）；容器级沙箱隔离、资源和能力边界、多租户完全隔离属扩展阶段，按信号驱动升级。
+3. **安全校验是强制的，不是可选的。** 核心阶段每个 Tool 调用都强制经过应用层白名单校验（SandboxChecker：文件路径、Shell 命令、HTTP 域名白名单、通知渠道域名（notify.allowed_domains，独立于 HTTP 白名单））；容器级沙箱隔离、资源和能力边界、多租户完全隔离属扩展阶段，按信号驱动升级。
 4. **凭证不落地，走企业密钥体系。** API key、token、企业系统的凭证不硬编码、不明文存储，对接企业现有的密钥管理（KMS、Vault 等），凭证的使用全程可审计。核心阶段先做环境变量注入 + `${ENV_VAR}` 占位，完整加密存储与密钥轮转放扩展阶段。
-5. **prompt injection 和数据外泄要主动防御。** 借鉴 Hermes 的做法，记忆写入和工具输入要经过安全扫描，检测注入和外泄模式。
+5. **prompt injection 和数据外泄要主动防御。** 借鉴 Hermes 的做法，记忆写入和工具输入要经过安全扫描，检测注入和外泄模式（检测能力放扩展阶段；核心阶段先靠 Sandbox 白名单与审计兜底）。
 6. **全链路审计是底座能力，不是事后补。** 谁、在什么时候、让哪个 Agent、调了什么 Tool、访问了什么数据、产生了什么结果，全程结构化留痕（核心阶段即落 `tool_invocations`、`llm_calls` 审计表），可接入企业现有审计和 SIEM 系统的能力放扩展阶段。
 
 AgentOS 既然是 Java/Spring 实现、跑在企业自己基础设施上，它就能纳入企业现有的代码审计、安全扫描、合规过审流程。安全不是额外加的一层壳，是从架构里长出来的。
@@ -313,7 +313,7 @@ AgentOS 的远期图景：AgentOS 是单个节点上的 Agent 运行时，而连
 1. **Agent OS**：Agent Operating System，运行和管理 AI Agent 的基础设施层，装在用户（或企业）自己的机器上，提供多渠道、多 LLM 路由、记忆、工具、隔离等完整运行环境。
 2. **Agent**：具象的智能体，有具体的工种、人格设定和任务范围。一个 Agent 由 prompt、Skills、Tools、Memory 几部分组合而成，在 Agent OS 上配置出来，不是写代码写出来的。
 3. **Skill**：可复用的 Agent 能力模板，用 `SKILL.md` 文件格式描述，兼容 agentskills.io 开放标准。OpenClaw 和 Hermes 都用这个格式。在 AgentOS 里 Skill 是**全局共享能力库**（`.agentos/skills/<name>/SKILL.md`），Agent 通过自身 `skills/` 目录下的软连接绑定可见集合，运行时只注入 Skill 的元数据（name、description、读取路径），正文经 `read_file` 按需进入上下文（渐进式披露）；Agent 本身的定义本体则是 `.agentos/agents/<name>/AGENT.md`。
-4. **Tool**：Agent 可以调用的外部能力，主推通过 MCP 协议暴露（零代码 = 写 AGENT.md 目录 + 复用社区 MCP server，或自写 MCP server），也支持进程内 `@Tool` 注解 Java Bean。内置 Tool（文件、Shell、HTTP、通知）由 AgentOS 自带，进程内注册不走 MCP。
+4. **Tool**：Agent 可以调用的外部能力，主推通过 MCP 协议暴露（零代码 = 写 AGENT.md 目录 + 复用社区 MCP server，或自写 MCP server），也支持进程内 `@Tool` 注解 Java Bean。内置 Tool（文件、Shell、HTTP、记忆、通知）由 AgentOS 自带，进程内注册不走 MCP。
 5. **Channel**：Agent 对外接入的消息入口，包括 CLI、企业微信、飞书、钉钉、Slack、邮件等。HTTP API / Web 接入归 Web Service，不在 Channel 范畴。
 6. **LLM Provider**：大模型的提供方抽象，实现统一接口让 Agent 不感知具体调的是哪家模型。
 7. **MCP**：Model Context Protocol，Anthropic 2024 年 11 月提出的 LLM 与外部工具或数据源连接的开放协议，目前是 Agent 生态的事实标准。

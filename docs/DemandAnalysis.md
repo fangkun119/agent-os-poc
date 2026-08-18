@@ -62,8 +62,8 @@ Agent 记得住用户的偏好、项目、决策、对话历史。三层记忆�
 
 | 层次 | 说明 | 核心阶段 |
 |------|------|---------|
-| 会话记忆 | 当前对话的完整历史，过长时自动压缩 | ✅ 实现 |
-| 长期记忆 | 用户偏好、项目背景、关键事实，存在 MEMORY.md 文件里，跨对话保留 | ✅ 实现（极简版） |
+| 会话记忆 | 当前对话的完整历史，过长时自动截断保留近期（总结压缩扩展阶段） | ✅ 实现 |
+| 长期记忆 | 用户偏好、项目背景、关键事实，经 `LongTermMemoryStore` 后端存储（核心阶段交付 Markdown 默认档 MEMORY.md；接口预留 `memory.backend` 切换，SQLite/Mem0 档随后补齐），跨对话保留 | ✅ 实现 |
 | 情景记忆 | 每个任务过程中学到的东西，修改了什么文件、做了什么决策 | ⏳ 扩展阶段 |
 
 **基于这个能力可以做的事：**
@@ -76,7 +76,7 @@ Agent 记得住用户的偏好、项目、决策、对话历史。三层记忆�
 
 Agent 能调用工具实际操作系统。AgentOS 提供两类 Tool：
 
-- **内置 Tool**：AgentOS 自带的基础工具（读写文件、执行 Shell、发起 HTTP 请求）
+- **内置 Tool**：AgentOS 自带的基础工具（读写文件、执行 Shell、发起 HTTP 请求、记忆读写、通知推送）
 - **Plugin Tool**：业务方自己扩展的工具，按门槛从低到高有三种方式
 
 | 方式 | 门槛 | 做法 | 适用场景 |
@@ -95,7 +95,7 @@ Agent 能调用工具实际操作系统。AgentOS 提供两类 Tool：
 
 AgentOS 通过完整的 REST API 把所有能力对外暴露，业务系统用 HTTP 调一下就能用上 Agent，不用关心内部怎么实现。Web Service 是 AgentOS 的对外门面，是企业把 AI 能力嵌入已有业务系统的唯一通道。
 
-API 覆盖六类操作：
+API 覆盖八类操作：
 
 | 类别 | 端点功能 |
 |------|---------|
@@ -105,6 +105,10 @@ API 覆盖六类操作：
 | Memory 操作 | 查长期记忆、手动写入、清理 |
 | Tool 信息 | 列可用 Tool、看元信息 |
 | 系统状态 | 健康检查、运行指标、Provider 状态 |
+| 通知渠道管理 | notify-channels 列表/注册/更新/删除（webhook 推送目标，CRUD 4 个） |
+| 定时任务管理 | 查任务状态、执行历史、立即执行、启停 |
+
+> 注：类别覆盖全周期；核心阶段交付基础 10 + 收尾 8 共 18 个端点（见 5.8），系统状态类核心阶段交付 health/info 两个只读状态端点；运行指标（Prometheus metrics）、Provider 状态属扩展阶段，各类中的其余端点（如 Memory 写入/清理、Profile 详情/重载）亦属扩展阶段。
 
 #### 关于 Channel
 
@@ -145,12 +149,12 @@ API 覆盖六类操作：
 | **Profile（配置）** | 底座内部的运行时宿主配置对象，决定一个 Agent"怎么跑"：绑定的 LLM Provider、可用 Tool 列表、Channel、Tool Policy 和定时规则。它不再是一份单独手写的 YAML——`AgentLoader.deriveProfile()` 把 `AGENT.md` 的 frontmatter 派生成 `Profile`；Skill 绑定由 Agent 本地 `skills/` 软连接集合独立表达 |
 | **Provider（供应商）** | LLM API 服务的抽象，实现统一接口让 Agent 不感知具体调的是哪家模型 |
 | **ReAct 循环** | Agent 的核心工作机制，Reason + Act。LLM 思考是否调用工具，调用后看结果，再决定下一步，直到给出最终响应 |
-| **Tool（工具）** | Agent 可以调用的外部能力。内置 Tool 是 AgentOS 自带的（文件、Shell、HTTP、通知推送）；Plugin Tool 是业务方自己写的 |
-| **Memory（记忆）** | Agent 跨对话保留的状态，分三层：会话记忆、长期记忆（MEMORY.md）、情景记忆（扩展阶段） |
+| **Tool（工具）** | Agent 可以调用的外部能力。内置 Tool 是 AgentOS 自带的（文件、Shell、HTTP、记忆、通知推送）；Plugin Tool 是业务方自己写的 |
+| **Memory（记忆）** | Agent 的记忆体系，分三层：会话记忆（当前对话）、长期记忆（跨对话保留，经 `LongTermMemoryStore` 存储，核心阶段 Markdown 默认档；接口预留 `memory.backend` 切换，SQLite/Mem0 档随后补齐）、情景记忆（扩展阶段） |
 | **Channel（渠道）** | Agent 对外接入的消息入口，包括 CLI、企业微信、飞书、钉钉、Slack 等 |
 | **Web Service** | AgentOS 对外暴露的完整 REST API，是业务系统集成 AgentOS 的唯一通道 |
 | **Session（会话）** | 用户和 Agent 一次对话的上下文容器，包含对话历史、当前上下文、临时变量 |
-| **Sandbox（沙箱）** | 工具执行的隔离环境。核心阶段是应用层白名单校验，扩展阶段补容器级隔离 |
+| **Sandbox（沙箱）** | 工具执行前的策略校验层（核心阶段应用层白名单；受控执行的容器/microVM 隔离是扩展阶段另立的 `execute_code` Runner） |
 | **Tool Policy（工具策略）** | 控制 Agent 可用工具的允许或拒绝规则，在 Profile 级别配置 |
 | **Skill（技能）** | 公共实体存 `.agentos/skills/<name>/`，Agent 通过自身 `skills/<name>` 相对软连接选择可见集合。`ContextLoader` 每轮只注入已绑定 Skill 的 name、description 和本地读取路径；正文与附属资源经 `read_file`/`shell` 按需进入上下文。Skill 不是 Tool，不进 `ToolRegistry` |
 | **Bootstrap（引导文件）** | 加载到系统提示词中的上下文文件：AGENTS.md（项目级 agent 行为说明）、SOUL.md（agent 人格定义）、USER.md（用户偏好） |
@@ -215,17 +219,17 @@ agentos init   # 在当前目录下创建 .agentos/ 工作区
 ├── skills/            # 公共 Skill 实体库（每个子目录一个 SKILL.md + 可选附属资源）
 ├── memory/
 │   └── MEMORY.md      # 长期记忆文件
-├── sessions/          # 会话历史
 ├── logs/              # 结构化日志
 ├── mcp_servers.yaml   # MCP server 全局配置
-├── agentos.db         # SQLite（sessions、tool_invocations、llm_calls 等审计表）
+├── agentos.db         # SQLite（核心表，含 sessions、tool_invocations、llm_calls、scheduled_tasks、task_executions、notify_channels，见 10 数据模型）
 ├── AGENTS.md          # Bootstrap：项目级 agent 行为说明
 ├── SOUL.md            # Bootstrap：默认 agent 人格定义
 └── USER.md            # Bootstrap：用户偏好
 ```
 
 - 三个 Bootstrap 文件在 Agent 启动时被自动加载到系统提示词，让 Agent 知道项目背景、自己的身份、用户偏好
-- `agentos init` 幂等：已存在的目录和文件一律不覆盖。五个子目录建好后，用 `agentos profile create <name>` 生成第一个 Agent 目录
+- init 同时生成空的 `mcp_servers.yaml` 模板；`agentos.db` 由 JPA 在首次启用 SQLite 持久化（第三周 serve）时自动创建
+- `agentos init` 幂等：已存在的目录和文件一律不覆盖。四个子目录建好后，用 `agentos profile create <name>` 生成第一个 Agent 目录
 
 ---
 
@@ -259,7 +263,8 @@ channels:
     config: {}                  # Channel 配置
 
 schedules:                      # 定时任务（可选）
-  - cron: string                # cron 表达式
+  - id: string                  # 任务 id（Agent 内唯一，供 scheduled_tasks.task_id 与管理端点寻址）
+    cron: string                # cron 表达式
     timezone: string            # 时区（如 Asia/Shanghai）
     message: string             # 触发时注入的消息
 
@@ -269,6 +274,7 @@ bootstrap:
 settings:
   max_iterations: 10            # 最大 ReAct 迭代次数
   max_history_turns: 20         # 最大对话历史轮数
+  timeout: {llm_call: 60s, tool: 30s, total: 300s}  # 可选，分步超时预算，默认值见技术方案 7.4
 ```
 
 **Agent 管理命令**（命令组名沿用 `profile`，操作的是 `.agentos/agents/` 下的 Agent 目录）：
@@ -309,7 +315,7 @@ ReAct 循环是 Agent 的核心工作机制，也是 AgentOS 最关键的一段�
 ```
 接到用户消息
   └─ 追加到 Session 对话历史
-     └─ 组装 Prompt（system prompt + Bootstrap + 对话历史 + 可用 Tool 列表）
+     └─ 组装 Prompt（system prompt[含已绑定 Skill 元数据] + Bootstrap + Memory 注入[仅长期记忆] + 对话历史 + 可用 Tool 列表，五部分见技术方案 4.2）
         └─ 调用 LLM Provider 获取响应
            ├─ [无 Tool 调用] → 返回最终响应
            └─ [有 Tool 调用] → 执行 Tool，把结果追加到对话历史 → 继续循环
@@ -334,18 +340,18 @@ ReAct 循环是 Agent 的核心工作机制，也是 AgentOS 最关键的一段�
 
 - 当前对话的完整历史，按 Channel + 用户 + Profile 联合标识
 - Session 数据持久化到本地 SQLite，重启后可以恢复
-- 上下文超过 LLM context window 上限时简单截断早期对话
+- 对话历史按 `max_history_turns`（默认 20 轮）截断保留近期（不探测 context window，以轮数预算兜底；总结压缩放扩展阶段）
 
-#### 长期记忆（极简版）
+#### 长期记忆
 
-- 存在 `.agentos/memory/MEMORY.md` 一个 Markdown 文件，跨所有对话保留
+- 经 `LongTermMemoryStore` 统一存取，跨所有对话保留；核心阶段交付 Markdown 默认档（MEMORY.md），接口预留 `memory.backend` 切换，SQLite/Mem0 档随后补齐
 - Agent 通过两个内置 Tool 主动读写：
-  - `save_memory(content)`：把要长期记住的事追加到 MEMORY.md
-  - `recall_memory(query)`：按关键词检索 MEMORY.md 里的相关内容
-- Agent 启动时 MEMORY.md 整个文件作为长期上下文注入到 system prompt
-- 文件超过 4000 字时简单截断（扩展阶段做压缩）
+  - `save_memory(content, scope)`：把要长期记住的事写入存储，带 scope 参数（CORE 核心区/ARCHIVAL 归档区，默认 ARCHIVAL）
+  - `recall_memory(query)`：检索相关内容
+- Markdown 档下 MEMORY.md 按"## 核心记忆/## 归档记忆"两分区组织：核心区永不被截断，截断只作用归档区
+- 每轮组装 prompt 时经 `MemoryService` 注入长期记忆（核心区全量 + 归档区截断）
 
-**核心阶段不做**：自动从对话中抽取事实、语义检索（用关键词匹配）、情景记忆、Memory Wiki、矛盾检测。
+**核心阶段不做**：自动从对话中抽取事实、语义检索（Markdown/SQLite 档用关键词匹配；Mem0 档自带语义检索，用不用取决于后端选择）、情景记忆、Memory Wiki、矛盾检测。
 
 **用户核心体验**：用 AgentOS 一段时间后，Agent 自然会记住用户的偏好、项目信息、关键决策，下一次对话不需要重新解释。这是 AgentOS 区别于 chatbot 的核心体验。
 
@@ -362,12 +368,12 @@ Tool 是 Agent 可以调用的外部能力。Agent 通过 LLM Function Calling �
 | `read_file` | 文件 | 读取文件内容，受路径白名单限制 |
 | `write_file` | 文件 | 写入文件内容，受路径白名单限制 |
 | `list_dir` | 文件 | 列出目录，受路径白名单限制 |
-| `shell` | Shell | 执行 bash 命令，有超时和命令白名单限制 |
+| `shell` | Shell | 直接执行白名单内可执行文件与参数数组（不经 Shell 解释），带超时；解释器仅在管理员显式列入白名单时可用（见技术方案 6.7） |
 | `http_get` | HTTP | 发起 HTTP 请求，有域名白名单限制 |
 | `http_post` | HTTP | 发起 HTTP 请求，有域名白名单限制 |
-| `save_memory` | Memory | 把内容追加到 MEMORY.md |
-| `recall_memory` | Memory | 按关键词检索 MEMORY.md |
-| `notify` | 通知 | 通过 NotifyChannelAdapter 推送消息，随收尾阶段（定时任务）补齐 |
+| `save_memory` | Memory | 把内容经 `LongTermMemoryStore` 写入长期记忆（`scope` 指定 CORE/ARCHIVAL 分区，默认 Markdown 档 MEMORY.md） |
+| `recall_memory` | Memory | 按关键词检索长期记忆（默认 MEMORY.md 归档区） |
+| `notify` | 通知 | 通过 NotifyChannelAdapter 推送消息，随第四周定时任务与通知收尾一并交付 |
 
 #### Plugin Tool（业务方扩展）
 
@@ -392,7 +398,8 @@ Tool 是 Agent 可以调用的外部能力。Agent 通过 LLM Function Calling �
 - 文件操作：路径白名单
 - Shell：命令白名单
 - HTTP：域名白名单
-- 执行超时和资源占用限制
+- 通知：独立域名白名单（`notify.allowed_domains`，与 HTTP 白名单分离——webhook URL 含 token 等凭证，不暴露给 `http_post`）
+- 执行超时（Tool 单次 30s，见技术方案 7.4）；资源占用限制随扩展阶段 execute_code Runner 引入
 
 > 注：不使用 Java SecurityManager，它在 JDK 17 起已废弃、JDK 21 已不可用。完整的 Docker/K8s 容器级沙箱放在扩展功能。
 
@@ -412,7 +419,7 @@ Channel 是 Agent 对外的消息接入入口，主要解决"消息进来、响�
 
 Web Service 是 AgentOS 的对外完整门面，业务系统通过 REST API 接入 AgentOS 的所有能力。这是 AgentOS 区别于偏个人定位的 OpenClaw、Hermes 的关键能力。
 
-#### 核心阶段 10 个关键端点
+#### 核心阶段端点（基础 10 个）
 
 | 类别 | 端点 | 说明 |
 |------|------|------|
@@ -427,9 +434,11 @@ Web Service 是 AgentOS 的对外完整门面，业务系统通过 REST API 接�
 | 系统状态 | `GET /api/v1/health` | 健康检查 |
 | 系统状态 | `GET /api/v1/info` | 运行信息 |
 
-#### 扩展阶段补齐的端点（15 个）
+收尾阶段（第四周定时任务与通知）追加 8 个（notify-channels CRUD 4 个：GET 列表/POST 注册/PUT 更新/DELETE 删除；schedules 管理 4 个），核心阶段合计 18 个，详见技术方案 7.2。
 
-Profile 的 show/reload/create/update/delete；Memory 的 append/clear/search；Tool describe 和调用历史查询；LLM call 历史、token 统计；Webhook 触发、流式 SSE 响应；Prometheus metrics、OpenAPI spec。
+#### 扩展阶段补齐的端点
+
+Agent 目录的上传/查看/更新/删除（含一句话生成 AGENT.md）、AgentScheduler 调度定义的增删改、Memory 的 append/clear/search、Tool describe 和调用历史查询、LLM call 历史、token 统计、Webhook 触发、流式 SSE 响应、Prometheus metrics。
 
 **核心阶段不做**：认证机制（无认证假设内网）、流式响应 SSE、WebSocket、RBAC 权限。
 
@@ -448,7 +457,7 @@ Profile 的 show/reload/create/update/delete；Memory 的 append/clear/search；
 
 Session 是用户和 Agent 一次对话的上下文容器，包含起止时间、用户身份、Agent 标识、对话历史、当前上下文、临时变量。Session 标识由 Channel、用户、Profile 联合生成。
 
-核心阶段 Session 数据持久化到本地 SQLite（`.agentos/sessions/` 下）。重启 AgentOS 后，正在进行的 Session 可以恢复。Session 上下文超过 LLM 的 context window 时，简单截断早期对话保留近期对话。
+核心阶段 Session 数据持久化到 `.agentos/agentos.db`（SQLite，启用 WAL）。重启 AgentOS 后，正在进行的 Session 可以恢复。Session 对话历史按 `max_history_turns`（默认 20 轮）截断保留近期对话（不探测 context window，以轮数预算兜底；总结压缩放扩展阶段），钟推 Session 的 messages_json 落盘时同步物理裁剪、保留同一 session_id。
 
 ---
 
@@ -458,7 +467,7 @@ Session 是用户和 Agent 一次对话的上下文容器，包含起止时间�
 |------|------|------|
 | 交互对话 | `agentos chat` | 交互式多轮对话，开发调试和日常使用的主要方式。`--message "xxx"` 可发单条消息后退出 |
 | HTTP API | `agentos serve` | 启动后在指定端口（默认 8080）开放 RESTful 接口，业务系统通过 HTTP 调用 |
-| 守护进程 | `agentos gateway` | 常驻守护进程，同时服务多个 Channel |
+| 守护进程 | `agentos gateway` | 常驻守护进程，同时服务多个 Channel（核心阶段 = serve + 预挂 CLI Channel，HTTP 行为与 serve 完全一致；多 Channel 扩展阶段启用） |
 
 三种模式共享同一份 Profile 配置和 Session 存储。
 
@@ -472,9 +481,9 @@ Session 是用户和 Agent 一次对话的上下文容器，包含起止时间�
 |------|------|------|
 | 启动和状态 | `agentos init` | 初始化工作区 |
 | 启动和状态 | `agentos status` | 查看配置和运行状态 |
-| 启动和状态 | `agentos chat [--profile <name>]` | 交互对话 |
+| 启动和状态 | `agentos chat [--profile <name>] [--message <msg>]` | 交互对话；--message 发单条消息后退出 |
 | 启动和状态 | `agentos serve` | 启动 HTTP API 服务 |
-| 启动和状态 | `agentos gateway` | 启动多渠道守护进程 |
+| 启动和状态 | `agentos gateway` | 启动多渠道守护进程（核心阶段 = serve + CLI） |
 | Profile 管理 | `agentos profile list` | 列出所有 Profile |
 | Profile 管理 | `agentos profile create <name>` | 创建新 Profile |
 | Profile 管理 | `agentos profile show <name>` | 查看 Profile 详情 |
@@ -528,7 +537,7 @@ AgentOS 作为开源项目，需要一个独立的主页作为对外门面，讲
 - **MCP server 暴露**：AgentOS 自己作为 MCP server，把内部 Agent 能力暴露给其他系统
 - **Tool Policy**：Profile 级别的 Tool 允许或拒绝规则，这是 AgentOS 治理能力里最轻、最能体现 OS 管控的一项，扩展阶段优先做
 - **Tool LRU 加载**：工具数量多时，动态加载，避免把所有工具塞进 LLM context
-- **完整 Sandbox 隔离**：Docker 容器和 K8s pod 两种 Sandbox 实现，WebAssembly Sandbox 作为高性能选项
+- **受控执行隔离**：容器/microVM 级经扩展阶段另立的 `execute_code` Runner 接口承载（Docker/K8s pod/WASM），`Sandbox.check` 继续作为前置校验
 
 ### 6.4 治理和运维层
 
@@ -580,11 +589,11 @@ AgentOS 作为开源项目，需要一个独立的主页作为对外门面，讲
 
 - 已注册的 Profile 配置和已写入的 Session 数据保证不丢
 - LLM Provider 故障时核心阶段直接报错，完整 failover 在扩展阶段实现
-- Tool 调用失败时按重试策略再调，默认指数退避最多三次
+- Tool 调用失败时返回可重试标识，由 Agent 自行决定是否再次调用；框架级自动重试（指数退避）放扩展阶段
 
 ### 8.3 可运维性
 
-- 配置变更通过修改 `AGENT.md` frontmatter，核心阶段重启服务生效
+- 配置变更通过修改 `AGENT.md` frontmatter；AGENT.md 正文与 Skill 绑定修改后下一轮 prompt 即生效（ContextLoader 每轮现读），frontmatter 派生字段（provider/tools/schedules）变更需重启或触发重新加载生效（核心阶段新增 Agent 仍需重启）
 - 支持物理机、虚拟机、Docker、Kubernetes 部署
 
 ### 8.4 兼容性
@@ -598,7 +607,7 @@ AgentOS 作为开源项目，需要一个独立的主页作为对外门面，讲
 - API 调用支持 HTTPS
 - 敏感配置（LLM API key、数据库密码、Tool 凭证）支持加密存储，不能明文写在配置文件里
 - Tool 调用通过应用层白名单校验做基础隔离
-- 完整的鉴权机制、Docker Sandbox 隔离、SSO 集成放在扩展阶段
+- 完整的鉴权机制、容器级受控执行（`execute_code` Runner）、SSO 集成放在扩展阶段
 
 ### 8.6 合规
 
@@ -613,8 +622,8 @@ AgentOS 作为开源项目，需要一个独立的主页作为对外门面，讲
 
 ```
 用户执行 agentos init
-  → AgentOS 创建 .agentos/ 目录及五个子目录
-    （agents / skills / output / memory / sessions / logs）
+  → AgentOS 创建 .agentos/ 目录及四个子目录
+    （agents / skills / memory / logs）
   → 创建三个 Bootstrap 文件（AGENTS.md、SOUL.md、USER.md）
   → 幂等：已存在的目录和文件一律不覆盖
 用户编辑 Bootstrap 文件填入项目背景、Agent 人格、用户偏好
@@ -637,10 +646,10 @@ AgentOS 作为开源项目，需要一个独立的主页作为对外门面，讲
 ### 流程三：消息处理（最高频链路）
 
 ```
-消息从 Channel 进来（CLI 输入或 HTTP API 调用）
-  → Channel Adapter 转换成内部统一格式
+消息从三个入口进来（CLI Channel / Web Service HTTP API / AgentScheduler 钟推），均调 AgentService.process
+  → Channel 触发经 Channel Adapter 转换成内部统一格式
   → Agent 查询 Session 上下文
-  → 组装 LLM Prompt（Bootstrap + 对话历史 + 可用 Tool 列表）
+  → 组装 LLM Prompt（system prompt（AGENT.md 正文，含已绑定 Skill 元数据）+ Bootstrap + Memory 注入（仅长期记忆）+ 对话历史 + 可用 Tool 列表，五部分见技术方案 4.2）
   → 调用 LLM Provider 获取响应
   → [有 Tool 调用] → AgentOS 执行 Tool → 结果回传给 LLM 继续生成
   → 最终响应通过 Channel Adapter 发回给用户
@@ -652,7 +661,7 @@ AgentOS 作为开源项目，需要一个独立的主页作为对外门面，讲
 ```
 LLM 通过 Function Calling 指明 Tool 名称和参数
   → AgentOS 从 Agent 工具池找到对应 Tool
-  → 做参数校验和白名单校验
+  → 做 Tool 入参的 JSON schema 校验和白名单校验（注：shell 白名单仅精确比对可执行文件、参数不校验，见技术方案 6.7）
   → 内置 Tool：在 AgentOS 进程内执行（白名单约束下）
   → MCP Tool：通过 MCP 协议转发给对应 MCP server 执行
   → 执行结果（成功/失败、错误信息、可重试标识）回传给 Agent
@@ -667,7 +676,7 @@ LLM 通过 Function Calling 指明 Tool 名称和参数
   → [无活跃 Session] → 创建新 Session，初始化空对话历史
   → [有活跃 Session] → 恢复 Session 上下文
 后续消息追加到 Session 对话历史
-  → [上下文超限] → 截断早期对话，保留近期（扩展阶段做总结压缩）
+  → [超过轮数预算] → 对话历史按 `max_history_turns`（默认 20 轮）截断保留近期（不探测 context window，以轮数预算兜底；总结压缩放扩展阶段）
 Session 超时无消息 → 结束，对话历史归档可查
 ```
 
@@ -675,9 +684,9 @@ Session 超时无消息 → 结束，对话历史归档可查
 
 ## 10. 数据模型
 
-### Profile（YAML 文件）
+### Profile（由 AGENT.md frontmatter 派生）
 
-见 [5.2 Profile 配置](#52-profile-配置)。
+结构见 [5.2 定义一个 Agent：AGENT.md](#52-定义一个-agentagentmd)。
 
 ### Session（持久化到 SQLite）
 
@@ -695,7 +704,7 @@ Session 超时无消息 → 结束，对话历史归档可查
 
 ### Memory（文件形态，非数据库表）
 
-长期记忆是 `.agentos/memory/MEMORY.md` 一个 Markdown 文件，按追加方式写入，无结构化 schema。扩展阶段引入向量库后，Memory 才有结构化的 embedding 存储。
+长期记忆是 `.agentos/memory/MEMORY.md` 一个 Markdown 文件，按追加方式写入，无结构化 schema。切到 SqliteMemoryStore 档时落 `memory_entries` 表（scope 列区分 CORE/ARCHIVAL；扩展阶段 SqliteMemoryStore 档引入时建表），结构见技术方案 5.1。扩展阶段引入向量库后，Memory 才有结构化的 embedding 存储。
 
 ### Tool Invocation（记录每次 Tool 调用）
 
@@ -725,6 +734,18 @@ Session 超时无消息 → 结束，对话历史归档可查
 | `duration_ms` | BIGINT | 调用耗时（毫秒） |
 | `created_at` | TIMESTAMP | 调用时间 |
 
+### Scheduled Task（定时任务定义）
+
+AgentScheduler 调度定义表（`scheduled_tasks`），字段见技术方案 9.2。
+
+### Task Execution（定时任务执行历史）
+
+定时任务每次触发的执行历史表（`task_executions`），字段见技术方案 9.2。
+
+### Notify Channel（通知渠道）
+
+webhook 推送目标注册表（`notify_channels`），字段见技术方案 6.8。
+
 ---
 
 ## 11. 里程碑规划
@@ -735,8 +756,8 @@ AgentOS 核心功能的实施按 **4 周节奏**组织，每周 3 小时，合�
 |------|---------|---------|-----------|
 | **第一周** | 3 小时 | 对接 LLM + ReAct 循环（核心能力一+二） | `agentos chat` 多轮对话，Agent 通过 ReAct 调 HTTP Tool 完成天气查询 |
 | **第二周** | 3 小时 | Memory + Tool 体系（核心能力三+四） | Agent 记住用户偏好并在后续对话用到，能调本地文件和外部 MCP server |
-| **第三周** | 3 小时 | Web Service（核心能力五） | 外部系统通过 10 个 REST 端点完整调用 AgentOS |
-| **第四周** | 3 小时 | 多 Agent 演示 + 工程化收尾 | 多 Agent 并存可用，CLI 完整，Session 跨重启恢复，项目主页可访问 |
+| **第三周** | 3 小时 | Web Service（核心能力五） | 外部系统通过基础 10 个 REST 端点完整调用 AgentOS，Session 跨重启恢复 |
+| **第四周** | 3 小时 | 多 Agent 演示 + 工程化收尾 | 多 Agent 并存可用，CLI 完整，两个验收 Demo 以钟推自动运行（含 notify 推送），scripts/ 最小链路演示通过，项目主页可访问 |
 
 ### 各周详细实施内容
 
@@ -748,12 +769,12 @@ AgentOS 核心功能的实施按 **4 周节奏**组织，每周 3 小时，合�
 - Session 管理（内存版，第三周 Web Service 阶段加 SQLite 持久化）
 
 **第二周**（3 小时）：Memory + Tool 体系
-- Memory 长期记忆极简版（MEMORY.md 文件、`save_memory` 和 `recall_memory` 两个内置 Tool、启动时整个文件注入 system prompt）
+- Memory 长期记忆（Markdown 默认档交付（`LongTermMemoryStore` 接口预留三档切换，SQLite/Mem0 档随后补齐），`save_memory`/`recall_memory` 两个内置 Tool，每轮注入长期记忆（核心区全量 + 归档区截断），经 `MemoryService` 进入 PromptBuilder 的 Memory 段）
 - 文件操作 Tool（read_file、write_file、list_dir）、Shell Tool（带白名单校验）
 - MCP Client 集成（连接外部 MCP server）
 
 **第三周**（3 小时）：Web Service + API 端点
-- Web Service 核心 10 个 REST 端点（会话管理 4 个、Agent 调用 1 个、Profile/Memory/Tool 列表 3 个、health/info 2 个）
+- Web Service 基础 10 个 REST 端点（会话管理 4 个、Agent 调用 1 个、Profile/Memory/Tool 列表 3 个、health/info 2 个）
 - 通过 `agentos serve` 启动 Spring MVC 服务
 - 配置与密钥加载（环境变量注入 + 基础校验）
 - Session 持久化到 SQLite（跨重启恢复）、命令行工具补齐至 12 个命令
@@ -761,6 +782,9 @@ AgentOS 核心功能的实施按 **4 周节奏**组织，每周 3 小时，合�
 
 **第四周**（3 小时）：多 Agent 演示 + 工程化收尾
 - 多 Agent 演示（配置两个不同 Profile 的 Agent 在同一实例并存）
+- AgentScheduler 定时任务（Profile `schedules` 字段驱动，第三触发源）
+- NotifyTools 通知推送（`notify` 内置 Tool + WebhookNotifyAdapter + `notify_channels` 注册，两个 Demo 的推送依赖它）
+- scripts/ 最小链路手工演示（`AGENT.md + scripts/` 形态：目录加载→脚本调起→产出进上下文→`tool_invocations` 有记录，见技术方案 12.3，不设独立 Demo）
 - 结构化日志、项目主页（VitePress 或类似静态站点工具）
 
 ---
@@ -783,10 +807,9 @@ AgentOS 核心功能的实施按 **4 周节奏**组织，每周 3 小时，合�
 
 | 事项 | 说明 | 决议时间 |
 |------|------|---------|
-| Provider 抽象接口设计 | 直接用 Spring AI `ChatClient`，还是在 `ChatClient` 之上加一层 AgentOS 自己的抽象 | 技术方案阶段 |
-| 底层存储选 SQLite 还是 H2 | SQLite 是嵌入式 C 实现，H2 是纯 Java | 技术方案阶段 |
-| Bootstrap 文件加载顺序和优先级 | AGENTS.md、SOUL.md、USER.md 怎么组合进系统提示词 | 技术方案阶段 |
 | GraalVM Native Image 引入时机 | 核心阶段还是扩展阶段 | 核心阶段结束后 |
+
+> 注：原未决项 Provider 抽象接口设计、Bootstrap 文件加载顺序和优先级已决，见正文 5.3 与技术方案 4.2。
 
 ---
 
@@ -800,12 +823,12 @@ AgentOS 核心功能的实施按 **4 周节奏**组织，每周 3 小时，合�
 - [ ] Profile 配置和管理（支持多 Profile 并存）
 - [ ] Provider 抽象（至少跑通一个 Provider：DeepSeek 或 Kimi）
 - [ ] ReAct 循环（多轮 Tool 调用、正确累积消息历史、达到最大迭代次数时正确终止）
-- [ ] Memory 长期记忆（save_memory 写入、recall_memory 关键词检索、启动时注入 system prompt）
+- [ ] Memory 长期记忆（save_memory 写入、recall_memory 关键词检索、每轮注入（核心区全量 + 归档区截断））
 - [ ] 内置 Tool（文件、HTTP、Shell、save_memory、recall_memory、notify）
 - [ ] Plugin Tool 接入（方式一零代码 Agent 目录 + MCP 跑通；方式三 @Tool 注解示例跑通）
 - [ ] MCP Client 集成、CLI Channel
 - [ ] 定时任务 `AgentScheduler`（第三触发源，cron 到点自动触发，跟 CLI/Web Service 复用同一条 `AgentService` 链路）
-- [ ] Web Service 核心 10 个 REST 端点全部跑通
+- [ ] Web Service 端点全部跑通（基础 10 个 + 收尾 8 个，见 5.8）
 - [ ] Session 持久化（SQLite，跨重启恢复）
 - [ ] 12 个命令行工具
 - [ ] 配置与密钥加载
@@ -830,10 +853,12 @@ AgentOS 核心功能的实施按 **4 周节奏**组织，每周 3 小时，合�
 
 | Demo | 验证能力 | 场景描述 | 验收标准 |
 |------|---------|---------|---------|
-| **Demo 一：每日天气** | 能力一+二（LLM + ReAct）、能力四（内置 HTTP Tool）、定时任务（`AgentScheduler`） | 每天早上到点自动查天气、生成穿搭建议，推送到企业 IM 群 | 不需要人工触发，到点自动跑完整 ReAct 循环；查天气和推送各一次 HTTP 调用，都过 Sandbox 域名白名单且都写入 `tool_invocations`；`GET /api/v1/sessions/{id}` 能查到这次自动触发的完整对话记录 |
+| **Demo 一：每日天气** | 能力一+二（LLM + ReAct）、能力四（内置 HTTP Tool）、能力五（Session 查询兜底）、定时任务（`AgentScheduler`） | 每天早上到点自动查天气、生成穿搭建议，推送到企业 IM 群 | 不需要人工触发，到点自动跑完整 ReAct 循环；查天气和推送各一次 HTTP 调用，分别过 HTTP 与 notify 各自的域名白名单且都写入 `tool_invocations`；`GET /api/v1/sessions/{id}` 能查到这次自动触发的最近对话记录（钟推 Session 落盘时经物理裁剪，完整审计链路在 `tool_invocations`/`llm_calls`） |
 | **Demo 二：每日科技日报** | 能力四（Plugin Tool 方式一 Agent 目录零代码 + 方式二 MCP）、能力三（Memory）、定时任务（`AgentScheduler`） | 每天到点自动汇总当日科技新闻并推送，且日报内容会体现用户之前说过的关注方向（比如"更关注 AI 和芯片"） | 业务方全程不写 Java 代码，只写 `AGENT.md`（含 `schedules` 字段）并在 Agent `skills/` 绑定公共 Skill，再配置 `mcp_servers.yaml`；prompt 只出现 Skill 元数据，模型按需读取正文并完成日报 |
 
 两个 Demo 都是"钟推"（`AgentScheduler` 到点自动触发），但都要能同时支持"人推"手动补跑一次做验证（`agentos chat` 或 `POST /agents/{name}/invoke`），验证同一个 Agent 不管从哪个入口触发，走的都是同一条 `AgentService` 链路。
+
+`AGENT.md + scripts/`（Agent 目录第三档丰富度）不设独立 Demo，以第四周"scripts/ 最小链路手工演示"验证：目录加载、脚本经专用 Tool/MCP 封装或白名单 shell 调起、产出进上下文、`tool_invocations` 有记录。推荐将脚本封装为专用 Tool 或 MCP server，通用 shell + 白名单解释器仅限可信单机部署。
 
 ---
 
@@ -850,8 +875,8 @@ AgentOS 是基于 Java 实现的面向企业场景的 Agent OS，装在企业自
 
 - **对接 LLM**：Provider 抽象，让 Agent 能调任意主流大模型，运行时切换无 lock-in
 - **ReAct 循环**：Agent 大脑，LLM 思考 + 工具执行，多步骤任务自主完成
-- **Memory 三层记忆**：核心阶段会话 + 长期 MEMORY.md，跨对话记住用户偏好和项目背景
+- **Memory 三层记忆**：核心阶段会话 + 长期记忆（核心阶段 Markdown 默认档；`LongTermMemoryStore` 接口预留 `memory.backend` 三档切换，SQLite/Mem0 档随后补齐），跨对话记住用户偏好和项目背景
 - **Plugin 自定义工具 + 内置工具集**：内置文件/Shell/HTTP，业务方通过 Agent 目录 + MCP 零代码扩展、MCP server 轻代码扩展、@Tool 注解重代码扩展
-- **Web Service**：REST API 覆盖会话管理、Agent 调用、Profile/Memory/Tool 信息查询、系统状态
+- **Web Service**：REST API 覆盖八类操作（会话管理、Agent 调用、Profile、Memory、Tool 信息、系统状态，收尾阶段补齐通知渠道管理、定时任务管理后两类）
 
 **核心理念**：AgentOS 五大能力扎实落地，业务方组合 Agent 目录 + MCP server 就能解决业务问题，通过 Web Service 接入已有系统，不需要写 Agent 后端代码。AgentOS 不绑定具体业务，业务方按自己的需求组合。

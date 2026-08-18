@@ -46,9 +46,9 @@ Tool 的实际调度和执行完全由 AgentOS 自己的 **`ReActLoop`** 加 **`
 
 **决策五：HTTP 服务层用 Spring MVC 加 Java 21 virtual thread。** 同步直观的代码加 virtual thread 的高并发能力，单机轻松撑住几千并发。扩展阶段要 SSE 流式返回时，Spring MVC 的 `SseEmitter` 也能支持。
 
-**决策六：Sandbox 先定接口，核心阶段只填一档实现。** 隔离强度和开销是一个跷跷板，从轻到重依次是应用层白名单校验、容器隔离（namespace + cgroups + seccomp）、microVM（Firecracker / Kata / gVisor）、完整虚拟机或物理隔离。为了不让核心阶段的实现选择绑死未来的架构，先抽象出一个 `Sandbox` 接口，表达"在受控环境里执行一个动作"这个意图，不携带任何一档实现特有的概念（不出现"容器镜像""VM 配置"字样）。核心阶段只实现 `SandboxChecker` 这一档：文件操作限制工作目录、Shell 命令白名单、HTTP 域名白名单，在应用层做校验，不使用 Java `SecurityManager`（它在 JDK 17 起已废弃、JDK 21 已不可用，与本项目 JDK 21+ 要求冲突）。扩展阶段按信号驱动升级：出现"要跑不可信代码或要多租户"时上容器隔离；出现"要跑完全不可信代码或要规模化多租户"时上 microVM。接口不随升级变化，新增的是实现类。
+**决策六：Sandbox 先定接口，核心阶段只填一档实现。** 隔离强度和开销是一个跷跷板，从轻到重依次是应用层白名单校验、容器隔离（namespace + cgroups + seccomp）、microVM（Firecracker / Kata / gVisor）、完整虚拟机或物理隔离。为了不让核心阶段的实现选择绑死未来的架构，先抽象出一个 `Sandbox` 接口，表达"在受控环境里执行一个动作"这个意图，不携带任何一档实现特有的概念（不出现"容器镜像""VM 配置"字样）。核心阶段只实现 `SandboxChecker` 这一档：文件操作限制工作目录、Shell 命令白名单、HTTP 域名白名单，在应用层做校验，不使用 Java `SecurityManager`（它在 JDK 17 起已废弃、JDK 21 已不可用，与本项目 JDK 21+ 要求冲突）。扩展阶段按信号驱动升级：出现"要跑不可信代码或要多租户"时上容器隔离；出现"要跑完全不可信代码或要规模化多租户"时上 microVM。`Sandbox` 是纯校验接口（策略层：动作允不允许）；容器/microVM 级受控执行（执行层：在隔离环境里跑动作）是扩展阶段另立的 `execute_code` Runner 接口——校验与执行分离，各自演进互不绑死。
 
-**决策七：持久化用 SQLite 加 Spring Data JPA，Memory 长期记忆用 `MEMORY.md` 文件加关键词检索。** Agent 目录放 `.agentos/agents/`，Session、Tool Invocation、LLM Call 落 SQLite。其中审计相关的 `tool_invocations` 和 `llm_calls` 两张表在核心阶段就做写入（不做查询接口），让可审计这个差异化能力的数据地基在 day one 就立起来，避免后期从日志反解析返工。完整的向量检索方案在扩展阶段升级（详见第 8 章）。
+**决策七：持久化用 SQLite 加 Spring Data JPA，Memory 长期记忆用 `MEMORY.md` 文件加关键词检索（默认 Markdown 档；接口预留 `memory.backend` 切换，SQLite/Mem0 档扩展阶段补齐，见第 5 章）。** Agent 目录放 `.agentos/agents/`，Session、Tool Invocation、LLM Call 落 SQLite。其中审计相关的 `tool_invocations` 和 `llm_calls` 两张表在核心阶段就做写入（不做查询接口），让可审计这个差异化能力的数据地基在 day one 就立起来，避免后期从日志反解析返工。完整的向量检索方案在扩展阶段升级（详见第 9 章）。
 
 ### 1.2 整体技术栈
 
@@ -95,7 +95,7 @@ AgentOS 的整体架构按"五大核心能力加支撑模块"组织。五大核�
 1. **接入层**（CLI Channel、Web Service 的 REST API、`AgentScheduler` 定时触发），负责消息进出。
 2. **Agent 层**（`.agentos/agents/` 下的 Agent 目录：`AGENT.md` 正文定义做什么、frontmatter 定义怎么跑），是业务 Agent 的定义处。
 3. **引擎层**（`ReActLoop`、`PromptBuilder`、`ToolExecutor`），是 Agent 的大脑。
-4. **能力层**（Provider、Memory、Tool、Notify），给引擎提供 LLM 调用、上下文、执行能力。
+4. **能力层**（Provider、Memory、Tool），给引擎提供 LLM 调用、上下文、执行能力。
 5. **基础层**（Profile/Bootstrap/Skill 加载、Session 存储、SQLite、配置与密钥加载），是工程地基。
 
 ### 2.2 五大能力之间的关系
@@ -104,7 +104,7 @@ AgentOS 的整体架构按"五大核心能力加支撑模块"组织。五大核�
 
 - **ReAct 循环（能力二）** 是引擎，负责把"用户消息到 LLM 思考到 Tool 执行到结果回填到继续"这件事跑起来。
 - **Provider（能力一）** 给 ReAct 循环提供 LLM 调用能力，每轮思考都要调一次。
-- **Memory（能力三）** 给 ReAct 循环提供上下文，每轮组装 prompt 时把会话历史和长期记忆注入进去。
+- **Memory（能力三）** 给 ReAct 循环提供上下文，每轮组装 prompt 时提供长期记忆（会话历史由 `PromptBuilder` 独立注入，见 4.2/5.3）。
 - **Tool（能力四）** 给 ReAct 循环提供执行能力，LLM 决定调哪个 Tool 后由 ReAct 循环负责执行。
 - **Web Service（能力五）** 是这套内部能力的对外出口，把前四个能力包装成 REST API 供业务系统集成，它不参与 Agent 内部循环，而是循环的触发入口和结果出口之一（另外两个入口是 CLI Channel 和 `AgentScheduler` 定时触发，见 8.5）。
 
@@ -138,7 +138,7 @@ AgentOS 的做法是维护一份显式的 **provider name 到 `ChatModel` 的映
 
 **核心阶段不做 fallback 和 hedge racing。** Provider 故障时直接报错给 Agent。fallback 链路、circuit breaker、hedge racing 放扩展阶段，通过 Profile 的 `fallback` 字段声明备用 Provider。
 
-**成本透明在核心阶段做基础版。** 每次 LLM 调用记录 token 使用量、Provider、模型，写入 `llm_calls` 表（见第 8 章）。扩展阶段做完整的成本聚合和 Web 看板。
+**成本透明在核心阶段做基础版。** 每次 LLM 调用记录 token 使用量、Provider、模型，写入 `llm_calls` 表（见第 9 章）。扩展阶段做完整的成本聚合和 Web 看板。
 
 ---
 
@@ -151,7 +151,7 @@ ReAct 循环是 AgentOS 最核心的一段代码。输入一条用户消息，�
 ReAct 是 **Reason** 加 **Act** 的简称。算法步骤：
 
 1. 接到用户消息追加到 Session 对话历史
-2. 组装 Prompt（system prompt 加 Bootstrap 加 Skill 加 Memory 加对话历史加可用 Tool 列表）
+2. 组装 Prompt（按 4.2 五部分：system prompt 加 Bootstrap 加 Memory 注入加对话历史加可用 Tool 列表）
 3. 调用 LLM Provider 获取响应
 4. 如果响应**没有** Tool 调用，返回最终响应
 5. 如果**有** Tool 调用，AgentOS 执行 Tool 并把结果作为 tool 消息追加到对话历史
@@ -166,25 +166,27 @@ ReAct 是 **Reason** 加 **Act** 的简称。算法步骤：
 
 **`PromptBuilder` 模块。** 组装每轮 LLM 调用的 Prompt。按五部分顺序拼接：
 
-1. system prompt（`AGENT.md` 正文，这个 Agent 的指令，由 `ContextLoader` 提供；末尾附当前日期时间——LLM 自己不知道今天几号，定时场景的"今天"全靠这一行）
+1. system prompt（`AGENT.md` 正文，这个 Agent 的指令，由 `ContextLoader` 提供，含当前 Agent 已绑定 Skill 的 name/description/本地路径（由 ContextLoader 拼入，见 8.3）；末尾附当前日期时间——LLM 自己不知道今天几号，定时场景的"今天"全靠这一行）
 2. Bootstrap 文件（AGENTS.md、SOUL.md、USER.md，由 `ContextLoader` 加载到系统提示词）
-3. Memory 注入（会话历史加长期记忆，由 `MemoryService` 提供）
+3. Memory 注入（**仅长期记忆**：核心记忆区加归档记忆区，由 `MemoryService` 提供；会话历史不在此段，由第 4 段独立注入一次——`MemoryService` 的会话记忆职责只服务于 Session 读写，不重复进 prompt）
 4. 对话历史（按 `maxHistoryTurns` 截断后的 Session messages）
 5. 当前 Profile 可用的 Tool 列表（按 Function Calling 格式）
 
-**`ToolExecutor` 模块。** 执行 LLM 返回的 Tool 调用请求。从 `ToolRegistry` 找到对应 Tool，做 Sandbox 检查，执行 Tool，把结果包装成 `ToolResult` 返回给 ReAct 循环，并写入 `tool_invocations` 表。失败时按可重试策略返回错误信息。
+**`ToolExecutor` 模块。** 执行 LLM 返回的 Tool 调用请求。从 `ToolRegistry` 找到对应 Tool，做 Sandbox 检查，执行 Tool，把结果包装成 `ToolResult` 返回给 ReAct 循环，并写入 `tool_invocations` 表。失败时返回可重试标识，由 Agent（LLM）自行决定是否重试；框架级自动重试放扩展阶段。
 
-**`AgentService` 模块。** 三种触发源共用的统一入口，也是一次处理的编排者：`process(Session, String)` 内部依次做——把当前 Profile 放进 `ProfileContext`（ThreadLocal，虚拟线程下每个请求天然独立）、调 `ReActLoop.run` 跑完循环、持久化 Session、`finally` 里清掉 `ProfileContext`。`ProfileContext` 解决的是"工具执行时怎么知道当前是哪个 Agent"：`AgentOSTool.execute` 的签名不带 Profile，按 Profile 过滤工具子集这类需求从 `ProfileContext` 读，不改工具接口；`NotifyTools` 则按渠道名称查询全局通知渠道注册表。
+**`AgentService` 模块。** 三种触发源共用的统一入口，也是一次处理的编排者：`process(Session, String)` 内部依次做——把当前 Profile 放进 `ProfileContext`（ThreadLocal，虚拟线程下每个请求天然独立）、调 `ReActLoop.run` 跑完循环、持久化 Session、`finally` 里清掉 `ProfileContext`。`ProfileContext` 解决的是"工具执行时怎么知道当前是哪个 Agent"：`AgentOSTool.execute` 的签名不带 Profile，按 Profile 过滤工具子集这类需求从 `ProfileContext` 读，不改工具接口；`NotifyTools` 则按渠道名称查询全局通知渠道注册表。硬性约束：ReAct 循环全程不得切换执行线程（禁 `@Async`/跨线程 `CompletableFuture`，否则 `ProfileContext` 静默丢失）；扩展阶段做并行 Tool 时需改为显式传参或上下文对象传递。
 
 ### 4.3 关键设计点
 
 **`MAX_ITERATIONS` 限制。** 核心阶段默认 10 次，防止 Agent 陷入 Tool 调用死循环，可在 Profile 里覆盖。
 
-**消息累积。** 每次迭代都把 LLM 响应和 Tool 结果追加到 Session 的 messages 列表。Session 的对话历史包含完整的 LLM 调用链和 Tool 调用链，对外可查可审计。
+**消息累积。** 每次迭代都把 LLM 响应和 Tool 结果追加到 Session 的 messages 列表。Session 的对话历史包含完整的 LLM 调用链和 Tool 调用链，对外可查可审计。人推 Session 完整保留；钟推 Session 的 messages_json 按 `max_history_turns` 物理裁剪（见 9.2），完整审计链路在 `tool_invocations`/`llm_calls`。
 
 **上下文长度管理。** 核心阶段策略简单：保留 system prompt 和最近 N 轮对话，超出部分丢弃，N 由 Profile 配置默认 20 轮。扩展阶段引入总结压缩。
 
 **核心阶段不做：** Tool 调用并行（一次响应里多个 Tool 调用按顺序执行）、Agent 间任务委托、流式响应。这些放扩展阶段。
+
+**超时打断语义：** 总超时触发返回 504 时，已执行的 `tool_invocations`/`llm_calls` 照常落库、Session 标记 `interrupted` 不丢弃——审计链路完整、事后可查。
 
 ---
 
@@ -200,7 +202,7 @@ Memory 是 AgentOS 区别于普通 chatbot 的核心能力。三层记忆是完�
 
 ![Memory 架构：MemoryService 门面统一收口 SessionManager 和 LongTermMemoryStore 接口，接口下三档后端按 memory.backend 切换](../website/public/images/docs-memory-service.svg)
 
-**`LongTermMemoryStore` 后端接口（可插拔）。** 长期记忆抽成一个后端接口，把"长期记忆的读写契约"和"具体存哪、怎么存"解耦——这是第 21 节评审那道"接口墙"在实现层的落地。对外四个方法：
+**`LongTermMemoryStore` 后端接口（可插拔）。** 长期记忆抽成一个后端接口，把"长期记忆的读写契约"和"具体存哪、怎么存"解耦——这是早期方案评审定下的"接口墙"在实现层的落地。对外四个方法：
 
 - `append(content, scope)`（追加内容到指定分区，`scope` 取 `MemoryScope.CORE` 或 `ARCHIVAL`，默认 `ARCHIVAL`）
 - `load`（返回核心记忆区全量 + 归档记忆区截断后的内容）
@@ -209,17 +211,17 @@ Memory 是 AgentOS 区别于普通 chatbot 的核心能力。三层记忆是完�
 
 所有实现共同遵守四条行为契约：①不缓存（每次重新读文件/查库/调 API）；②核心记忆区永不被截断，截断只作用在归档区；③写核心还是写归档由 Agent 经 `scope` 显式指定，系统不猜；④`recall` 是关键词检索不做复杂化。核心阶段**不做自动抽取**，分区完全由 Agent 通过 `save_memory` 的调用时机和 `scope` 参数手动决定，这是信号驱动升级原则在 Memory 模块的体现——自动从对话历史提炼记忆放到扩展阶段。
 
-**三档后端实现（核心阶段一次交付，靠配置 `memory.backend` 选一个）。** 递进对应第 21 节讲的三级演进：
+**后端实现（核心阶段交付 Markdown 默认档；`LongTermMemoryStore` 接口预留 `memory.backend` 切换，SQLite/Mem0 档随后补齐）。** 递进对应早期方案评审讲的三级演进：
 
 - **`MarkdownMemoryStore`（默认）。** 底层操作 `.agentos/memory/MEMORY.md` 一个 Markdown 文件，按 `## 核心记忆` / `## 归档记忆` 两个 header 分区（详见 5.2）；截断是字符串裁归档段，检索是 `String.contains` 行匹配。零依赖、人可读、git 可跟踪，记忆量不大时的首选。
 - **`SqliteMemoryStore`。** 记忆按条入库到 `memory_entries` 表（手工建表脚本，与 sessions/审计表同口径），截断变成归档查询的 `LIMIT N`、检索变成 SQL `LIKE`、核心区用 `WHERE scope='CORE'` 全量取。仍**零外部依赖**（复用已有 SQLite），记忆量上千、要结构化查询时的升级档。
-- **`Mem0MemoryStore`。** 接一个**自托管** Mem0 记忆层（数据不出域），Java 侧走 REST 集成，`append/load/recall` 翻译成 Mem0 的 add/get/search——提炼、冲突消解、语义检索都交给 Mem0。凭证与地址走环境变量占位。这是"真需要智能记忆"时的外部集成档，对应第 21 节第十四节"记忆若非核心差异化能力、集成可自托管方案是理性选择"。
+- **`Mem0MemoryStore`。** 接一个**自托管** Mem0 记忆层（数据不出域），Java 侧走 REST 集成，`append/load/recall` 翻译成 Mem0 的 add/get/search——提炼、冲突消解、语义检索都交给 Mem0。凭证与地址走环境变量占位。这是"真需要智能记忆"时的外部集成档，对应早期评审"记忆若非核心差异化能力、集成可自托管方案是理性选择"的判断。
 
 换后端只改 `memory.backend` 一行配置，`MemoryService` 以上（`PromptBuilder`/`MemoryTools`/`ReActLoop`）一个字不动——这就是接口墙的价值兑现。`recallByKeyword` 也预留了语义升级空间（Mem0 档已是语义检索），切换底层不影响上层。
 
 **`MemoryTools` 子模块。** 把长期记忆暴露给 Agent 调用，包含 `save_memory` 和 `recall_memory` 两个内置 Tool，标注 `@Tool` 注解自动注册到 `ToolRegistry`，跟其他内置 Tool 一视同仁。
 
-**会话记忆。** 由 `SessionManager` 实现（见第 8 章），通过 SQLite 持久化，按 Channel 加用户加 Profile 联合标识管理。`MemoryService` 把它作为三层之一统一对外。
+**会话记忆。** 由 `SessionManager` 实现（见第 9 章），通过 SQLite 持久化，按 Channel 加用户加 Profile 联合标识管理。`MemoryService` 把它作为三层之一统一对外。
 
 ### 5.2 MEMORY.md 文件设计（默认后端 `MarkdownMemoryStore`）
 
@@ -231,7 +233,7 @@ Memory 是 AgentOS 区别于普通 chatbot 的核心能力。三层记忆是完�
 
 ### 5.3 Memory 注入到 system prompt
 
-ReAct 循环每次组装 prompt 时，`MemoryService` 把会话历史和长期记忆（核心记忆区加归档记忆区，经 `LongTermMemoryStore.load()` 取得）提供给 `PromptBuilder`。长期记忆每次重新读不做缓存（契约一），这样 Agent 调用 `save_memory` 后下一轮立刻能看到——Markdown 档每次读一个小文件、SQLite 档每次查库、Mem0 档每次调 API，性能都可接受。扩展阶段可在门面背后加 in-memory cache 加失效机制。
+ReAct 循环每次组装 prompt 时，`MemoryService` 把长期记忆（经 `LongTermMemoryStore.load()` 取得）提供给 `PromptBuilder`；会话历史由 `PromptBuilder` 按 `maxHistoryTurns` 截断后独立注入。长期记忆每次重新读不做缓存（契约一），这样 Agent 调用 `save_memory` 后下一轮立刻能看到——Markdown 档每次读一个小文件、SQLite 档每次查库、Mem0 档每次调 API，性能都可接受。扩展阶段可在门面背后加 in-memory cache 加失效机制。
 
 ### 5.4 MEMORY.md 跟 USER.md 的区别
 
@@ -249,7 +251,7 @@ ReAct 循环每次组装 prompt 时，`MemoryService` 把会话历史和长期�
 - 情景记忆（放扩展）
 - Memory Wiki（结构化 claim/evidence、矛盾检测）
 - 记忆压缩（超长简单截断，md 裁字符串、sqlite 用 LIMIT）
-- 知识图谱后端（第 21 节第九节：门槛比向量更高，真需要时集成 Graphiti 类可自托管方案，不自造）
+- 知识图谱后端（门槛比向量更高，真需要时集成 Graphiti 类可自托管方案，不自造）
 
 ---
 
@@ -280,7 +282,7 @@ AgentOS 内部统一的 Tool 抽象接口。内置 Tool、`@Tool` 注解的 Plug
 
 核心阶段提供九个内置 Tool，分五组：
 
-- **`FileTools`**：`read_file`、`write_file`、`list_dir`，执行前调用 `Sandbox.enforce(...)` 做路径白名单检查
+- **`FileTools`**：`read_file`、`write_file`、`list_dir`，执行前调用 `Sandbox.check(...)` 做路径白名单检查
 - **`ShellTools`**：`shell` Tool 直接执行白名单内的可执行文件与参数数组，带超时；不经 Shell 解释
 - **`HttpTools`**：`http_get`、`http_post`，带域名白名单
 - **`MemoryTools`**：`save_memory`、`recall_memory`（归 Memory 模块，但作为内置 Tool 注册）
@@ -288,9 +290,9 @@ AgentOS 内部统一的 Tool 抽象接口。内置 Tool、`@Tool` 注解的 Plug
 
 这九个覆盖"让 Agent 能读写文件、跑命令、调外部 API、记事、往外推通知"的最短链路。
 
-![Plugin Tool 三档：零代码 AGENT.md 目录+MCP、轻代码自写 MCP server、重代码 @Tool Java Bean，门槛从低到高](../website/public/images/docs-plugin-tool-tiers.svg)
-
 ### 6.3 Plugin Tool 方式一：零代码 AGENT.md 目录 加复用 MCP
+
+![Plugin Tool 三档：零代码 AGENT.md 目录+MCP、轻代码自写 MCP server、重代码 @Tool Java Bean，门槛从低到高](../website/public/images/docs-plugin-tool-tiers.svg)
 
 AgentOS **主推**的接入方式。业务方不写代码，只写一个 Agent 目录描述要做的事，LLM 自己理解任务、自己组合调用 MCP 工具。
 
@@ -298,7 +300,7 @@ AgentOS **主推**的接入方式。业务方不写代码，只写一个 Agent �
 
 加载走三层渐进式披露：`AGENT.md` 正文常驻；当前 Agent 绑定 Skill 的 name/description/本地路径每轮注入；Skill 正文、参考与脚本经底座 `read_file`/`shell` 按需读取或运行。AgentOS 不解析任务步骤、不做工作流引擎。
 
-> 注意 `AGENT.md` 的解析由 `AgentLoader` / `ContextLoader`（8.3）负责，不在 Tool 模块里——它是 prompt 的输入源、不是可执行 Tool（见宪法原则四与 11.1）。
+> 注意 `AGENT.md` 的解析由 `AgentLoader` / `ContextLoader`（8.3）负责，不在 Tool 模块里——它是 prompt 的输入源、不是可执行 Tool（见 AiProgrammingGuide 4.6 纠偏表（Agent 目录不是 Tool，加载归 ContextLoader）与 11.1）。
 
 ### 6.4 Plugin Tool 方式二：自己写 MCP server
 
@@ -323,35 +325,36 @@ Sandbox 遵循"接口先行"原则：先定一个不携带任何实现细节的�
 **`Sandbox` 接口。** 只有一个方法，表达"在受控环境里执行一个动作"这个意图：
 
 ```text
-Sandbox.enforce(SandboxAction action)
+Sandbox.check(SandboxAction action)
 
 SandboxAction  = { type: ActionType, target: String }
-ActionType     = FILE_READ | FILE_WRITE | SHELL_COMMAND | HTTP_REQUEST
+ActionType     = FILE_READ | FILE_WRITE | SHELL_COMMAND | HTTP_REQUEST | NOTIFY
 ```
 
-> ActionType 取四值（文件读 / 文件写 / Shell 命令 / HTTP 请求）——文件读写分开便于未来按读/写分权限；`SandboxChecker` 的 `enforce` 把 `FILE_READ`、`FILE_WRITE` 两 case 同路由到 `checkFilePath`。
+> ActionType 取五值（文件读 / 文件写 / Shell 命令 / HTTP 请求 / 通知推送）——文件读写分开便于未来按读/写分权限；`SandboxChecker` 的 `check` 把 `FILE_READ`、`FILE_WRITE` 两 case 同路由到 `checkFilePath`。
 
 接口签名里不出现"白名单""容器镜像""VM 配置"这类某一档实现特有的词——用最重的 microVM 实现去反向套这个签名，也应该能干净套入，这是校验接口是否中立的办法。
 
-**`SandboxChecker`（核心阶段唯一实现）。** 配置在 `application.yaml`（`file.allowed_paths`、`shell.allowed_commands`、`http.allowed_domains`），内部按 `ActionType` 路由到三个私有校验方法：
+**`SandboxChecker`（核心阶段唯一实现）。** 配置在 `application.yaml`（`file.allowed_paths`、`shell.allowed_commands`、`http.allowed_domains`、`notify.allowed_domains`），内部按 `ActionType` 路由到四个私有校验方法：
 
 - `checkFilePath`（路径标准化后比对白名单，需处理 `../` 路径穿越）
-- `checkShellCommand`（精确比对可执行文件白名单；解释器仅在管理员显式列入时允许，并授予宿主机进程权限）
+- `checkShellCommand`（精确比对可执行文件白名单；解释器仅在管理员显式列入时允许，并授予宿主机进程权限。警示：参数不校验——解释器一旦列入白名单即视为放通其全部文件/网络行为，文件白名单对其不生效；列入解释器属高危运维决策）
 - `checkHttpUrl`（解析 host 后做通配符匹配）
+- `checkNotifyUrl`（校验独立的 `notify.allowed_domains`，不复用 `http.allowed_domains`）
 
 任意校验失败抛 `SandboxViolationException`，Tool 执行终止；异常信息直接复用 `ToolExecutor` 已有的失败审计路径写入 `tool_invocations`（`success=false`、`error_message`），不需要为 Sandbox 单独新增审计逻辑。
 
-`FileTools`、`ShellTools`、`HttpTools` 在各自 `execute` 方法开头调用 `sandbox.enforce(...)`，校验通过才执行真正的 IO：
+`FileTools`、`ShellTools`、`HttpTools`、`NotifyTools`（经 `WebhookNotifyAdapter`，NOTIFY 动作）在各自 `execute` 方法开头调用 `sandbox.check(...)`，校验通过才执行真正的 IO：
 
-![Sandbox 校验流程：FileTools/ShellTools/HttpTools 调用 SandboxChecker.enforce，通过则继续执行，拒绝则抛异常并走既有审计路径](../website/public/images/docs-sandbox-flow.svg)
+![Sandbox 校验流程：FileTools/ShellTools/HttpTools/NotifyTools 调用 SandboxChecker.check，通过则继续执行，拒绝则抛异常并走既有审计路径](../website/public/images/docs-sandbox-flow.svg)
 
 **扩展阶段按信号驱动升级，接口不变，只新增实现类：**
 
 | 阶段 | 实现 | 升级信号 |
 |------|------|------|
 | 核心阶段 | `SandboxChecker`（应用层 Path/Pattern 白名单） | — |
-| 扩展阶段一 | 容器隔离（namespace + cgroups + seccomp） | 要跑相对不可信代码，或要做多租户 |
-| 扩展阶段二 | microVM（Firecracker / Kata / gVisor） | 要跑完全不可信代码，或要规模化多租户 |
+| 扩展阶段一 | 容器隔离（namespace + cgroups + seccomp），经 `execute_code` Runner（新接口）承载，`Sandbox.check` 继续作为前置校验保留 | 要跑相对不可信代码，或要做多租户 |
+| 扩展阶段二 | microVM（Firecracker / Kata / gVisor），经 `execute_code` Runner（新接口）承载，`Sandbox.check` 继续作为前置校验保留 | 要跑完全不可信代码，或要规模化多租户 |
 
 > **要点一：** 应用层白名单是"劝阻级"防线，防的是模型犯傻误操作，防不住蓄意绕过，核心阶段不建议用它跑完全不可信的代码或对外做多租户。
 >
@@ -373,22 +376,22 @@ NotifyChannelAdapter.send(NotifyTarget target, String content)
 NotifyTarget = { channelType: String, config: Map<String, String> }
 ```
 
-**`WebhookNotifyAdapter`（核心阶段唯一实现）。** 用通用 HTTP webhook 承接所有场景——企业微信、飞书、钉钉的群机器人都提供 webhook 地址，核心阶段不用逐家接它们的专用 API（签名算法、AccessToken 刷新这些认证细节核心阶段不做），直接把 `content` 包成对方 webhook 约定的 JSON 格式发一次 POST。发送前一样要过 `Sandbox.enforce(new SandboxAction(HTTP_REQUEST, url))` 域名白名单校验，跟 `http_post` 共享同一份 `http.allowed_domains` 配置，不新增 Sandbox 逻辑。
+**`WebhookNotifyAdapter`（核心阶段唯一实现）。** 用通用 HTTP webhook 承接所有场景——企业微信、飞书、钉钉的群机器人都提供 webhook 地址，核心阶段不用逐家接它们的专用 API（签名算法、AccessToken 刷新这些认证细节核心阶段不做），直接把 `content` 包成对方 webhook 约定的 JSON 格式发一次 POST。发送前过 `Sandbox.check(new SandboxAction(NOTIFY, url))`，校验独立的 `notify.allowed_domains` 白名单——通知渠道域名（webhook URL 内含 token 等同凭证）不进入通用 HTTP 白名单，`http_post` 打不到它们。
 
 **`NotifyTools`（内置 Tool，归 `agentos-tool`）：**
 
 ```text
-@Tool notify(content: String, channel: String = 默认渠道)
+@Tool notify(content: String, channel: String)
 ```
 
-`channel` 参数是通知渠道的全局注册名。通知渠道通过 Web 管理台或 `/api/v1/notify-channels` 做 CRUD，持久化在 SQLite 的 `notify_channels` 表；每项包含 `name`、`type`、`url` 和可选的 `description`。Agent 在 `AGENT.md` 正文中用自然语言按名引用渠道，LLM 调用时传 `channel` 和 `content`，`NotifyTools` 再从注册表解析适配器和 URL。具体 webhook 地址不进入对话，增加或修改渠道也无需改 Agent；`AGENT.md` frontmatter 不包含 `notify_channels` 字段。
+`channel` 参数（必填）是通知渠道的全局注册名。通知渠道通过 `/api/v1/notify-channels` 做 CRUD（核心阶段经 API/Swagger 操作；管理台页面放扩展阶段，下同），持久化在 SQLite 的 `notify_channels` 表；每项包含 `name`、`type`、`url` 和可选的 `description`。Agent 在 `AGENT.md` 正文中用自然语言按名引用渠道，LLM 调用时传 `channel` 和 `content`，`NotifyTools` 再从注册表解析适配器和 URL。具体 webhook 地址不进入对话，增加或修改渠道也无需改 Agent；`AGENT.md` frontmatter 不包含 `notify_channels` 字段。
 
 ![NotifyTools 设计：接口先行，核心阶段只实现 WebhookNotifyAdapter，扩展阶段新增专用渠道 Adapter](../website/public/images/docs-notify.svg)
 
 **跟已有机制的关系：**
 
 - **审计：** `notify` 跟其他 Tool 一样走 `ToolExecutor` 现有的成功/失败审计路径，写入 `tool_invocations`，不新增审计逻辑。
-- **Sandbox：** 复用已有的 `Sandbox.enforce(HTTP_REQUEST, ...)`，不新增沙箱概念。
+- **Sandbox：** 复用 `Sandbox.check(NOTIFY, ...)`，通知域名独立白名单。
 - **跟入站 Channel 的对称关系，但不是同一个东西：** `ChannelAdapter`（8.4）解决"什么触发 Agent 开始跑"，`NotifyChannelAdapter` 解决"Agent 跑完把结果送到哪"——语义方向相反，所以分开建模，不合并成一个抽象；同一个企业微信群，可能同时是某个 Agent 的入站 Channel、又是另一个 Agent 的出站通知目标。
 - **和 Plugin Tool 方式二（MCP）的边界：** 如果业务方需要企业微信官方富文本卡片消息这种更复杂的格式，`notify` 简单场景之外仍然可以走 MCP 方式二自己接一个专用 MCP server，两条路并存，`notify` 只是把"最常见的纯文本/webhook 推送"这个重复劳动统一掉，不是要吃掉 MCP 方式二的场景。
 
@@ -402,13 +405,13 @@ Web Service 是 AgentOS 的对外完整门面，业务系统通过 REST API 接�
 
 **`WebServer` 模块。** 启动 Spring MVC 服务器，`agentos serve` 命令触发，默认端口 `8080`，开启 Java 21 virtual thread。
 
-**`ApiController` 集合。** 按资源分六个 Controller：`SessionApiController`（会话管理）、`AgentApiController`（无状态调用）、`ProfileApiController`（Profile 查询）、`MemoryApiController`（Memory 查询）、`ToolApiController`（Tool 信息）、`SystemApiController`（系统状态）。每个 Controller 只做参数校验、响应包装、错误处理，实际逻辑委托给核心层的服务。
+**`ApiController` 集合。** 按资源分八个 Controller：`SessionApiController`（会话管理）、`AgentApiController`（无状态调用）、`ProfileApiController`（Profile 查询）、`MemoryApiController`（Memory 查询）、`ToolApiController`（Tool 信息）、`SystemApiController`（系统状态）、`NotifyChannelApiController`（通知渠道注册 CRUD）、`ScheduleApiController`（定时任务运行控制，见 8.5；其中 `NotifyChannelApiController`/`ScheduleApiController` 随第四周收尾端点交付，见第 13 章）。每个 Controller 只做参数校验、响应包装、错误处理，实际逻辑委托给核心层的服务。
 
-**`GlobalExceptionHandler` 模块。** 统一异常处理，把异常转成标准 JSON 响应信封 `ApiResponse`（`code`、`message`、`data`、`timestamp`；成功与错误共用一个信封）。此信封第 24 节随白名单管理端点已建于 `agentos-web`，第 26 节复用、不另建 ErrorBody。
+**`GlobalExceptionHandler` 模块。** 统一异常处理，把异常转成标准 JSON 响应信封 `ApiResponse`（`code`、`message`、`data`、`timestamp`；成功与错误共用一个信封）。此信封随首个管理端点（`/api/v1/notify-channels`，第四周收尾）引入，`GlobalExceptionHandler` 第三周交付时即采用同一信封结构返回错误，后续复用、不另建 ErrorBody。
 
-**OpenAPI 文档模块。** 通过 `springdoc-openapi` 自动生成 OpenAPI 3.0 文档，暴露在 `/swagger-ui`。
+**OpenAPI 文档模块。** 通过 `springdoc-openapi` 自动生成 OpenAPI 3.0 文档，暴露在 `/swagger-ui`（随第三周交付）。
 
-### 7.2 核心阶段 10 个端点
+### 7.2 核心阶段端点（基础 10 个 + 收尾追加 8 个，共 18 个）
 
 **会话管理（4 个）：**
 
@@ -432,18 +435,20 @@ Web Service 是 AgentOS 的对外完整门面，业务系统通过 REST API 接�
 1. `GET /api/v1/health`
 2. `GET /api/v1/info`
 
+**收尾追加（8 个）：** notify-channels CRUD 4 个（GET 列表/POST 注册/PUT 更新/DELETE 删除，见 6.8）＋ schedules 管理 4 个（见 8.5）
+
 ### 7.3 扩展阶段补齐的端点
 
-**`Agent` 目录的上传/查看/更新/删除**（业务方通过 API 而不是手动把目录丢进 `.agentos/agents/` 来创建新 Agent，含一句话生成 `AGENT.md`，这才是"纯 API 定义一个新 Agent"的完整闭环）；Memory 的 append/clear/search；Tool describe 和调用历史；LLM call 历史和 token 统计；**`AgentScheduler` 的调度管理**（增删查改某个 Agent frontmatter 的 `schedules`，不用改文件重启进程）；Webhook 触发；SSE 流式响应；Prometheus metrics；OpenAPI spec。
+**`Agent` 目录的上传/查看/更新/删除**（业务方通过 API 而不是手动把目录丢进 `.agentos/agents/` 来创建新 Agent，含一句话生成 `AGENT.md`，这才是"纯 API 定义一个新 Agent"的完整闭环）；Memory 的 append/clear/search；Tool describe 和调用历史；LLM call 历史和 token 统计；**AgentScheduler 调度定义的增删改**（改某个 Agent frontmatter 的 `schedules` 定义；按 Agent 查询其 schedules 定义也在本项，区别于 8.5 已交付的按任务查运行状态）；Webhook 触发；SSE 流式响应；Prometheus metrics。
 
-> **核心阶段为什么不做：** 核心阶段"定义一个 Agent"的路径是业务方手写一个 `.agentos/agents/<name>/` 目录（`AGENT.md`[+ 脚本 / 子指令]）、重启或热加载生效（`ContextLoader` 每次组装 prompt 都重新读取，不需要重启也能生效，见 8.3），Web Service 核心阶段的端点都只做查询，不做创建，这跟"业务系统通过 API 动态创建新 Agent"是两件事——后者需要 Agent 目录上传接口（含一句话生成）、`AgentScheduler` 的运行时增删接口一起补齐，缺了这条链路就不完整，所以放在同一批扩展阶段一起做，不拆开先做一半。
+> **核心阶段为什么不做：** 核心阶段"定义一个 Agent"的路径是业务方手写一个 `.agentos/agents/<name>/` 目录（`AGENT.md`[+ 脚本 / 子指令]）、重启生效（AGENT.md 正文与 Skill 绑定的修改因 `ContextLoader` 每次组装 prompt 都重新读取、不需要重启也能生效；frontmatter 派生字段需重启，见 8.3），Web Service 核心阶段的端点都只做查询，不做创建，这跟"业务系统通过 API 动态创建新 Agent"是两件事——后者需要 Agent 目录上传接口（含一句话生成）、`AgentScheduler` 的运行时增删接口一起补齐，缺了这条链路就不完整，所以放在同一批扩展阶段一起做，不拆开先做一半。
 
 ### 7.4 关键设计点
 
 - **错误码规范：** 标准 HTTP 状态码加内部错误码（400 参数错误、404 资源不存在、500 内部错误、503 Provider 故障）。
 - **CORS：** 核心阶段开放所有源方便调试，扩展阶段加白名单。
 - **请求大小限制：** 单条消息最大 32KB，Session 历史返回最多最近 100 条。
-- **超时：** Agent 调用最长 60 秒超时返回 504。
+- **超时：** 分步预算，均为 `application.yaml` 默认配置、可在 Profile `settings.timeout`（`llm_call`/`tool`/`total`）按 Agent 覆盖，不硬编码：LLM 单次调用默认 60s、Tool 单次执行默认 30s、Agent 调用循环总超时默认 300s，超总超时返回 504。
 
 ### 7.5 核心阶段不做的部分
 
@@ -479,7 +484,6 @@ Web Service 是 AgentOS 的对外完整门面，业务系统通过 REST API 接�
 ├── memory/
 │   └── MEMORY.md      # 长期记忆
 ├── mcp_servers.yaml   # MCP 配置
-├── sessions/          # Session 数据
 ├── logs/              # 日志
 ├── AGENTS.md
 ├── SOUL.md
@@ -487,13 +491,13 @@ Web Service 是 AgentOS 的对外完整门面，业务系统通过 REST API 接�
 └── agentos.db          # SQLite
 ```
 
-创建目录、写默认模板。init 本身不创建 Agent，第一个 Agent 由 `agentos profile create <name>` 生成。
+创建目录、写默认模板。init 本身不创建 Agent，第一个 Agent 由 `agentos profile create <name>` 生成——该命令组名沿用 profile，实际操作的是 `.agentos/agents/` 下的 Agent 目录：生成一份最小 `AGENT.md` 模板（与需求文档 5.2 一致）。
 
 ### 8.2 Profile 配置
 
 **`AgentLoader` 模块。** 扫 `.agentos/agents/` 各子目录，`deriveProfile` 把每个 `AGENT.md` 的 frontmatter 派生成一个 `Profile`，注册到 `ProfileRegistry`。启动时做合法性校验：Provider 是否存在、Tool 是否注册、Channel 是否支持、Bootstrap 文件是否存在。校验失败的 Agent 不阻断启动但记录错误日志。
 
-**`ProfileRegistry` 模块。** Agent 派生 `Profile` 的内存索引，按 name 提供快速查找。Channel 接收消息时通过它拿到具体 Profile。派生自 `AGENT.md` frontmatter 的字段：`name`、`description`、`identity`（`agent_name`、`prompt`）、`provider`（`name`、`model`、`temperature`）、`tools`、`mcp_servers`、`channels`、`schedules`、`bootstrap`、`settings`（`max_iterations`、`max_history_turns`）。`notify_channels` 不属于 Profile 或 frontmatter；通知渠道由 SQLite 全局注册表管理，Agent 只在正文中按名称引用。核心阶段支持多个 Agent 并存，同一实例上同时可用，这是"OS"在核心阶段的最小体现。
+**`ProfileRegistry` 模块。** Agent 派生 `Profile` 的内存索引，按 name 提供快速查找。Channel 接收消息时通过它拿到具体 Profile。派生自 `AGENT.md` frontmatter 的字段：`name`、`description`、`identity`（`agent_name`、`prompt`）、`provider`（`name`、`model`、`temperature`）、`tools`、`mcp_servers`、`channels`、`schedules`、`bootstrap`、`settings`（`max_iterations`、`max_history_turns`、`timeout`（llm_call/tool/total，见 7.4））。`notify_channels` 不属于 Profile 或 frontmatter；通知渠道由 SQLite 全局注册表管理，Agent 只在正文中按名称引用。核心阶段支持多个 Agent 并存，同一实例上同时可用，这是"OS"在核心阶段的最小体现。
 
 ### 8.3 上下文加载（Bootstrap + AGENT.md 正文）
 
@@ -513,21 +517,21 @@ Channel 是 Agent 对外的消息接入入口，主要解决"消息进来、响�
 
 ![定时任务是第三种触发源：CLI/Web Service（人推）和 AgentScheduler（钟推）都调同一个 AgentService](../website/public/images/docs-scheduler.svg)
 
-**`AgentScheduler` 模块（归 `agentos-core`）。** 基于 Spring 的 `ThreadPoolTaskScheduler` 加 `CronTrigger` 动态注册任务，不用静态的 `@Scheduled` 注解，因为触发规则要按 Profile 配置动态生成，编译期写死的注解做不到。Profile 新增 `schedules` 字段声明 cron 表达式、时区、要发给 Agent 的消息内容；AgentOS 启动时扫描所有 Profile 的 `schedules` 字段逐个注册。
+**`AgentScheduler` 模块（归 `agentos-core`）。** 基于 Spring 的 `ThreadPoolTaskScheduler` 加 `CronTrigger` 动态注册任务，不用静态的 `@Scheduled` 注解，因为触发规则要按 Profile 配置动态生成，编译期写死的注解做不到。Profile 新增 `schedules` 字段声明 id、cron 表达式、时区、要发给 Agent 的消息内容；AgentOS 启动时扫描所有 Profile 的 `schedules` 字段逐个注册。
 
 **并发控制。** 每个定时任务用一把进程内的 `ReentrantLock`（按任务 id 维度）防止同一任务重叠执行——上一次还没跑完，下一次触发点到了就跳过，不排队、不并行跑两份。核心阶段是单实例部署，这把锁只解决"同一进程内不重叠"，**不是**分布式锁，多实例部署下的分布式协调放扩展阶段。
 
 **失败处理。** 定时任务执行失败只记日志，不能让调度器本身崩溃、影响后续任务触发；失败的这次调用依然走 `AgentService.process` 内部完整的 `llm_calls`/`tool_invocations` 审计路径，跟人推触发的失败没有区别。
 
-**会话身份。** 钟推也要落 Session：`session_id` 沿用既有公式（channel + user + profile 联合生成，见 9.2），channel 和 user 都固定为 `scheduler`。即同一个 Profile 的历次定时触发复用同一个 Session，对话历史自然累积、靠 `max_history_turns` 截断兜底——不为钟推新设任何概念。
+**会话身份。** 钟推也要落 Session：`session_id` 沿用既有公式（channel + user + profile 联合生成，见 9.2），channel 和 user 都固定为 `scheduler`。即同一个 Profile 的历次定时触发复用同一个 Session，对话历史自然累积、靠 `max_history_turns` 截断兜底——不为钟推新设任何概念（prompt 侧截断之外，messages_json 落盘时同步物理裁剪，见 9.2）。
 
-**状态持久化与可管理（第 28 节补齐）。** 光"到点自动跑"还不够——运营方要能看见有哪些定时任务、跑过几次、上次成没成，也要能手动补跑一次、临时停掉一个任务。为此把任务状态和执行历史落 SQLite（重启不丢），并做成管理台的一等公民：
+**状态持久化与可管理（收尾阶段补齐）。** 光"到点自动跑"还不够——运营方要能看见有哪些定时任务、跑过几次、上次成没成，也要能手动补跑一次、临时停掉一个任务。为此把任务状态和执行历史落 SQLite（重启不丢），并做成可查可管的一等公民（核心阶段经 API/Swagger 操作，管理台页面放扩展阶段）：
 
-- **两张表**（手工建表脚本，见 9.2）：`scheduled_tasks` 存任务登记信息与运行状态（`task_id` 主键、`profile_name`、`cron`、`zone`、`message`、`enabled`、`next_run_at`、`last_run_at`、`last_status`、`run_count`），`task_executions` 存每次执行的历史（成功失败都记：`task_id`、`session_id`、`started_at`、`success`、`error_message`、`duration_ms`）。定义来源仍是 Profile/Skill 的 `schedules`——这两张表只存"状态 + 历史"，不作为定义源，重启时从文件重新注册。
-- **契约在 core、实现在 storage**（依赖倒置）：`ScheduledTaskStore` 接口（`register`/`recordExecution`/`isEnabled`/`setEnabled`/`list`/`executions`）放 `agentos-core`，`AgentScheduler` 依赖它；JPA 实现 `JpaScheduledTaskStore` 放 `agentos-storage`。`AgentScheduler` 启动扫描时顺带 `register` 登记，每次 `execute` 成功失败都 `recordExecution` 留痕（与宪法 V 审计同源）；`runOnce` 先看 `isEnabled`（停用则跳过、不记执行），管理台"立即执行"走 `runNow` 手动触发一次（无视启用状态）。
-- **四个管理端点**（`ScheduleApiController`，前缀 `/api/v1/schedules`）：`GET /schedules` 列任务与状态、`GET /schedules/{id}/executions` 查执行历史、`POST /schedules/{id}/run` 立即执行一次、`PUT /schedules/{id}` 启用/停用。管理台"定时任务"页调这四个端点，可查可管——这是第 28 节相对第 26 节"管理台只读"的一处明确扩展（仅限定时任务这一子系统的运行控制）。
+- **两张表**（手工建表脚本，见 9.2）：`scheduled_tasks` 存任务登记信息与运行状态（`task_id` 主键、`profile_name`、`cron`、`zone`、`message`、`enabled`、`next_run_at`、`last_run_at`、`last_status`、`run_count`、`updated_at`），`task_executions` 存每次执行的历史（成功失败都记：`task_id`、`session_id`、`started_at`、`success`、`error_message`、`duration_ms`）。定义来源仍是 AGENT.md frontmatter 的 `schedules`——这两张表只存"状态 + 历史"，不作为定义源，重启时从文件重新注册。
+- **契约在 core、实现在 storage**（依赖倒置）：`ScheduledTaskStore` 接口（`register`/`recordExecution`/`isEnabled`/`setEnabled`/`list`/`executions`）放 `agentos-core`，`AgentScheduler` 依赖它；JPA 实现 `JpaScheduledTaskStore` 放 `agentos-storage`。`AgentScheduler` 启动扫描时顺带 `register` 登记，每次 `execute` 成功失败都 `recordExecution` 留痕（与 constitution 审计原则（AiProgrammingGuide 3.2 原则六：审计 day one 落库）同源）；`runOnce` 先看 `isEnabled`（停用则跳过、不记执行），管理台"立即执行"走 `runNow` 手动触发一次（无视启用状态）。
+- **四个管理端点**（`ScheduleApiController`，前缀 `/api/v1/schedules`）：`GET /schedules` 列任务与状态、`GET /schedules/{id}/executions` 查执行历史、`POST /schedules/{id}/run` 立即执行一次、`PUT /schedules/{id}` 启用/停用。管理台"定时任务"页调这四个端点（核心阶段经 API/Swagger 操作，管理台页面放扩展阶段），可查可管——这是相对"管理台只读"的一处明确扩展（仅限定时任务这一子系统的运行控制）。
 
-**核心阶段 vs 扩展阶段的边界。** 核心阶段的 `schedules` **定义**只能写在 `AGENT.md` frontmatter 里，跟着进程启动一起注册，改 cron / 新增任务要重启（或触发重新加载）才生效；第 28 节补齐的是任务的**状态持久化与运行控制**（查看 / 执行历史 / 立即执行 / 启用停用），不含通过 API 增删改 cron 定义。"业务方通过 Web Service 上传一个 Agent 目录（`AGENT.md` 带 `schedules` frontmatter）、由此定义一个新 Agent 并让它定时自动运行"这个完整闭环，依赖的是 7.3 里扩展阶段才补齐的两个能力——Agent 目录上传接口（含一句话生成）、`AgentScheduler` 的运行时增删接口——核心阶段这条链路要靠手动丢目录走通，扩展阶段补上后才是纯 API、免重启的闭环。
+**核心阶段 vs 扩展阶段的边界。** 核心阶段的 `schedules` **定义**只能写在 `AGENT.md` frontmatter 里，跟着进程启动一起注册，改 cron / 新增任务要重启（或触发重新加载）才生效；收尾阶段补齐的是任务的**状态持久化与运行控制**（查看 / 执行历史 / 立即执行 / 启用停用），不含通过 API 增删改 cron 定义。"业务方通过 Web Service 上传一个 Agent 目录（`AGENT.md` 带 `schedules` frontmatter）、由此定义一个新 Agent 并让它定时自动运行"这个完整闭环，依赖的是 7.3 里扩展阶段才补齐的两个能力——Agent 目录上传接口（含一句话生成）、`AgentScheduler` 的运行时增删接口——核心阶段这条链路要靠手动丢目录走通，扩展阶段补上后才是纯 API、免重启的闭环。
 
 ### 8.6 三种运行模式
 
@@ -535,7 +539,7 @@ Channel 是 Agent 对外的消息接入入口，主要解决"消息进来、响�
 |------|------|------|
 | `agentos chat` | 交互对话 | 本地 CLI 交互 |
 | `agentos serve` | Web Service | 启动 REST API 服务（定时任务随 `serve`/`gateway` 一起常驻调度） |
-| `agentos gateway` | 守护进程 | 同时挂多个 Channel |
+| `agentos gateway` | 守护进程 | 核心阶段与 `serve` 同义（预挂 CLI Channel），多 Channel 挂载扩展阶段启用 |
 
 三种模式共享同一份 Profile 配置和 Session 存储，差异只是接入层。
 
@@ -549,7 +553,7 @@ status
 chat
 serve
 gateway
-profile list / create / show / delete
+profile list / create / show / delete   # 操作 .agentos/agents/ 下的 Agent 目录，create 生成 AGENT.md 模板
 provider list
 tool list
 session list
@@ -567,7 +571,7 @@ session list
 
 ### 9.1 持久化选型说明
 
-核心阶段选 **SQLite** 加 **Spring Data JPA** 做关系型持久化，**`MEMORY.md`** 文件加关键词检索做长期记忆。
+核心阶段选 **SQLite** 加 **Spring Data JPA** 做关系型持久化，**`MEMORY.md`** 文件加关键词检索做长期记忆（默认 Markdown 档；接口预留 `memory.backend` 切换，SQLite/Mem0 档扩展阶段补齐，见第 5 章）。
 
 **为什么核心阶段不用向量数据库：** LanceDB 在向量加全文检索上做得好，是 Memory 自然的升级方向，但它的 Java 本地嵌入式支持还在开发中，当前 Java SDK 只支持远程的 Cloud 或 Enterprise，不符合 AgentOS 单二进制部署的定位。其他向量库（Qdrant、Chroma、Milvus）都需要外部进程，pgvector 要外部 PostgreSQL。JVector 这种纯 Java 嵌入式向量库是另一条路但成熟度待验证。
 
@@ -587,15 +591,19 @@ session list
 
 > **工程风险提示：** SQLite 本身 `ALTER TABLE` 能力有限，`hibernate.ddl-auto=update` 在 SQLite 上对表结构演进的支持很弱。核心阶段首次建表用 `update` 可以，但表结构后续演进时不要依赖 `update` 自动迁移，需要手动维护建表脚本或引入 Flyway/Liquibase。
 
-核心表五张：
+**工程要求：** 启用 WAL 模式 + busy_timeout（virtual thread 并发下必须）；Session 落盘节奏为 ReAct 循环结束后落一次（不逐消息重写 messages_json）；钟推 Session（channel/user 固定 scheduler）历次触发复用同一 session_id，messages_json 每次落盘时物理裁剪至与 `max_history_turns` 同步的条数——避免无限增长，旧内容随裁剪丢弃、审计数据在 `tool_invocations`/`llm_calls` 完整保留。
+
+核心表六张 + 一张条件表：
 
 1. **`sessions`**：Session 元数据加 JSON 序列化的对话历史
 2. **`tool_invocations`**：每次 Tool 调用记录
 3. **`llm_calls`**：每次 LLM 调用记录
-4. **`scheduled_tasks`**：定时任务登记信息与运行状态（第 28 节，见 8.5）
-5. **`task_executions`**：定时任务每次执行的历史，成功失败都记（第 28 节，见 8.5）
+4. **`scheduled_tasks`**：定时任务登记信息与运行状态（收尾阶段补齐，见 8.5）
+5. **`task_executions`**：定时任务每次执行的历史，成功失败都记（收尾阶段补齐，见 8.5）
+6. **`notify_channels`**（name/type/url/description，见 6.8）
+7. **`memory_entries`**（扩展阶段 SqliteMemoryStore 档引入时建表，核心阶段 Markdown 档不建；scope 列区分 CORE/ARCHIVAL，见 5.1）
 
-> **相对原方案的调整：** `tool_invocations` 和 `llm_calls` 在核心阶段就做写入（不一定做查询接口），因为"可审计"是 AgentOS 的差异化卖点之一，审计数据的地基应该 day one 就立起来，纯靠日志后期要做审计还得反解析返工。查询接口和审计报表放扩展阶段，但写入核心阶段就有。`scheduled_tasks`/`task_executions` 是第 28 节把"定时任务"做成可查可管的一等公民时补的两张表，让任务状态与执行历史重启不丢（见 8.5）。
+> **相对原方案的调整：** `tool_invocations` 和 `llm_calls` 在核心阶段就做写入（不一定做查询接口），因为"可审计"是 AgentOS 的差异化卖点之一，审计数据的地基应该 day one 就立起来（day one 指核心阶段交付物即含审计写入；实施顺序上随第三周 SQLite 落地，见第 13 章），纯靠日志后期要做审计还得反解析返工。查询接口和审计报表放扩展阶段，但写入核心阶段就有。`scheduled_tasks`/`task_executions` 是收尾阶段把"定时任务"做成可查可管的一等公民时补的两张表，让任务状态与执行历史重启不丢（见 8.5）。
 
 **`sessions` 实体字段：**
 
@@ -611,14 +619,14 @@ session list
 | `last_active_at` | 最后活跃时间 |
 | `archived_at` | 归档时间 |
 
-**`scheduled_tasks` 实体字段（第 28 节）：**
+**`scheduled_tasks` 实体字段（收尾阶段补齐）：**
 
 | 字段 | 说明 |
 |------|------|
-| `task_id` | 主键，schedule 的 id（Profile/Skill 的 `schedules` 里声明） |
+| `task_id` | 主键，schedule 的 id（AGENT.md frontmatter `schedules` 里声明） |
 | `profile_name` | 归属 Profile |
 | `cron` | cron 表达式 |
-| `zone` | 时区 |
+| `zone` | 时区（对应 frontmatter `schedules.timezone` 字段） |
 | `message` | 到点发给 Agent 的消息 |
 | `enabled` | 是否启用（管理台开关，默认启用） |
 | `next_run_at` | 下次触发时刻 |
@@ -627,7 +635,7 @@ session list
 | `run_count` | 累计触发次数 |
 | `updated_at` | 状态更新时间 |
 
-**`task_executions` 实体字段（第 28 节）：**
+**`task_executions` 实体字段（收尾阶段补齐）：**
 
 | 字段 | 说明 |
 |------|------|
@@ -656,12 +664,12 @@ AgentOS 是 Maven 多模块项目，由 9 个模块组成：
 | `agentos-memory` | 核心能力三：`MemoryService` 统一门面、`LongTermMemoryStore` 后端接口（含 Markdown/SQLite/Mem0 三档实现）、`MemoryTools`（`save_memory` / `recall_memory`） |
 | `agentos-tool` | 核心能力四：内置 Tool（`FileTools`、`ShellTools`、`HttpTools`、`NotifyTools`）、`McpClientService`、`McpToolAdapter`、`ToolRegistry`、`Sandbox` 接口 + `SandboxChecker` 实现、`NotifyChannelAdapter` 接口 + `WebhookNotifyAdapter` 实现（三合一模块） |
 | `agentos-channel-cli` | CLI Channel：`CliChannel`、`agentos chat` 命令实现 |
-| `agentos-web` | 核心能力五：`WebServer`、6 个 `ApiController`、`GlobalExceptionHandler`、OpenAPI 文档 |
-| `agentos-storage` | 持久化层：SQLite、`SessionRepository`、`ToolInvocationRepository`、`LlmCallRepository` |
+| `agentos-web` | 核心能力五：`WebServer`、8 个 `ApiController`（其中 `NotifyChannelApiController`/`ScheduleApiController` 随第四周收尾端点交付，见第 13 章）、`GlobalExceptionHandler`、OpenAPI 文档 |
+| `agentos-storage` | 持久化层：SQLite、`SessionRepository`、`ToolInvocationRepository`、`LlmCallRepository`、`JpaScheduledTaskStore`、`NotifyChannelRepository`、`MemoryEntryRepository`（扩展阶段） |
 | `agentos-cli` | 命令行入口：Picocli 主入口、12 个子命令、`ConfigLoader` |
 | `agentos-boot` | Spring Boot 启动模块：主类、自动配置、依赖聚合 |
 
-模块之间通过接口解耦。扩展阶段加新 Channel 或新 Tool 实现只加新模块不改 core，所有 Channel 模块底层都调 `agentos-web` 的 Agent 接口。
+模块之间通过接口解耦。扩展阶段加新 Channel 或新 Tool 实现只加新模块不改 core；扩展阶段的 IM Channel（独立进程/机器部署）调 `agentos-web` 的 Agent 接口，核心阶段 CLI Channel 与 `AgentScheduler` 同进程直调 `AgentService`——两种接入同走 `AgentService.process` 链路，审计与 Session 语义一致。
 
 打包：
 
@@ -688,13 +696,13 @@ mvn clean package
 
 **借 Anthropic Agent Skills 的形态、但定义的是 Agent。** Anthropic 把这种目录叫一个 Skill（Claude 这个大 Agent 的一项可加载能力）；我们借的是目录的**形态**，不是命名——在 AgentOS，**一个目录 = 一个 Agent**。每个 Agent 独立自足，只调用底座的系统基础能力。
 
-> **宪章 v2.0.0 修订：公共实体与 Agent 绑定分离。** Skill 内容存 `.agentos/skills/<name>/`；Agent 通过自身 `skills/<name>` 下的受控相对软连接选择可见集合。软连接集合是唯一绑定真相源，不再使用 frontmatter `skills:`。公共 CRUD 保留，但删除被引用 Skill 默认拒绝并返回引用 Agent。
+> **早期宪章修订：公共实体与 Agent 绑定分离。** Skill 内容存 `.agentos/skills/<name>/`；Agent 通过自身 `skills/<name>` 下的受控相对软连接选择可见集合。软连接集合是唯一绑定真相源，不再使用 frontmatter `skills:`。公共 CRUD 保留，但删除被引用 Skill 默认拒绝并返回引用 Agent。
 
 **派生 Profile**：底座（第 1~10 章的一切）都吃 `Profile`，所以 `AgentLoader.deriveProfile(agentDir)` 把 `AGENT.md` 的 frontmatter 映射成一个 `Profile`，让 Agent 目录**零改动复用整台底座**。
 
-**渐进式披露（收进一个 Agent 内部）**：Agent 的**正文**在被触发时进 system prompt（它就是这个 Agent 的"人格 + 干什么"）；目录里的**子指令 / 参考 / 脚本不预载**，按正文指引**用底座既有能力按需取**——读子指令 / 参考用 `read_file`；在可信单机部署中，脚本可通过 `shell` 调用管理员显式白名单内的解释器。该操作以 AgentOS 进程的操作系统权限运行，不构成文件或网络隔离；不可信或多租户代码应使用未来基于容器/microVM 的 `execute_code` Runner。没有新工具、没有能力库、没有全局索引。
+**渐进式披露（收进一个 Agent 内部）**：Agent 的**正文**在被触发时进 system prompt（它就是这个 Agent 的"人格 + 干什么"）；目录里的**子指令 / 参考 / 脚本不预载**（本文"子指令"指 Skill 正文与 REFERENCE 等按需读取的指令性内容），按正文指引**用底座既有能力按需取**——读子指令 / 参考用 `read_file`；在可信单机部署中，脚本可通过 `shell` 调用管理员显式白名单内的解释器。该操作以 AgentOS 进程的操作系统权限运行，不构成文件或网络隔离；不可信或多租户代码应使用未来基于容器/microVM 的 `execute_code` Runner。没有新工具、没有能力库、没有全局索引。
 
-> **底线不变（宪法原则四）**：`AGENT.md` 正文由 `ContextLoader` 注入 system prompt（与 Bootstrap 文件同层）；**一个 Agent 目录不是一个可执行 Tool**——它的子资源经底座既有的 `read_file`/`shell` 取用，不新造机制。
+> **底线不变（见 AiProgrammingGuide 4.6 纠偏表：Agent 目录不是 Tool，加载归 ContextLoader）**：`AGENT.md` 正文由 `ContextLoader` 注入 system prompt（与 Bootstrap 文件同层）；**一个 Agent 目录不是一个可执行 Tool**——它的子资源经底座既有的 `read_file`/`shell` 取用，不新造机制。
 
 ### 11.2 核心阶段：一个目录定义一个 Agent（文件系统）
 
@@ -704,11 +712,11 @@ mvn clean package
 2. 启动时 `AgentLoader` 扫 `.agentos/agents/`，对每个目录 `deriveProfile` → `ProfileRegistry.register`；有 `schedules` 的交 `AgentScheduler`。
 3. 运行时：正文与已绑定 Skill 元数据进 system prompt，Skill 正文/参考/脚本按需经 `read_file`/`shell` 取用；`ContextLoader` 每次现扫、不缓存。
 
-配合运行时注册（11.3 的改造点在核心阶段就立好），新增 Agent 无需重启。
+配合运行时注册（11.3 的改造点在核心阶段就立好，供扩展阶段的 Watcher/API 调用）；核心阶段新增 Agent 仍需重启生效——AGENT.md 正文与 Skill 绑定的修改因 ContextLoader 每轮现读而免重启。
 
 ### 11.3 扩展阶段：`/api/v1/agents` + 一句话生成 + 实时监听 + 文件浏览器
 
-业务系统 / 运营要完全通过 API 或页面管理、不摸文件系统。对外只有**一类资源——Agent**（一个目录）。`AgentLifecycleService`（在第 26 节已有的 `AgentApiController` 上扩展）：
+业务系统 / 运营要完全通过 API 或页面管理、不摸文件系统。对外只有**一类资源——Agent**（一个目录）。`AgentLifecycleService`（在 7.1 已有的 `AgentApiController` 上扩展）：
 
 - `POST /api/v1/agents/generate`：一句话经 LLM 生成一份 **`AGENT.md` 草稿**原样返回（不落盘、不注册），供页面预览、修改（尤其 cron/tools 敏感项要人过一眼）
 - `POST /api/v1/agents`：写 Agent 目录（`AGENT.md`[+ 脚本 / 子指令]）→ `deriveProfile` → 注册
@@ -719,9 +727,9 @@ mvn clean package
 
 ![两条录入路径一段注册代码：API 上传 create() 与手工丢目录 WorkspaceWatcher 都汇到 register(agentDir)，deriveProfile + 注册 + 注册定时，免重启即上线](../website/public/images/docs-agent-lifecycle.svg)
 
-写完 Agent 目录后走的 `AgentLoader.deriveProfile → ProfileRegistry.register → AgentScheduler.registerProfile`，与启动扫描是**同一段代码**——保证"API 建的 Agent 和手工丢目录建的 Agent 行为一模一样"。`ProfileRegistry`（`register`/`remove`/`exists`）和 `AgentScheduler`（`registerProfile`/`unregisterProfile` + `scheduledTasks` 句柄表）的运行时注册方法在核心阶段（课程第 29 节）就已立好，本阶段直接调；`generate` 走既有 `ProviderService`（并落 `llm_calls` 审计）。
+写完 Agent 目录后走的 `AgentLoader.deriveProfile → ProfileRegistry.register → AgentScheduler.registerProfile`，与启动扫描是**同一段代码**——保证"API 建的 Agent 和手工丢目录建的 Agent 行为一模一样"。`ProfileRegistry`（`register`/`remove`/`exists`）和 `AgentScheduler`（`registerProfile`/`unregisterProfile` + `scheduledTasks` 句柄表）的运行时注册方法在核心阶段就已立好，本阶段直接调；`generate` 走既有 `ProviderService`（并落 `llm_calls` 审计）。
 
-**一个目录、两条录入路径 + 实时监听。** `.agentos/agents/` 是**唯一真相源**，填充它两条路殊途同归：API 上传（校验 + 写 Agent 目录）、手工丢目录（scp/git/编辑器）。本阶段新增 `WorkspaceWatcher`（装配层一个守护线程，用 JDK `WatchService`；启动全量扫 + 之后实时监听 `.agentos/agents/` 变更），**它是统一注册入口**：任何 Agent 目录新增/改/删都调 `AgentLifecycleService.register(agentDir)`（与 API 上传写完目录后调的是**同一个方法**）或注销。于是"上传即上线 = 丢目录即上线、全程免重启"。此外 `WorkspaceApiController` 提供**只读**的工作区文件浏览（`GET /workspace/tree` 列 Agent 目录树、`GET /workspace/file?path=` 读文件内容，**必做防目录穿越**：`normalize()` 后 `startsWith(root)` 校验），供管理台"工作区"页钻进一个 Agent 目录看它的 `AGENT.md`/脚本/子指令。
+**一个目录、两条录入路径 + 实时监听。** `.agentos/agents/` 是**唯一真相源**，填充它两条路殊途同归：API 上传（校验 + 写 Agent 目录）、手工丢目录（scp/git/编辑器）。本阶段新增 `WorkspaceWatcher`（装配层一个守护线程，用 JDK `WatchService`；启动全量扫 + 之后实时监听 `.agentos/agents/` 变更），**它是统一注册入口**：任何 Agent 目录新增/改/删都调 `AgentLifecycleService.register(agentDir)`（与 API 上传写完目录后调的是**同一个方法**）或注销。于是"上传即上线 = 丢目录即上线、全程免重启"。此外 `WorkspaceApiController` 提供**只读**的工作区文件浏览（`GET /workspace/tree` 列 Agent 目录树、`GET /workspace/file?path=` 读文件内容，**必做防目录穿越**：`normalize()` 后 `startsWith(root)` 校验），供运维查看（核心阶段经 API/Swagger，管理台页面放扩展阶段）——钻进一个 Agent 目录看它的 `AGENT.md`/脚本/子指令。
 
 ### 11.4 为什么这几件事要打包在一起交付
 
@@ -729,7 +737,7 @@ mvn clean package
 
 ### 11.5 两个例子
 
-下一章（12.1~12.2）的两个 Demo 各演一种 Agent 目录丰富度：天气 Agent 是光杆 `AGENT.md`；科技日报 Agent 绑定公共组稿 Skill，prompt 只注入元数据、正文按需读取。
+下一章（12.1~12.2）的两个 Demo 各演一种 Agent 目录丰富度：天气 Agent 是光杆 `AGENT.md`；科技日报 Agent 绑定公共组稿 Skill，prompt 只注入元数据、正文按需读取。第三档丰富度（`AGENT.md + scripts/`）不设 Demo，以第四周最小链路手工演示验证（见 12.3）。
 
 ---
 
@@ -744,14 +752,14 @@ mvn clean package
 **场景：** 每天早上 8 点，Agent 自动查天气、生成穿搭建议，推送到企业 IM 群，不需要人工发起。
 
 1. `AgentScheduler` 按 `AGENT.md` frontmatter 里 `schedules` 声明的 cron 表达式到点触发，生成一条消息，调 `AgentService.process`——跟 `CliChannel`/`ApiController` 调用的是同一个方法，`ReActLoop` 不感知这次触发是"钟推"
-2. `ReActLoop` 第一轮，`PromptBuilder` 通过 `ContextLoader` 组装 system prompt（`AGENT.md` 正文即这个 Agent 的指令 + Bootstrap）
+2. `ReActLoop` 第一轮，`PromptBuilder` 通过 `ContextLoader` 组装 system prompt（`AGENT.md` 正文即这个 Agent 的指令 + Bootstrap）（按 4.2 五部分，此处略 Memory 注入与 Tool 列表）
 3. `ProviderService` 调 DeepSeek，返回包含 `http_get` 的 Tool 调用
-4. `ToolExecutor` 执行，`HttpTools` 调用 `Sandbox.enforce(...)` 检查 URL 通过，拿到天气 JSON，并写 `tool_invocations`
+4. `ToolExecutor` 执行，`HttpTools` 调用 `Sandbox.check(...)` 检查 URL 通过，拿到天气 JSON，并写 `tool_invocations`
 5. 结果追加到 Session 进入第二轮，DeepSeek 看到天气生成穿搭建议，按 `AGENT.md` 正文指定的渠道名称调用 `notify(channel="team-lark", content="...")`；`NotifyTools` 从 SQLite 的 `notify_channels` 全局注册表解析适配器和 URL
-6. `ToolExecutor` 再次执行，`NotifyTools` 委托给 `WebhookNotifyAdapter`，发送前同样先过 `Sandbox.enforce(...)` 域名白名单校验，推送成功后写第二条 `tool_invocations`
+6. `ToolExecutor` 再次执行，`NotifyTools` 委托给 `WebhookNotifyAdapter`，发送前同样先过 `Sandbox.check(...)` `notify.allowed_domains` 独立白名单校验，推送成功后写第二条 `tool_invocations`
 7. 无更多 Tool 调用，循环结束，最终响应留在这次自动触发的 Session 里
 
-**验收要点：** 全程不需要人工触发；两次涉外调用都过 Sandbox 白名单且都有审计记录；`GET /api/v1/sessions/{id}` 查得到完整对话；同一个 Agent 也能通过 `agentos chat` 或 `POST /agents/{name}/invoke` 手动补跑一次，验证"人推"和"钟推"复用同一条链路。光杆 `AGENT.md`、不带子指令 / 脚本。
+**验收要点：** 全程不需要人工触发；两次涉外调用都过 Sandbox 白名单且都有审计记录；`GET /api/v1/sessions/{id}` 查得到（经物理裁剪后的）最近对话且 `tool_invocations`/`llm_calls` 审计记录完整；同一个 Agent 也能通过 `agentos chat` 或 `POST /agents/{name}/invoke` 手动补跑一次，验证"人推"和"钟推"复用同一条链路。光杆 `AGENT.md`、不带子指令 / 脚本。
 
 涉及能力一（Provider）+ 能力二（ReAct）+ 能力四（内置 HTTP Tool + `NotifyTools` + Sandbox）+ 定时任务（`AgentScheduler`）+ 能力五（Session 查询兜底）。
 
@@ -760,11 +768,11 @@ mvn clean package
 **场景：** 每天早上 9 点，Agent 自动汇总当日科技新闻并推送，日报内容会体现用户之前提过的关注方向。业务方全程不写 Java 代码。
 
 1. 业务方创建 `.agentos/agents/daily-tech-digest/AGENT.md`，并把 `skills/digest-format` 绑定为指向 `.agentos/skills/digest-format/` 的相对软连接；需要新闻聚合 MCP 就在 `mcp_servers.yaml` 配一条
-2. 用户此前说过"更关注 AI 和芯片方向"，DeepSeek 调 `save_memory` 写入 `MEMORY.md` 归档区
-3. 到点后 system prompt 注入 `AGENT.md` 正文、记忆，以及 digest-format 的 name/description/本地绝对路径；组稿规范正文不预载
+2. 用户此前说过"更关注 AI 和芯片方向"，DeepSeek 调 `save_memory` 写入 `MEMORY.md` 归档区（默认 Markdown 档；SQLite 档则入 `memory_entries` 归档分区）
+3. 到点后 system prompt 注入 `AGENT.md` 正文、Bootstrap、记忆、Skill 元数据，以及 digest-format 的 name/description/本地绝对路径（按 4.2 五部分，此处略对话历史与 Tool 列表）；组稿规范正文不预载
 4. LLM 根据描述命中该 Skill，调用 `read_file("<agent绝对路径>/skills/digest-format/SKILL.md")`，正文此时才作为工具结果进入上下文
 5. LLM 按规范调新闻工具（`http_get` 或新闻 MCP，`McpToolAdapter` 转发）拉当日科技新闻；因为看到记忆里的偏好，组稿时自然侧重 AI 和芯片方向——AgentOS 不解析任务步骤
-6. LLM 调内置 `notify(content="...")` 推送，`ToolExecutor` 写 `tool_invocations`
+6. LLM 调内置 `notify(content="...", channel="<AGENT.md 正文指定的渠道名>")` 推送（channel 必填，见 6.8），`ToolExecutor` 写 `tool_invocations`
 
 **验收要点：** prompt 只有 Skill 元数据、没有正文；`tool_invocations` 有对 Agent 本地软连接路径的 `read_file`；未绑定 Skill 不可见；日报体现记忆偏好。
 
@@ -772,7 +780,14 @@ mvn clean package
 
 ### 12.3 关于 scripts/ 脚本的说明
 
-`AGENT.md + scripts/` 这种更丰富的 Agent 目录形态仍是架构支持的（11.1、11.2），只是不再单设验收 Demo。脚本的信任边界不变（呼应 11.1 与宪法原则四）：通用 `shell` 可调用管理员显式白名单内的 Python、Bash、Node 等解释器，但这等于授予模型 AgentOS 进程所属操作系统用户的代码执行权限。argv 直传只阻止 Shell 语法拼接，不会隔离解释器的文件或网络行为。对不可信或多租户代码，应使用未来基于容器/microVM 的 `execute_code` Runner；在此之前，只能在可信单机部署中启用解释器。
+`AGENT.md + scripts/` 这种更丰富的 Agent 目录形态仍是架构支持的（11.1、11.2），只是不再单设验收 Demo。跑脚本分两条路径：
+
+- **推荐路径：** 需要捆绑脚本的 Agent，把脚本封装为专用 Tool 或 MCP server（即 Plugin Tool 方式二/三）——Tool 自己定义输入参数、限制脚本的文件/网络访问范围，只把产出的 JSON 返回给模型，脚本代码本身不进上下文。核心阶段即可安全使用。
+- **止损路径：** 通用 `shell` 调用管理员显式白名单内的解释器（Python、Bash、Node 等），仅限可信单机部署。
+
+脚本的信任边界不变（呼应 11.1 与 AiProgrammingGuide 4.6 纠偏表：Agent 目录不是 Tool，加载归 ContextLoader）：通用 `shell` 调用白名单内解释器，等于授予模型 AgentOS 进程所属操作系统用户的代码执行权限。argv 直传只阻止 Shell 语法拼接，不会隔离解释器的文件或网络行为。对不可信或多租户代码，应使用未来基于容器/microVM 的 `execute_code` Runner；在此之前，只能在可信单机部署中启用解释器。
+
+`AGENT.md + scripts/` 形态（Agent 目录第三档丰富度）不设独立验收 Demo，但在第四周收尾做一次**最小链路手工演示**（约 15 分钟）：建一个带 `scripts/` 的 Agent 目录，验证目录能加载、脚本能经推荐或止损路径调起、产出进入上下文、`tool_invocations` 有记录。
 
 ---
 
@@ -795,26 +810,31 @@ mvn clean package
 - `PromptBuilder` 加 Memory 注入
 - 文件 Tool + Shell Tool（`Sandbox` 接口 + `SandboxChecker` 应用层白名单）、`McpClientService`（连接外部 MCP server）
 - `ContextLoader` 加载 `AGENT.md` 正文（及 Agent 目录里的子指令按需读）
+- Plugin Tool 方式三 @Tool 注解 Java Bean 示例跑通（DA 13 功能验收项）
 
 **可演示：** Agent 记住偏好并后续用到，调本地文件读写、调外部 MCP server 完成跨工具任务。
 
 ### 第三周（3 小时）：核心能力五 Web Service
 
-- `WebServer`（Spring MVC + virtual thread）、六个 `ApiController` 的核心 10 个端点
+- `WebServer`（Spring MVC + virtual thread）、六个 `ApiController`（基础 10 个端点），`NotifyChannelApiController`/`ScheduleApiController` 随第四周收尾端点一起交付
 - `GlobalExceptionHandler`、`ConfigLoader`（配置与密钥加载）
 - Session 持久化到 SQLite（含 `tool_invocations`、`llm_calls` 写入）
 - `ContextLoader` 的 Bootstrap 加载、Picocli 12 个命令补齐
+- springdoc OpenAPI 文档（`/swagger-ui`）
 
-**可演示：** 外部系统通过 10 个 REST 端点完整调用 AgentOS，Session 跨重启恢复。
+**可演示：** 外部系统通过基础 10 个 REST 端点完整调用 AgentOS，Session 跨重启恢复。
 
 ### 第四周（3 小时）：多 Agent 演示 + 工程化收尾
 
 - 多 Agent 演示（两个不同 Profile 的 Agent 在同一实例并存）
 - 结构化日志
 - `AgentScheduler` 第三触发源（`ThreadPoolTaskScheduler` + `CronTrigger`，Profile `schedules` 字段驱动）
+- 收尾 8 个端点（notify-channels CRUD 4 个 + schedules 管理 4 个）及 `NotifyTools`/`WebhookNotifyAdapter`、`notify_channels`/`scheduled_tasks`/`task_executions` 表、`ScheduledTaskStore`（见 6.8/8.5/9.2）
 - 项目主页（VitePress 或类似）
+- scripts/ 最小链路手工演示（见 12.3）
+- 跑通两个验收 Demo（12.1 每日天气、12.2 每日科技日报）
 
-**可演示：** 多 Agent 并存可用，CLI 体验流畅，Bootstrap 影响 Agent 行为，Session 跨重启恢复，定时任务到点自动触发，主页可访问。
+**可演示：** 多 Agent 并存可用，CLI 体验流畅，Bootstrap 影响 Agent 行为，Session 跨重启恢复，定时任务到点自动触发、`task_executions` 有执行记录，主页可访问，带 scripts/ 的 Agent 目录最小链路演示通过。
 
 ---
 
@@ -826,11 +846,11 @@ mvn clean package
 
 性能目标在需求文档第 8 章已定义，这里说明怎么达到。
 
-**Java 21 virtual thread 撑高并发。** 每个 Agent 是内存里的 Profile 对象加 Session 列表占用极少，virtual thread 让每个并发请求跑在独立虚拟线程，OS 线程数维持几十个就够支撑几千并发，LLM 调用 IO 阻塞时 virtual thread 自动让出 OS 线程。
+**Java 21 virtual thread 撑高并发。** 每个 Agent 是内存里的 Profile 对象加 Session 列表占用极少，virtual thread 让每个并发请求跑在独立虚拟线程，OS 线程数维持几十个就够支撑几千并发（指并发 LLM 等待；写路径受 SQLite 单写者约束，量级以压测为准），LLM 调用 IO 阻塞时 virtual thread 自动让出 OS 线程。
 
-**1000 个并发 Session 内存可控。** 1000 个 Session 平均 50KB 共 50MB 没问题。SQLite 写入主要由 Session 追加消息和审计表写入触发，核心阶段每次都写，压测发现瓶颈再优化成批量落盘。
+**1000 个并发 Session 内存可控。** 1000 个 Session 平均 50KB 共 50MB 没问题。SQLite 写入按循环结束落盘 + 审计表逐次写入触发（见 9.2 落盘节奏）。
 
-**Memory 文件 IO。** 每次组装 prompt 读一次 `MEMORY.md`，文件几 KB 到几十 KB 每次读 1 到 2ms，1000 并发可接受。扩展阶段加 cache 加文件 watch。
+**Memory 文件 IO。** 每次组装 prompt 读一次 `MEMORY.md`，文件几 KB 到几十 KB 每次读 1 到 2ms，1000 并发可接受（论证针对默认 Markdown 档；SQLite 档为查库、Mem0 档为远程调用，时延另行评估）。扩展阶段加 cache 加文件 watch。
 
 **启动时间。** Spring Boot 在 JDK 21 下启动 2 到 4 秒，对常驻服务没问题，对 CLI 工具太慢。核心阶段 CLI 命令分两类，不需要 Spring 的直接用标准 API 操作文件，需要的才启动 Spring。扩展阶段用 GraalVM Native Image 把启动降到 100ms 以下。
 
@@ -844,15 +864,15 @@ AgentOS 技术方案核心：**JDK 21 + Spring Boot 3.x** 单体应用，自实�
 
 1. **能力一** 对接 LLM（Provider 抽象加显式 provider name 映射）
 2. **能力二** ReAct 循环（Agent 的大脑，引擎约数十行 Java）
-3. **能力三** Memory 三层记忆（统一门面，核心阶段 `MEMORY.md` 加两个内置 Tool，向量检索放扩展，接口预留升级空间）
+3. **能力三** Memory 三层记忆（统一门面，核心阶段交付 Markdown 默认档 `MEMORY.md` 加两个内置 Tool，向量检索放扩展，接口预留升级空间）
 4. **能力四** Tool 体系（内置 9 个 Tool 加 Plugin Tool 三档接入，主推 `AGENT.md` 目录 加 MCP 零代码，`NotifyTools` 对称补上出站通知能力，核心阶段 Tool 相关三合一为一个模块）
-5. **能力五** Web Service（REST API 六类操作核心 10 个端点，业务系统集成的唯一通道）
+5. **能力五** Web Service（REST API 八类操作，基础 10 + 收尾 8 共 18 个端点，业务系统集成的唯一通道）
 
 五大能力加支撑模块是**底座**（第一部分），本身不是某个具体的业务 Agent。真正定义一个业务 Agent 靠的是 Skill（做什么）加 Profile（怎么跑），核心阶段手动改文件，扩展阶段统一到 `POST /api/v1/agents` 一个入口（第二部分，第 11 章）——这条边界线是这版技术方案跟早期版本最大的结构性调整。
 
 实施按 4 周组织每周 3 小时：第一周对接 LLM + ReAct，第二周 Memory + Tool，第三周 Web Service，第四周多 Agent 演示 + 定时任务 + 工程化收尾。每周末有可演示成果，第四周末跑通两个验收 Demo（每日天气、每日科技日报），覆盖五大核心能力、Skill 渐进式披露与定时任务第三触发源。
 
-**存储选型：** 核心阶段 SQLite + `MEMORY.md` + 关键词检索跑通最短链路，向量检索放扩展（LanceDB Java GA、pgvector、JVector 三选一），`MemoryService` 接口预留升级空间。
+**存储选型：** 核心阶段 SQLite + `MEMORY.md` + 关键词检索跑通最短链路（MEMORY.md 默认档为核心阶段交付，SQLite/Mem0 档见第 5 章），向量检索放扩展（LanceDB Java GA、pgvector、JVector 三选一），`MemoryService` 接口预留升级空间。
 
 **承接定位：** 核心阶段交付运行时内核，能力上对齐业界开源 Agent OS 基础层，企业级治理差异化在扩展阶段补齐。架构上为治理层预留扩展点（Tool Policy、多租户、审计查询、SSO 都有对应的预留位置）。
 

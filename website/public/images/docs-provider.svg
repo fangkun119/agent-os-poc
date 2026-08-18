@@ -11,7 +11,7 @@
   <line x1="410" y1="78" x2="410" y2="104" stroke="#94a3b8" stroke-width="2" marker-end="url(#tsg1)"/>
   <rect x="185" y="106" width="450" height="58" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.6"/>
   <text x="410" y="132" fill="#b45309" font-size="16" font-weight="bold" text-anchor="middle">ProviderService（前台 / 统一抽象层）</text>
-  <text x="410" y="152" fill="#92400e" font-size="12" text-anchor="middle">按 Profile 选对应模型 · 屏蔽各家差异</text>
+  <text x="410" y="152" fill="#92400e" font-size="12" text-anchor="middle">按 Profile 显式映射 ChatModel · 屏蔽各家差异</text>
   <line x1="410" y1="164" x2="410" y2="184" stroke="#f59e0b" stroke-width="2"/>
   <line x1="140" y1="184" x2="680" y2="184" stroke="#f59e0b" stroke-width="2"/>
   <line x1="140" y1="184" x2="140" y2="212" stroke="#f59e0b" stroke-width="2" marker-end="url(#tsam1)"/>

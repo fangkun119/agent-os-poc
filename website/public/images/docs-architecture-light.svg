@@ -75,8 +75,8 @@
   <text x="385" y="348" fill="#92400e" font-size="8.5" text-anchor="middle">max 10 iterations</text>
   <rect x="466" y="300" width="138" height="52" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.4"/>
   <text x="535" y="320" fill="#b45309" font-size="10" font-weight="bold" text-anchor="middle">PromptBuilder</text>
-  <text x="535" y="336" fill="#92400e" font-size="8.5" text-anchor="middle">system + memory</text>
-  <text x="535" y="348" fill="#92400e" font-size="8.5" text-anchor="middle">+ history + tools</text>
+  <text x="535" y="336" fill="#92400e" font-size="7.5" text-anchor="middle">system + bootstrap + memory</text>
+  <text x="535" y="348" fill="#92400e" font-size="7.5" text-anchor="middle">+ history + tools</text>
   <rect x="616" y="300" width="148" height="52" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.4"/>
   <text x="690" y="320" fill="#b45309" font-size="10" font-weight="bold" text-anchor="middle">ToolExecutor</text>
   <text x="690" y="336" fill="#92400e" font-size="8.5" text-anchor="middle">Sandbox check</text>
@@ -87,44 +87,42 @@
   <!-- ── Band 4: Capability Layer ── -->
   <rect x="316" y="386" width="448" height="100" rx="8" fill="#faf5ff" stroke="#a855f7" stroke-width="1.8"/>
   <text x="332" y="405" fill="#7c3aed" font-size="11" font-weight="bold">Capability Layer</text>
-  <rect x="316" y="412" width="100" height="64" rx="6" fill="#ede9fe" stroke="#a855f7" stroke-width="1.4"/>
-  <text x="366" y="432" fill="#7c3aed" font-size="10" font-weight="bold" text-anchor="middle">Provider</text>
-  <text x="366" y="448" fill="#6b21a8" font-size="8" text-anchor="middle">LLM 路由</text>
-  <text x="366" y="462" fill="#9333ea" font-size="7.5" text-anchor="middle">显式映射</text>
-  <rect x="432" y="412" width="100" height="64" rx="6" fill="#ede9fe" stroke="#a855f7" stroke-width="1.4"/>
-  <text x="482" y="432" fill="#7c3aed" font-size="10" font-weight="bold" text-anchor="middle">Memory</text>
-  <text x="482" y="448" fill="#6b21a8" font-size="8" text-anchor="middle">会话+长期</text>
-  <text x="482" y="462" fill="#9333ea" font-size="7.5" text-anchor="middle">核心/归档分区</text>
-  <rect x="548" y="412" width="100" height="64" rx="6" fill="#ede9fe" stroke="#a855f7" stroke-width="1.4"/>
-  <text x="598" y="432" fill="#7c3aed" font-size="10" font-weight="bold" text-anchor="middle">Tool</text>
-  <text x="598" y="448" fill="#6b21a8" font-size="8" text-anchor="middle">内置+MCP</text>
-  <text x="598" y="462" fill="#9333ea" font-size="7.5" text-anchor="middle">+ Sandbox</text>
-  <rect x="664" y="412" width="100" height="64" rx="6" fill="#ede9fe" stroke="#a855f7" stroke-width="1.4"/>
-  <text x="714" y="432" fill="#7c3aed" font-size="10" font-weight="bold" text-anchor="middle">Notify</text>
-  <text x="714" y="448" fill="#6b21a8" font-size="8" text-anchor="middle">出站推送</text>
-  <text x="714" y="462" fill="#9333ea" font-size="7.5" text-anchor="middle">NotifyTools</text>
+  <rect x="353" y="412" width="100" height="64" rx="6" fill="#ede9fe" stroke="#a855f7" stroke-width="1.4"/>
+  <text x="403" y="432" fill="#7c3aed" font-size="10" font-weight="bold" text-anchor="middle">Provider</text>
+  <text x="403" y="448" fill="#6b21a8" font-size="8" text-anchor="middle">LLM 路由</text>
+  <text x="403" y="462" fill="#9333ea" font-size="7.5" text-anchor="middle">显式映射</text>
+  <rect x="490" y="412" width="100" height="64" rx="6" fill="#ede9fe" stroke="#a855f7" stroke-width="1.4"/>
+  <text x="540" y="432" fill="#7c3aed" font-size="10" font-weight="bold" text-anchor="middle">Memory</text>
+  <text x="540" y="448" fill="#6b21a8" font-size="8" text-anchor="middle">会话+长期</text>
+  <text x="540" y="462" fill="#9333ea" font-size="7.5" text-anchor="middle">核心/归档分区</text>
+  <rect x="627" y="412" width="100" height="64" rx="6" fill="#ede9fe" stroke="#a855f7" stroke-width="1.4"/>
+  <text x="677" y="432" fill="#7c3aed" font-size="10" font-weight="bold" text-anchor="middle">Tool</text>
+  <text x="677" y="448" fill="#6b21a8" font-size="8" text-anchor="middle">内置 Tool + MCP</text>
+  <text x="677" y="462" fill="#9333ea" font-size="7.5" text-anchor="middle">+ Sandbox · Notify 出站</text>
 
   <line x1="540" y1="486" x2="540" y2="508" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#dag)"/>
 
   <!-- ── Band 5: Storage Layer ── -->
   <rect x="316" y="508" width="448" height="80" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="1.8"/>
   <text x="332" y="527" fill="#15803d" font-size="11" font-weight="bold">Storage Layer  ·  agentos-storage</text>
-  <rect x="316" y="534" width="216" height="42" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.4"/>
-  <text x="424" y="552" fill="#15803d" font-size="10" font-weight="bold" text-anchor="middle">SQLite (agentos.db)</text>
-  <text x="424" y="567" fill="#166534" font-size="7" text-anchor="middle">sessions · tool_invocations · llm_calls · scheduled_tasks · task_executions</text>
-  <rect x="548" y="534" width="216" height="42" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.4"/>
+  <rect x="316" y="530" width="216" height="50" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.4"/>
+  <text x="424" y="546" fill="#15803d" font-size="10" font-weight="bold" text-anchor="middle">SQLite (agentos.db)</text>
+  <text x="424" y="559" fill="#166534" font-size="6.5" text-anchor="middle">sessions · tool_invocations · llm_calls · scheduled_tasks</text>
+  <text x="424" y="569" fill="#166534" font-size="6.5" text-anchor="middle">task_executions · notify_channels · memory_entries*</text>
+  <text x="424" y="578" fill="#16a34a" font-size="6" text-anchor="middle">* 仅 sqlite 档</text>
+  <rect x="548" y="530" width="216" height="50" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.4"/>
   <text x="656" y="552" fill="#15803d" font-size="10" font-weight="bold" text-anchor="middle">Filesystem (.agentos/)</text>
-  <text x="656" y="567" fill="#166534" font-size="8.5" text-anchor="middle">agents · skills · MEMORY.md · Bootstrap</text>
+  <text x="656" y="569" fill="#166534" font-size="8.5" text-anchor="middle">agents · skills · MEMORY.md · Bootstrap</text>
 
   <!-- ════════ EXTERNAL CONNECTIONS ════════ -->
-  <line x1="220" y1="126" x2="300" y2="436" stroke="#a855f7" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#dap)"/>
+  <line x1="220" y1="126" x2="353" y2="436" stroke="#a855f7" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#dap)"/>
   <text x="216" y="280" fill="#a855f7" font-size="9" text-anchor="end">API</text>
 
-  <line x1="860" y1="126" x2="780" y2="428" stroke="#a855f7" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#dap)"/>
+  <line x1="860" y1="126" x2="727" y2="436" stroke="#a855f7" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#dap)"/>
   <text x="864" y="280" fill="#a855f7" font-size="9">JSON-RPC</text>
 
-  <line x1="860" y1="265" x2="780" y2="452" stroke="#db2777" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#dapk)"/>
-  <text x="864" y="360" fill="#db2777" font-size="9">Webhook</text>
+  <line x1="860" y1="265" x2="727" y2="448" stroke="#db2777" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#dapk)"/>
+  <text x="760" y="360" fill="#db2777" font-size="9" text-anchor="end">Webhook</text>
 
   <!-- ════════ USERS / CLIENTS ════════ -->
   <rect x="24" y="624" width="196" height="56" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="5,3"/>
