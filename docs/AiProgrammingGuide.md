@@ -238,6 +238,16 @@ docs/
 
 > **关键注意**：`ProviderService` 不能靠"扫描容器里所有 `ChatModel`"来区分 Provider，多 Provider 并存时 Bean 类型相同会有歧义，必须维护 provider name 到 `ChatModel` 的显式映射（技术方案 3.2）。AI agent 很容易写成类型扫描，要在 task 里点明。另：US-1 第一个 task 前安排 30 分钟 Spike，验证当前锁定版本中多 `ChatModel` Bean 注入与按 name 选择的推荐写法，结论回写技术方案 3.2。
 
+**Spike 执行清单**（30 分钟时间盒，超时停在当前发现、未决问题记 task，不恋战）：
+
+1. **锁版本**（5 min）：确定 Spring AI Alibaba 稳定版与配套 Spring AI 版本，写入 spike 工程 pom——结论同时作为 US-1 依赖清单输入（版本锁定原则见 7.1）
+2. **搭最小工程**（10 min）：独立单模块 Maven 工程（如 `spike/chatmodel-mapping/`，不进 9 模块主干），配两个 Provider（deepseek + 任一 OpenAI 兼容），API key 走环境变量。**在单独的 spike 分支上进行**（如 `spike/chatmodel-mapping`），避免污染开发分支
+3. **启动观察**（3 min）：启动时打印容器内全部 `ChatModel` Bean 的 name 与类型——实证"为何不能类型扫描"
+4. **按名调用**（10 min）：按 name 取 Bean，经 `ChatClientBuilderConfigurer` 构建 client（官方警告避免裸 `ChatClient.builder(chatModel)`，会绕过 observability 与 customizer），发一次真实调用（最便宜模型）；API key 不可得时本步降级为"待 key 就绪补验"，步骤 3 不受影响
+5. **记录结论**（2 min）：回答三问——多 Bean 如何注册（Bean name/类型）、按 name 取用的推荐写法（`@Qualifier` / 自建映射表 / `ObjectProvider`）、`ChatClient` 正确构建方式
+
+**产出与回填**：结论一句话 + 最小示例代码回填技术方案 3.2（替换"映射的具体实现方式在研发阶段定"的留白）；US-1 "Provider 实现类" task 直接引用该写法；spike 工程用完即删。**若结论与技术方案 3.2 假设冲突**（如该版本无法给 Bean 显式命名、或存在自带的多人模型路由机制），升级为决策项与项目方讨论，不得静默改架构文档。
+
 US-1 实施完成后不立刻有 demo，因为它没有用户可见的入口，下一步 US-2 完成后跟 US-1 一起跑 Demo 一。
 
 ---
