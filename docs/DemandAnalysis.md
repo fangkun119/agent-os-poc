@@ -221,7 +221,7 @@ agentos init   # 在当前目录下创建 .agentos/ 工作区
 │   └── MEMORY.md      # 长期记忆文件
 ├── logs/              # 结构化日志
 ├── mcp_servers.yaml   # MCP server 全局配置
-├── agentos.db         # SQLite（核心表，含 sessions、tool_invocations、llm_calls、scheduled_tasks、task_executions、notify_channels，见 10 数据模型）
+├── agentos.db         # SQLite（核心表，含 sessions、tool_invocations、llm_calls、notify_channels；scheduled_tasks、task_executions 后两张收尾阶段补齐，见 10 数据模型与技术方案 9.2）
 ├── AGENTS.md          # Bootstrap：项目级 agent 行为说明
 ├── SOUL.md            # Bootstrap：默认 agent 人格定义
 └── USER.md            # Bootstrap：用户偏好
