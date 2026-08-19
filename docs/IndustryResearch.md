@@ -151,7 +151,7 @@ Java/Spring 生态在企业后端是极其完整的，从 Web 框架（**Spring 
 这个缺位之所以现在值得、也能够被补上，有几个具体的技术支点：
 
 1. **Spring Boot 是企业后端的事实标准。** 一个 Java Agent OS 就是一个 Spring Boot 应用，运维体系无缝对接，IT 部门不需要学新东西，装上就能纳入现有体系。
-2. **Spring AI Alibaba 提供了现成的主流 LLM connector。** 十余个 LLM 的接入不需要重新造轮子，直接复用 Spring AI 的 `ChatClient` 抽象，让 Java Agent OS 的 LLM Provider 层站在巨人肩膀上。
+2. **Spring AI Alibaba 提供了现成的主流 LLM connector。** 十余个 LLM 的接入不需要重新造轮子，直接复用 Spring AI 的 `ChatModel`/`ChatClient` 抽象，让 Java Agent OS 的 LLM Provider 层站在巨人肩膀上。
 3. **JVM 成熟的运维工具链能直接复用。** Nacos、Sentinel、SkyWalking、Arthas、JFR、Prometheus + Grafana，跟 Java Agent OS 是无缝的，企业现有运维体系不需要为它单独搭一套。
 4. **跟企业现有 Java 系统对接成本最低。** Tool 直接调企业现有 Java 服务，不需要写跨语言的胶水代码。
 5. **严监管行业的私有部署要求让 Java 成为确定性选择。** 这些行业的核心系统大量是 Java，私有部署、完全审计、合规过审是硬要求，用 Java 实现可以走企业现有的 Java 审计流程，不需要为新组件单独搭一套合规通道。

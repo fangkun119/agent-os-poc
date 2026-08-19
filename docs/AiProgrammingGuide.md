@@ -184,7 +184,7 @@ Review 通过后 `plan.md` 锁定。
 
 准备阶段结束时，AgentOS 项目仓库里应该有：
 
-```
+```text
 .specify/
 └── memory/
     └── constitution.md       # 非协商原则集
@@ -236,7 +236,7 @@ docs/
 | 配置类 | `application.yaml` 配置至少跑通 DeepSeek 或 Kimi，API key 经环境变量占位注入（`ConfigLoader` 统一加载在 US-5 交付，本阶段用 Spring 环境变量解析） |
 | 测试类 | 该能力面的单元测试 + 端到端 Demo 用例（每个 task 的完成标准含测试通过） |
 
-> **关键注意**：`ProviderService` 不能靠"扫描容器里所有 `ChatModel`"来区分 Provider，多 Provider 并存时 Bean 类型相同会有歧义，必须维护 provider name 到 `ChatModel` 的显式映射（技术方案 3.2）。AI agent 很容易写成类型扫描，要在 task 里点明。
+> **关键注意**：`ProviderService` 不能靠"扫描容器里所有 `ChatModel`"来区分 Provider，多 Provider 并存时 Bean 类型相同会有歧义，必须维护 provider name 到 `ChatModel` 的显式映射（技术方案 3.2）。AI agent 很容易写成类型扫描，要在 task 里点明。另：US-1 第一个 task 前安排 30 分钟 Spike，验证当前锁定版本中多 `ChatModel` Bean 注入与按 name 选择的推荐写法，结论回写技术方案 3.2。
 
 US-1 实施完成后不立刻有 demo，因为它没有用户可见的入口，下一步 US-2 完成后跟 US-1 一起跑 Demo 一。
 
@@ -327,6 +327,7 @@ US-3 的 tasks 生成后跑 `/speckit.analyze`。
 | MCP Client 类 | `mcp_servers.yaml` 解析、`McpClientService` 启动时连接、`tools/list` 拉工具、`McpToolAdapter` 包装成 `AgentOSTool` |
 | `AGENT.md` 类 | `ContextLoader` 加载 `.agentos/agents/` 下每个 Agent 的 `AGENT.md` 正文拼接到 system prompt，这部分归 core 不归 tool |
 | Agent 定义类 | `AgentLoader.deriveProfile` 从 `AGENT.md` frontmatter 派生 `Profile`（含 `tools` / `mcp_servers` 等字段） |
+| Plugin Tool 方式三类 | 一个 `@Tool` 注解 Java Bean 示例跑通（进程内注册、不走 MCP，见技术方案 6.5）——DA 13 功能验收硬项，勿漏 |
 | 测试类 | 该能力面的单元测试 + 端到端 Demo 用例（每个 task 的完成标准含测试通过） |
 
 **关键 task 颗粒度**：US-4 的 task 数量较多，几个需要重点拆解的复杂 task：
@@ -381,7 +382,7 @@ US-5 的 tasks 生成后跑最后一次 `/speckit.analyze`，整个主体开发�
 **验收（两个 Demo 的 API 验证面）**：Web Service 完整链路
 
 - 外部系统 `POST /api/v1/sessions` 创建 Session、`POST /api/v1/sessions/{id}/messages` 发消息、`GET` 查历史、`DELETE` 归档，完整链路跑通
-- `GET /api/v1/health` 健康检查、`GET /api/v1/info` 查运行信息与 Provider 列表、`GET /api/v1/profiles` 列可用 Agent、`GET /api/v1/tools` 查可用 Tool、`POST /api/v1/agents/{name}/invoke` 无状态调用 Agent、`GET /api/v1/memory` 查长期记忆，多端点协同完成一次业务流程
+- `GET /api/v1/health` 健康检查、`GET /api/v1/info` 查运行信息与 Provider 配置列表（静态清单，非 Provider 状态——状态属扩展阶段，见 DA 5.8 注）、`GET /api/v1/profiles` 列可用 Agent、`GET /api/v1/tools` 查可用 Tool、`POST /api/v1/agents/{name}/invoke` 无状态调用 Agent、`GET /api/v1/memory` 查长期记忆，多端点协同完成一次业务流程
 - 补齐 `AgentScheduler` 后，两个 Demo 以"钟推"自动运行，需求文档 Demo 一的验收标准"`GET /api/v1/sessions/{id}` 能查到自动触发的最近对话记录"在此验证；同一 Agent 也能通过 `POST /agents/{name}/invoke` 手动补跑，验证"人推"和"钟推"复用同一条 `AgentService` 链路
 
 ---
@@ -456,7 +457,7 @@ API 参考文档、部署运维手册、贡献者指南这些剩余文档作为�
 
 增量阶段的典型工作流：
 
-```
+```text
 1. 社区贡献者认领一个 issue（主仓库标注 good-first-issue / feature-request / long-term-goal）
 2. 本地 fork + clone AgentOS
 3. 用 Claude Code 打开项目，跟 Claude 描述要做的改动
@@ -516,7 +517,7 @@ AgentOS 的 AI 编程实施分两个阶段：
 
 已有的需求文档 + 技术方案喂给 Spec-Kit，转成 constitution + `specs/` 各 feature 目录下的 spec、plan + tasks 等 artifacts。准备阶段先备好 constitution，各 feature 的 spec/plan 随实施逐个补齐（每个 user story 轮到时各跑一轮 specify→plan→tasks），然后按 5 个 user story 的依赖关系顺序实施：
 
-```
+```text
 US-1 → US-2 → ┌─ US-3 ─┐ → US-5
                └─ US-4 ─┘
 ```

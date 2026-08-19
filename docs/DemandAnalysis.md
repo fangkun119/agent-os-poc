@@ -146,7 +146,7 @@ API 覆盖八类操作：
 | 术语 | 定义 |
 |------|------|
 | **Agent（智能体）** | 一个具象的业务智能体，定义本体是一个目录 `.agentos/agents/<name>/`：`AGENT.md`（frontmatter 是运行配置、正文是任务指令）加可选 `skills/` 公共 Skill 软连接、`scripts/` 脚本、`REFERENCE.md` 参考。一个目录就是一个完整可用的业务 Agent，不是写代码写出来的 |
-| **Profile（配置）** | 底座内部的运行时宿主配置对象，决定一个 Agent"怎么跑"：绑定的 LLM Provider、可用 Tool 列表、Channel、Tool Policy 和定时规则。它不再是一份单独手写的 YAML——`AgentLoader.deriveProfile()` 把 `AGENT.md` 的 frontmatter 派生成 `Profile`；Skill 绑定由 Agent 本地 `skills/` 软连接集合独立表达 |
+| **Profile（配置）** | 底座内部的运行时宿主配置对象，决定一个 Agent"怎么跑"：绑定的 LLM Provider、可用 Tool 列表、Channel、Tool Policy（扩展阶段）和定时规则。它不再是一份单独手写的 YAML——`AgentLoader.deriveProfile()` 把 `AGENT.md` 的 frontmatter 派生成 `Profile`；Skill 绑定由 Agent 本地 `skills/` 软连接集合独立表达 |
 | **Provider（供应商）** | LLM API 服务的抽象，实现统一接口让 Agent 不感知具体调的是哪家模型 |
 | **ReAct 循环** | Agent 的核心工作机制，Reason + Act。LLM 思考是否调用工具，调用后看结果，再决定下一步，直到给出最终响应 |
 | **Tool（工具）** | Agent 可以调用的外部能力。内置 Tool 是 AgentOS 自带的（文件、Shell、HTTP、记忆、通知推送）；Plugin Tool 是业务方自己写的 |
@@ -155,10 +155,10 @@ API 覆盖八类操作：
 | **Web Service** | AgentOS 对外暴露的完整 REST API，是业务系统集成 AgentOS 的唯一通道 |
 | **Session（会话）** | 用户和 Agent 一次对话的上下文容器，包含对话历史、当前上下文、临时变量 |
 | **Sandbox（沙箱）** | 工具执行前的策略校验层（核心阶段应用层白名单；受控执行的容器/microVM 隔离是扩展阶段另立的 `execute_code` Runner） |
-| **Tool Policy（工具策略）** | 控制 Agent 可用工具的允许或拒绝规则，在 Profile 级别配置 |
+| **Tool Policy（工具策略）** | 控制 Agent 可用工具的允许或拒绝规则，在 Profile 级别配置（扩展阶段能力；核心阶段由 frontmatter 的 `tools` 字段充当雏形，见 6.3 与技术方案 6.7） |
 | **Skill（技能）** | 公共实体存 `.agentos/skills/<name>/`，Agent 通过自身 `skills/<name>` 相对软连接选择可见集合。`ContextLoader` 每轮只注入已绑定 Skill 的 name、description 和本地读取路径；正文与附属资源经 `read_file`/`shell` 按需进入上下文。Skill 不是 Tool，不进 `ToolRegistry` |
 | **Bootstrap（引导文件）** | 加载到系统提示词中的上下文文件：AGENTS.md（项目级 agent 行为说明）、SOUL.md（agent 人格定义）、USER.md（用户偏好） |
-| **Workspace（工作区）** | AgentOS 实例的工作目录，默认是 `.agentos/`，包含 Agent 目录、全局 Skill 库、Bootstrap 文件、记忆、会话、产出物、日志的子目录 |
+| **Workspace（工作区）** | AgentOS 实例的工作目录，默认是 `.agentos/`，包含 Agent 目录、全局 Skill 库、Bootstrap 文件、记忆、日志等子目录，以及 `mcp_servers.yaml` 与会话数据（agentos.db） |
 
 ---
 
@@ -213,7 +213,7 @@ agentos init   # 在当前目录下创建 .agentos/ 工作区
 
 初始化后的目录结构：
 
-```
+```text
 .agentos/
 ├── agents/            # 每个子目录 = 一个 Agent（AGENT.md + skills/软连接 + scripts/ REFERENCE.md）
 ├── skills/            # 公共 Skill 实体库（每个子目录一个 SKILL.md + 可选附属资源）
@@ -294,7 +294,7 @@ agentos profile delete <name>    # 删除 Agent（整个目录）
 
 Provider 是 LLM 调用的统一抽象。所有 LLM 调用通过 Provider 接口走，Agent 不感知具体调的是哪家。
 
-核心阶段直接基于 Spring AI Alibaba 的 `ChatClient` 实现。Spring AI Alibaba 已经做好了主流 LLM（DeepSeek、通义、文心、Kimi、智谱、混元、豆包、Anthropic、OpenAI 等）的 connector，AgentOS 把它们包装成 Provider，不重复造轮子。
+核心阶段直接基于 Spring AI Alibaba 的 `ChatModel` 实现（调用侧经 `ChatClient` 封装）。Spring AI Alibaba 已经做好了主流 LLM（DeepSeek、通义、文心、Kimi、智谱、混元、豆包、Anthropic、OpenAI 等）的 connector，AgentOS 把它们包装成 Provider，不重复造轮子。
 
 每个 Provider 实例配置：
 - `provider 名`（deepseek、qwen、kimi 等）
@@ -312,7 +312,7 @@ ReAct 循环是 Agent 的核心工作机制，也是 AgentOS 最关键的一段�
 
 **核心算法（Reason + Act）：**
 
-```
+```text
 接到用户消息
   └─ 追加到 Session 对话历史
      └─ 组装 Prompt（system prompt[含已绑定 Skill 元数据] + Bootstrap + Memory 注入[仅长期记忆] + 对话历史 + 可用 Tool 列表，五部分见技术方案 4.2）
@@ -620,7 +620,7 @@ AgentOS 作为开源项目，需要一个独立的主页作为对外门面，讲
 
 ### 流程一：工作区初始化
 
-```
+```text
 用户执行 agentos init
   → AgentOS 创建 .agentos/ 目录及四个子目录
     （agents / skills / memory / logs）
@@ -631,7 +631,7 @@ AgentOS 作为开源项目，需要一个独立的主页作为对外门面，讲
 
 ### 流程二：Agent 创建和启动
 
-```
+```text
 用户执行 agentos profile create <name>
   → AgentOS 在 .agentos/agents/<name>/ 下创建 AGENT.md（最小模板）
 用户编辑 AGENT.md：frontmatter 配 Provider、Tool 列表、Channel，正文写任务指令；需要 Skill 时在 Agent 目录 `skills/` 下建相对软连接
@@ -645,7 +645,7 @@ AgentOS 作为开源项目，需要一个独立的主页作为对外门面，讲
 
 ### 流程三：消息处理（最高频链路）
 
-```
+```text
 消息从三个入口进来（CLI Channel / Web Service HTTP API / AgentScheduler 钟推），均调 AgentService.process
   → Channel 触发经 Channel Adapter 转换成内部统一格式
   → Agent 查询 Session 上下文
@@ -658,7 +658,7 @@ AgentOS 作为开源项目，需要一个独立的主页作为对外门面，讲
 
 ### 流程四：Tool 调用
 
-```
+```text
 LLM 通过 Function Calling 指明 Tool 名称和参数
   → AgentOS 从 Agent 工具池找到对应 Tool
   → 做 Tool 入参的 JSON schema 校验和白名单校验（注：shell 白名单仅精确比对可执行文件、参数不校验，见技术方案 6.7）
@@ -670,7 +670,7 @@ LLM 通过 Function Calling 指明 Tool 名称和参数
 
 ### 流程五：Session 上下文管理
 
-```
+```text
 用户第一次跟 Agent 说话
   → AgentOS 用 Channel+用户+Profile 联合 ID 查活跃 Session
   → [无活跃 Session] → 创建新 Session，初始化空对话历史

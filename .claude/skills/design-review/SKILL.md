@@ -149,7 +149,7 @@ metadata:
 
 ### 第 5 步：产出评审报告
 
-写入 `draft/review-report-<YYYY-MM-DD>.md`（`draft/` 不存在时先创建）。报告结构：
+写入 `draft/review/review-report-<YYYY-MM-DD>.md`（`draft/review/` 不存在时先创建）。报告结构：
 
 ```
 # {项目} 设计文档评审报告

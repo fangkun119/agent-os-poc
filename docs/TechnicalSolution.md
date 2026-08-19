@@ -25,7 +25,7 @@ AgentOS 是一个 **Spring Boot 3.x** 单体应用，跑在 **JDK 21** 上，基
 | 1 | ReAct 循环 实现方式 | 自实现，不依赖 Spring AI Agent 抽象 | 完全可控，保留未来定制循环行为的空间 |
 | 2 | Spring AI 使用边界 | 只用 Provider 抽象 + 协议转换 + `@Tool` schema 生成，禁用自动 tool 执行 | 避免 tool 被调两次，ReAct 循环完全由 AgentOS 自己掌控 |
 | 3 | 执行模型 | 同步阻塞 + Java 21 virtual thread | 直观简洁，无需响应式编程，单节点撑高并发 |
-| 4 | Tool 注册机制 | `@Tool` 注解 + **AgentOSTool** 抽象层 | 统一内置 Tool 和 MCP Tool 接口，ReAct 循环不感知 Tool 来源 |
+| 4 | Tool 注册机制 | `@Tool` 注解 + **`AgentOSTool`** 抽象层 | 统一内置 Tool 和 MCP Tool 接口，ReAct 循环不感知 Tool 来源 |
 | 5 | HTTP 服务层 | Spring MVC + Java 21 virtual thread | 同步直观，单机撑千级并发，扩展阶段 `SseEmitter` 支持流式 |
 | 6 | Sandbox 策略 | 接口先行：`Sandbox` 抽象 + `SandboxChecker`（应用层 Path/Pattern 白名单）实现，扩展阶段按容器→microVM 演进 | `SecurityManager` 在 JDK 17 起废弃、JDK 21 已不可用，与 JDK 21+ 要求冲突；接口独立于白名单实现，未来换重隔离方案不用改调用方 |
 | 7 | 持久化方案 | SQLite + Spring Data JPA + `MEMORY.md` 文件 | 单二进制，审计表 day one 写入，避免后期从日志反解析返工 |
@@ -44,7 +44,7 @@ Tool 的实际调度和执行完全由 AgentOS 自己的 **`ReActLoop`** 加 **`
 
 **决策四：Tool 注册机制用 `@Tool` 注解加 `AgentOSTool` 抽象层。** Spring AI 注解负责扫描 Java 方法生成 JSON Schema，AgentOS 在其上加一层 **`AgentOSTool`** 抽象，统一内置 Tool 和 MCP Tool 的接口形式，让 ReAct 循环 不感知 Tool 来源。注解的确切名称和用法以采用的 Spring AI 版本为准，研发前需对当前版本核实。
 
-**决策五：HTTP 服务层用 Spring MVC 加 Java 21 virtual thread。** 同步直观的代码加 virtual thread 的高并发能力，单机轻松撑住几千并发。扩展阶段要 SSE 流式返回时，Spring MVC 的 `SseEmitter` 也能支持。
+**决策五：HTTP 服务层用 Spring MVC 加 Java 21 virtual thread。** 同步直观的代码加 virtual thread 的高并发能力，单机轻松撑住几千并发（按 8.1 目标 100 并发的 10 倍余量论证，见第 14 章）。扩展阶段要 SSE 流式返回时，Spring MVC 的 `SseEmitter` 也能支持。
 
 **决策六：Sandbox 先定接口，核心阶段只填一档实现。** 隔离强度和开销是一个跷跷板，从轻到重依次是应用层白名单校验、容器隔离（namespace + cgroups + seccomp）、microVM（Firecracker / Kata / gVisor）、完整虚拟机或物理隔离。为了不让核心阶段的实现选择绑死未来的架构，先抽象出一个 `Sandbox` 接口，表达"在受控环境里执行一个动作"这个意图，不携带任何一档实现特有的概念（不出现"容器镜像""VM 配置"字样）。核心阶段只实现 `SandboxChecker` 这一档：文件操作限制工作目录、Shell 命令白名单、HTTP 域名白名单，在应用层做校验，不使用 Java `SecurityManager`（它在 JDK 17 起已废弃、JDK 21 已不可用，与本项目 JDK 21+ 要求冲突）。扩展阶段按信号驱动升级：出现"要跑不可信代码或要多租户"时上容器隔离；出现"要跑完全不可信代码或要规模化多租户"时上 microVM。`Sandbox` 是纯校验接口（策略层：动作允不允许）；容器/microVM 级受控执行（执行层：在隔离环境里跑动作）是扩展阶段另立的 `execute_code` Runner 接口——校验与执行分离，各自演进互不绑死。
 
@@ -114,7 +114,7 @@ AgentOS 的整体架构按"五大核心能力加支撑模块"组织。五大核�
 
 ## 3. 核心能力一：对接 LLM（Provider 抽象）
 
-LLM 调用的复杂度都被 **Spring AI Alibaba** 吸收掉了。AgentOS 在其上做一层薄包装，把 Spring AI 的 `ChatClient` 转成 AgentOS 内部的 **`ProviderService`** 抽象。
+LLM 调用的复杂度都被 **Spring AI Alibaba** 吸收掉了。AgentOS 在其上做一层薄包装，把 Spring AI 的 `ChatModel`（按 provider name 显式映射，见 3.2；调用时可经 `ChatClient` 封装使用）转成 AgentOS 内部的 **`ProviderService`** 抽象。
 
 ### 3.1 模块组成
 
@@ -214,7 +214,7 @@ Memory 是 AgentOS 区别于普通 chatbot 的核心能力。三层记忆是完�
 **后端实现（核心阶段交付 Markdown 默认档；`LongTermMemoryStore` 接口预留 `memory.backend` 切换，SQLite/Mem0 档随后补齐）。** 递进对应早期方案评审讲的三级演进：
 
 - **`MarkdownMemoryStore`（默认）。** 底层操作 `.agentos/memory/MEMORY.md` 一个 Markdown 文件，按 `## 核心记忆` / `## 归档记忆` 两个 header 分区（详见 5.2）；截断是字符串裁归档段，检索是 `String.contains` 行匹配。零依赖、人可读、git 可跟踪，记忆量不大时的首选。
-- **`SqliteMemoryStore`。** 记忆按条入库到 `memory_entries` 表（手工建表脚本，与 sessions/审计表同口径），截断变成归档查询的 `LIMIT N`、检索变成 SQL `LIKE`、核心区用 `WHERE scope='CORE'` 全量取。仍**零外部依赖**（复用已有 SQLite），记忆量上千、要结构化查询时的升级档。
+- **`SqliteMemoryStore`。** 记忆按条入库到 `memory_entries` 表（随对应 JPA 实体由 `ddl-auto=update` 创建，与 sessions/审计表同口径；结构演进见 9.2），截断变成归档查询的 `LIMIT N`、检索变成 SQL `LIKE`、核心区用 `WHERE scope='CORE'` 全量取。仍**零外部依赖**（复用已有 SQLite），记忆量上千、要结构化查询时的升级档。
 - **`Mem0MemoryStore`。** 接一个**自托管** Mem0 记忆层（数据不出域），Java 侧走 REST 集成，`append/load/recall` 翻译成 Mem0 的 add/get/search——提炼、冲突消解、语义检索都交给 Mem0。凭证与地址走环境变量占位。这是"真需要智能记忆"时的外部集成档，对应早期评审"记忆若非核心差异化能力、集成可自托管方案是理性选择"的判断。
 
 换后端只改 `memory.backend` 一行配置，`MemoryService` 以上（`PromptBuilder`/`MemoryTools`/`ReActLoop`）一个字不动——这就是接口墙的价值兑现。`recallByKeyword` 也预留了语义升级空间（Mem0 档已是语义检索），切换底层不影响上层。
@@ -477,7 +477,7 @@ Web Service 是 AgentOS 的对外完整门面，业务系统通过 REST API 接�
 
 **`InitCommand` 模块。** `agentos init` 命令的执行逻辑，创建 `.agentos/` 工作目录及完整结构：
 
-```
+```text
 .agentos/
 ├── agents/            # 每个子目录 = 一个 Agent（AGENT.md + skills/软连接 + scripts/ REFERENCE.md）
 ├── skills/            # 公共 Skill 实体库（SKILL.md + 可选附属资源）
@@ -527,7 +527,7 @@ Channel 是 Agent 对外的消息接入入口，主要解决"消息进来、响�
 
 **状态持久化与可管理（收尾阶段补齐）。** 光"到点自动跑"还不够——运营方要能看见有哪些定时任务、跑过几次、上次成没成，也要能手动补跑一次、临时停掉一个任务。为此把任务状态和执行历史落 SQLite（重启不丢），并做成可查可管的一等公民（核心阶段经 API/Swagger 操作，管理台页面放扩展阶段）：
 
-- **两张表**（手工建表脚本，见 9.2）：`scheduled_tasks` 存任务登记信息与运行状态（`task_id` 主键、`profile_name`、`cron`、`zone`、`message`、`enabled`、`next_run_at`、`last_run_at`、`last_status`、`run_count`、`updated_at`），`task_executions` 存每次执行的历史（成功失败都记：`task_id`、`session_id`、`started_at`、`success`、`error_message`、`duration_ms`）。定义来源仍是 AGENT.md frontmatter 的 `schedules`——这两张表只存"状态 + 历史"，不作为定义源，重启时从文件重新注册。
+- **两张表**（首建走 `ddl-auto=update`，建表与演进口径见 9.2）：`scheduled_tasks` 存任务登记信息与运行状态（`task_id` 主键、`profile_name`、`cron`、`zone`、`message`、`enabled`、`next_run_at`、`last_run_at`、`last_status`、`run_count`、`updated_at`），`task_executions` 存每次执行的历史（成功失败都记：`task_id`、`session_id`、`started_at`、`success`、`error_message`、`duration_ms`）。定义来源仍是 AGENT.md frontmatter 的 `schedules`——这两张表只存"状态 + 历史"，不作为定义源，重启时从文件重新注册。
 - **契约在 core、实现在 storage**（依赖倒置）：`ScheduledTaskStore` 接口（`register`/`recordExecution`/`isEnabled`/`setEnabled`/`list`/`executions`）放 `agentos-core`，`AgentScheduler` 依赖它；JPA 实现 `JpaScheduledTaskStore` 放 `agentos-storage`。`AgentScheduler` 启动扫描时顺带 `register` 登记，每次 `execute` 成功失败都 `recordExecution` 留痕（与 constitution 审计原则（AiProgrammingGuide 3.2 原则六：审计 day one 落库）同源）；`runOnce` 先看 `isEnabled`（停用则跳过、不记执行），管理台"立即执行"走 `runNow` 手动触发一次（无视启用状态）。
 - **四个管理端点**（`ScheduleApiController`，前缀 `/api/v1/schedules`）：`GET /schedules` 列任务与状态、`GET /schedules/{id}/executions` 查执行历史、`POST /schedules/{id}/run` 立即执行一次、`PUT /schedules/{id}` 启用/停用。管理台"定时任务"页调这四个端点（核心阶段经 API/Swagger 操作，管理台页面放扩展阶段），可查可管——这是相对"管理台只读"的一处明确扩展（仅限定时任务这一子系统的运行控制）。
 
@@ -547,7 +547,7 @@ Channel 是 Agent 对外的消息接入入口，主要解决"消息进来、响�
 
 **`AgentOSCli` 模块。** Picocli 命令行入口，整个 AgentOS 的 `main` 函数，注册 12 个子命令：
 
-```
+```text
 init
 status
 chat
@@ -589,9 +589,9 @@ session list
 
 通过 Spring Data JPA 集成，`application.yaml` 配置数据源指向 `.agentos/agentos.db`。
 
-> **工程风险提示：** SQLite 本身 `ALTER TABLE` 能力有限，`hibernate.ddl-auto=update` 在 SQLite 上对表结构演进的支持很弱。核心阶段首次建表用 `update` 可以，但表结构后续演进时不要依赖 `update` 自动迁移，需要手动维护建表脚本或引入 Flyway/Liquibase。
+> **工程风险提示（建表与演进口径）：** 首次建表及后续新增表统一由 `hibernate.ddl-auto=update` 依据 JPA 实体创建（`update` 在 SQLite 上只做逐条 `CREATE TABLE`，不涉及 `ALTER`，这是它唯一可靠的场景）。既有表的结构演进不依赖 `update` 自动迁移（SQLite `ALTER TABLE` 仅支持 ADD COLUMN / RENAME），由版本化手工迁移脚本维护；扩展阶段建议引入 Flyway 并将 `ddl-auto` 降为 `validate`，实体定义与迁移脚本以脚本为准。
 
-**工程要求：** 启用 WAL 模式 + busy_timeout（virtual thread 并发下必须）；Session 落盘节奏为 ReAct 循环结束后落一次（不逐消息重写 messages_json）；钟推 Session（channel/user 固定 scheduler）历次触发复用同一 session_id，messages_json 每次落盘时物理裁剪至与 `max_history_turns` 同步的条数——避免无限增长，旧内容随裁剪丢弃、审计数据在 `tool_invocations`/`llm_calls` 完整保留。
+**工程要求：** 启用 WAL 模式 + busy_timeout（virtual thread 并发下必须）；Session 落盘节奏为 ReAct 循环结束后落一次（不逐消息重写 messages_json）；钟推 Session（channel/user 固定 scheduler）历次触发复用同一 session_id，messages_json 每次落盘时物理裁剪至与 `max_history_turns` 同步的条数——避免无限增长，旧内容随裁剪丢弃、审计数据在 `tool_invocations`/`llm_calls` 完整保留。SQLite 方言需显式引入 hibernate-community-dialects（org.hibernate.orm.dialect.SQLiteDialect）并在 application.yaml 指定，Spring Boot 3 + Hibernate 6 对 SQLite 无官方方言；WAL 与 busy_timeout 需在 JDBC 连接层设置（连接串参数或 SQLiteConfig，经 dataSourceProperties 透传，如 jdbc:sqlite:...?journal_mode=WAL&busy_timeout=5000），HikariCP 默认不透传 pragma。
 
 核心表六张 + 一张条件表：
 
@@ -798,8 +798,9 @@ mvn clean package
 ### 第一周（3 小时）：核心能力一 + 能力二（对接 LLM + ReAct 循环）
 
 - 搭 Maven 多模块骨架（9 个模块）、`agentos init`、AGENT.md frontmatter 解析
+- 第一步先做 30 分钟 spike：验证所锁定 Spring AI Alibaba 版本中多 `ChatModel` Bean 注入与按 name 选择的推荐写法，结论回填 3.2
 - `ProviderService` 包装 Spring AI Alibaba（先跑通 DeepSeek 或 Kimi，含 provider name 映射）
-- `ReActLoop` + `PromptBuilder` + `ToolExecutor`、一个内置 HTTP Tool、`CliChannel`
+- `ReActLoop` + `PromptBuilder` + `ToolExecutor`、一个内置 HTTP Tool（含 `SandboxChecker` 简化版：仅 URL 域名白名单，完整版第二周补齐，见 6.7）、`CliChannel`
 - Session 内存版（第三周 Web Service 阶段加 SQLite）
 
 **可演示：** `agentos chat` 多轮对话，Agent 调 HTTP Tool 完成简单任务。
@@ -844,9 +845,9 @@ mvn clean package
 
 ## 14. 性能和可扩展性考虑
 
-性能目标在需求文档第 8 章已定义，这里说明怎么达到。
+性能目标在需求文档第 8 章已定义，这里说明怎么达到。目标为单节点并发 Session ≥100（需求文档 8.1），本章按 1000（10 倍余量）论证架构可行性，非承诺值。
 
-**Java 21 virtual thread 撑高并发。** 每个 Agent 是内存里的 Profile 对象加 Session 列表占用极少，virtual thread 让每个并发请求跑在独立虚拟线程，OS 线程数维持几十个就够支撑几千并发（指并发 LLM 等待；写路径受 SQLite 单写者约束，量级以压测为准），LLM 调用 IO 阻塞时 virtual thread 自动让出 OS 线程。
+**Java 21 virtual thread 撑高并发。** 每个 Agent 是内存里的 Profile 对象加 Session 列表占用极少，virtual thread 让每个并发请求跑在独立虚拟线程，OS 线程数维持几十个就够支撑几千并发（按 8.1 目标的 10 倍余量；指并发 LLM 等待，写路径受 SQLite 单写者约束，量级以压测为准），LLM 调用 IO 阻塞时 virtual thread 自动让出 OS 线程。
 
 **1000 个并发 Session 内存可控。** 1000 个 Session 平均 50KB 共 50MB 没问题。SQLite 写入按循环结束落盘 + 审计表逐次写入触发（见 9.2 落盘节奏）。
 
