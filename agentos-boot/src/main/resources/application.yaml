@@ -1,0 +1,29 @@
+# AgentOS 应用配置（骨架版）。
+# 工程口径见 TS 9.2：SQLite 首建走 ddl-auto=update（update 在 SQLite 上只做 CREATE TABLE，
+# 其唯一可靠场景）；WAL + busy_timeout 在 JDBC 连接串透传（HikariCP 默认不透传 pragma）；
+# 方言显式指定 org.hibernate.community.dialect.SQLiteDialect（Spring Boot 3 无 SQLite 官方方言）。
+spring:
+  application:
+    name: agentos
+  datasource:
+    url: jdbc:sqlite:.agentos/agentos.db?journal_mode=WAL&busy_timeout=5000
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    open-in-view: false
+
+server:
+  port: 8080
+
+agentos:
+  # 超时三档分步预算（TS 7.4）：默认值在此，可被 Profile 的 settings.timeout 按 Agent 覆盖。
+  # 红线：代码中不得硬编码超时（AG 3.4 / TS 7.4）。
+  timeout:
+    llm-call: 60s
+    tool: 30s
+    total: 300s
+  # Provider 凭证一律经环境变量占位注入（TS 8.8），不明文写配置。
+  # 具体结构按第一周 spike 结论回填 TS 3.2 后补充。
+  provider: {}

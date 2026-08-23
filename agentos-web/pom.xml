@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.agentos</groupId>
+    <artifactId>agentos</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>agentos-web</artifactId>
+  <name>agentos-web</name>
+  <description>核心能力五（TS 10）：WebServer、8 个 ApiController（NotifyChannel/Schedule 随第四周收尾交付）、GlobalExceptionHandler、OpenAPI 文档（springdoc 第三周引入）。默认端口 8080，Java 21 virtual thread（TS 7.1）。</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.agentos</groupId>
+      <artifactId>agentos-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+  </dependencies>
+</project>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.agentos</groupId>
+    <artifactId>agentos</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>agentos-storage</artifactId>
+  <name>agentos-storage</name>
+  <description>持久化层（TS 10）：SQLite、SessionRepository、ToolInvocationRepository、LlmCallRepository、JpaScheduledTaskStore、NotifyChannelRepository、MemoryEntryRepository（扩展阶段建表）。
+    工程口径（TS 9.2）：首建走 ddl-auto=update；SQLite 无官方方言，须显式引入 hibernate-community-dialects；WAL/busy_timeout 在 JDBC 连接串透传。</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.agentos</groupId>
+      <artifactId>agentos-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    <!-- SQLite JDBC 驱动（版本由 Spring Boot BOM 管理） -->
+    <dependency>
+      <groupId>org.xerial</groupId>
+      <artifactId>sqlite-jdbc</artifactId>
+    </dependency>
+    <!-- Spring Boot 3 + Hibernate 6 对 SQLite 无官方方言，显式引入社区方言（TS 9.2），版本与 BOM 的 hibernate.version 对齐 -->
+    <dependency>
+      <groupId>org.hibernate.orm</groupId>
+      <artifactId>hibernate-community-dialects</artifactId>
+      <version>${hibernate.version}</version>
+    </dependency>
+  </dependencies>
+</project>

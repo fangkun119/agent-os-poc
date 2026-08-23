@@ -3,6 +3,13 @@ draft/
 chat/
 .venv/
 
+# IDE
+.idea/
+.vscode/
+
+# Maven build output
+target/
+
 # Compiled class file
 *.class
 

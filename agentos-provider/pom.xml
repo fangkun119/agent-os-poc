@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.agentos</groupId>
+    <artifactId>agentos</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>agentos-provider</artifactId>
+  <name>agentos-provider</name>
+  <description>核心能力一（TS 10）：ProviderService、Function Calling 适配、Provider 配置（provider name 到 ChatModel 显式映射）。Spring AI / Spring AI Alibaba 依赖按 TS 13 第一周 spike 结论引入，此处不预引入。</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.agentos</groupId>
+      <artifactId>agentos-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+</project>

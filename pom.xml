@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.5.16</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.agentos</groupId>
+  <artifactId>agentos</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>AgentOS</name>
+  <description>基于 Java 的企业级 Agent OS 运行时内核。九模块清单以 docs/TechnicalSolution.md 第 10 章为准。</description>
+
+  <modules>
+    <module>agentos-core</module>
+    <module>agentos-provider</module>
+    <module>agentos-memory</module>
+    <module>agentos-tool</module>
+    <module>agentos-channel-cli</module>
+    <module>agentos-web</module>
+    <module>agentos-storage</module>
+    <module>agentos-cli</module>
+    <module>agentos-boot</module>
+  </modules>
+
+  <properties>
+    <java.version>21</java.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <picocli.version>4.7.7</picocli.version>
+  </properties>
+</project>
