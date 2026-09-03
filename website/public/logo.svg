@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 32" role="img" aria-label="AgentOS">
+  <!-- AgentOS 文字标：favicon 同款提示符方块 + 词标（Agent 常规 + OS 加粗橙）。
+       textLength 固定文本宽度，避免访客系统字宽差异导致溢出或过缩 -->
+  <rect x="1" y="1" width="30" height="30" rx="7" fill="#0d1611" stroke="#2f4739" stroke-width="2"/>
+  <path d="M9 10l7 6-7 6" fill="none" stroke="#2fe07a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="19" y="19" width="5" height="3" rx="1" fill="#2fe07a"/>
+  <text x="42" y="24" textLength="128" lengthAdjust="spacingAndGlyphs"
+        font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" fill="#edf5ef"><tspan font-weight="400">Agent</tspan><tspan font-weight="800" fill="#2fe07a">OS</tspan></text>
+</svg>

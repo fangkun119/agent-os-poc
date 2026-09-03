@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- AgentOS favicon：终端提示符 + 光标，呼应 CLI 优先的产品形态 -->
+  <rect x="1" y="1" width="30" height="30" rx="7" fill="#0d1611" stroke="#2f4739" stroke-width="2"/>
+  <path d="M9 10l7 6-7 6" fill="none" stroke="#2fe07a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="19" y="19" width="5" height="3" rx="1" fill="#2fe07a"/>
+</svg>

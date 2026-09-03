@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 560" font-family="ui-monospace, SFMono-Regular, Menlo, 'JetBrains Mono', monospace">
+  <!-- AgentOS runtime architecture (EN). Colors from palette v3 Rack LED (refresh SPEC §3.1).
+       Layout: triggers → agent core (engine, highlighted) → capabilities → SQLite storage.
+       Geometry is shared with architecture-zh.svg — only strings differ; edit both together. -->
+  <g style="text-transform:uppercase" font-size="11" letter-spacing="2" fill="#7e9284">
+    <text x="8" y="30">Triggers</text>
+    <text x="274" y="30" fill="#2fe07a">Agent core</text>
+    <text x="540" y="30">Capabilities</text>
+    <text x="806" y="30">SQLite</text>
+  </g>
+
+  <!-- col 1: triggers -->
+  <g>
+    <rect x="8" y="56" width="226" height="54" rx="8" fill="#0d1611" stroke="#1b2c22"/>
+    <text x="121" y="78" text-anchor="middle" font-size="13" font-weight="600" fill="#edf5ef">CLI</text>
+    <text x="121" y="96" text-anchor="middle" font-size="11" fill="#7e9284">agentos chat</text>
+
+    <rect x="8" y="126" width="226" height="54" rx="8" fill="#0d1611" stroke="#1b2c22"/>
+    <text x="121" y="148" text-anchor="middle" font-size="13" font-weight="600" fill="#edf5ef">Web API</text>
+    <text x="121" y="166" text-anchor="middle" font-size="11" fill="#7e9284">/api/v1/**</text>
+
+    <rect x="8" y="196" width="226" height="54" rx="8" fill="#0d1611" stroke="#1b2c22"/>
+    <text x="121" y="218" text-anchor="middle" font-size="13" font-weight="600" fill="#edf5ef">Scheduler</text>
+    <text x="121" y="236" text-anchor="middle" font-size="11" fill="#7e9284">cron · agentos serve</text>
+  </g>
+
+  <!-- col 2: agent core (highlight) -->
+  <g>
+    <rect x="274" y="56" width="226" height="40" rx="8" fill="rgba(47,224,122,0.11)" stroke="#2fe07a"/>
+    <text x="387" y="81" text-anchor="middle" font-size="13" font-weight="700" fill="#edf5ef">AgentService.process</text>
+
+    <rect x="274" y="112" width="226" height="54" rx="8" fill="#101b14" stroke="#2f4739"/>
+    <text x="387" y="134" text-anchor="middle" font-size="13" font-weight="600" fill="#edf5ef">PromptBuilder</text>
+    <text x="387" y="152" text-anchor="middle" font-size="11" fill="#7e9284">five-part prompt</text>
+
+    <rect x="274" y="180" width="226" height="54" rx="8" fill="#101b14" stroke="#2f4739"/>
+    <text x="387" y="202" text-anchor="middle" font-size="13" font-weight="600" fill="#edf5ef">ProviderService</text>
+    <text x="387" y="220" text-anchor="middle" font-size="11" fill="#7e9284">name → ChatModel</text>
+
+    <rect x="274" y="248" width="226" height="54" rx="8" fill="#101b14" stroke="#2f4739"/>
+    <text x="387" y="270" text-anchor="middle" font-size="13" font-weight="600" fill="#edf5ef">ReActLoop</text>
+    <text x="387" y="288" text-anchor="middle" font-size="11" fill="#7e9284">Reason → Act → Observe</text>
+
+    <rect x="274" y="316" width="226" height="54" rx="8" fill="#101b14" stroke="#2f4739"/>
+    <text x="387" y="338" text-anchor="middle" font-size="13" font-weight="600" fill="#edf5ef">ToolExecutor</text>
+    <text x="387" y="356" text-anchor="middle" font-size="11" fill="#7e9284">whitelist · 30s · audit</text>
+  </g>
+
+  <!-- col 3: capabilities -->
+  <g>
+    <rect x="540" y="112" width="226" height="54" rx="8" fill="#0d1611" stroke="#1b2c22"/>
+    <text x="653" y="134" text-anchor="middle" font-size="13" font-weight="600" fill="#edf5ef">ToolRegistry</text>
+    <text x="653" y="152" text-anchor="middle" font-size="11" fill="#7e9284">9 built-in + MCP</text>
+
+    <rect x="540" y="180" width="226" height="54" rx="8" fill="#0d1611" stroke="#1b2c22"/>
+    <text x="653" y="202" text-anchor="middle" font-size="13" font-weight="600" fill="#edf5ef">MemoryService</text>
+    <text x="653" y="220" text-anchor="middle" font-size="11" fill="#7e9284">session + long-term</text>
+
+    <rect x="540" y="248" width="226" height="54" rx="8" fill="#0d1611" stroke="#1b2c22"/>
+    <text x="653" y="270" text-anchor="middle" font-size="13" font-weight="600" fill="#edf5ef">Sandbox</text>
+    <text x="653" y="288" text-anchor="middle" font-size="11" fill="#7e9284">path · shell · http · notify</text>
+
+    <rect x="540" y="316" width="226" height="54" rx="8" fill="#0d1611" stroke="#1b2c22"/>
+    <text x="653" y="338" text-anchor="middle" font-size="13" font-weight="600" fill="#edf5ef">Notify</text>
+    <text x="653" y="356" text-anchor="middle" font-size="11" fill="#7e9284">webhook channels</text>
+  </g>
+
+  <!-- col 4: sqlite tables -->
+  <g>
+    <g>
+      <rect x="806" y="56" width="226" height="34" rx="8" fill="#101b14" stroke="#23372b"/>
+      <rect x="806" y="56" width="3" height="34" rx="1.5" fill="#2fe07a" opacity="0.5"/>
+      <text x="919" y="77" text-anchor="middle" font-size="12" fill="#cfe3d6">sessions</text>
+    </g>
+    <g>
+      <rect x="806" y="102" width="226" height="34" rx="8" fill="#101b14" stroke="#23372b"/>
+      <rect x="806" y="102" width="3" height="34" rx="1.5" fill="#2fe07a" opacity="0.5"/>
+      <text x="919" y="123" text-anchor="middle" font-size="12" fill="#cfe3d6">scheduled_tasks</text>
+    </g>
+    <g>
+      <rect x="806" y="148" width="226" height="34" rx="8" fill="#101b14" stroke="#23372b"/>
+      <rect x="806" y="148" width="3" height="34" rx="1.5" fill="#2fe07a" opacity="0.5"/>
+      <text x="919" y="169" text-anchor="middle" font-size="12" fill="#cfe3d6">task_executions</text>
+    </g>
+    <g>
+      <rect x="806" y="194" width="226" height="34" rx="8" fill="#101b14" stroke="#23372b"/>
+      <rect x="806" y="194" width="3" height="34" rx="1.5" fill="#2fe07a" opacity="0.5"/>
+      <text x="919" y="215" text-anchor="middle" font-size="12" fill="#cfe3d6">tool_invocations</text>
+    </g>
+    <g>
+      <rect x="806" y="240" width="226" height="34" rx="8" fill="#101b14" stroke="#23372b"/>
+      <rect x="806" y="240" width="3" height="34" rx="1.5" fill="#2fe07a" opacity="0.5"/>
+      <text x="919" y="261" text-anchor="middle" font-size="12" fill="#cfe3d6">llm_calls</text>
+    </g>
+    <g>
+      <rect x="806" y="286" width="226" height="34" rx="8" fill="#101b14" stroke="#23372b"/>
+      <rect x="806" y="286" width="3" height="34" rx="1.5" fill="#2fe07a" opacity="0.5"/>
+      <text x="919" y="307" text-anchor="middle" font-size="12" fill="#cfe3d6">notify_channels</text>
+    </g>
+  </g>
+
+  <!-- flow arrows between columns -->
+  <g>
+    <path d="M242 190 H262" stroke="#2f4739" stroke-width="1.5"/>
+    <path d="M262 184 L274 190 L262 196 Z" fill="#2fe07a"/>
+
+    <path d="M508 190 H528" stroke="#2f4739" stroke-width="1.5"/>
+    <path d="M528 184 L540 190 L528 196 Z" fill="#2fe07a"/>
+
+    <path d="M774 190 H794" stroke="#2f4739" stroke-width="1.5"/>
+    <path d="M794 184 L806 190 L794 196 Z" fill="#2fe07a"/>
+  </g>
+
+  <!-- ReAct loop-back: ToolExecutor → ReActLoop (max 10 iterations) -->
+  <g>
+    <path d="M500 343 C 526 343 526 307 508 307" fill="none" stroke="#2fe07a" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <path d="M508 302 L498 307 L508 312 Z" fill="#2fe07a"/>
+    <text x="527" y="329" text-anchor="middle" font-size="10" fill="#2fe07a">≤10</text>
+  </g>
+
+  <text x="520" y="530" text-anchor="middle" font-size="11" fill="#708578">synchronous · virtual threads · one process() chain — identical audit and session semantics for all triggers</text>
+</svg>

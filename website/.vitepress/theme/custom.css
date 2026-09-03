@@ -1,0 +1,166 @@
+/* ============================================================
+   AgentOS 站点全局样式
+   分区：@font-face → 色板变量 → 具名字阶 → --vp-* 品牌映射 →
+         全局画布 → 可访问性地板 → 主题内部覆盖
+   纪律（website/CLAUDE.md）：主题覆盖只写本文件；.VP* 内部类用最窄
+   选择器并注明压的是哪条内部规则；!important 仅 proactive；禁 ID
+   选择器；无条件深色画布（appearance: false，禁 .dark 变体 /
+   prefers-color-scheme 配色）
+   ============================================================ */
+
+/* ── 色板出处指针（品牌语义色随色板定稿联动） ──
+   色板 v3「机房 LED」定稿记录：chat/consolidate/20260830-website-visual-refresh-spec.md §3.1
+   （候选对比页留档：chat/temp/website-style-candidate/2-rack-led.html；色板换版时同步更新本指针） */
+
+/* ── 自托管字体（零运行时外部请求；woff2 站内托管） ──
+   unicode-range 限拉丁：CJK 落系统栈（PingFang/微软雅黑），中文大字的个性由字重/结构承担 */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/inter-latin-var.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono-latin-var.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ── 色板变量（v3「机房 LED」，单一来源；组件一律 var() 消费） ──
+   品牌语义色与固定语义色分两类：
+   · --aos-signal-* 为品牌语义色（绿=健康=品牌，accent 与 signal-ok 同族同值）
+   · --aos-dot-* 为固定语义色（macOS 终端三圆点），永不随色板联动 */
+:root {
+  /* 画布与面板（绿黑，冷色相） */
+  --aos-bg: #060b08;
+  --aos-band: #0a120d;
+  --aos-panel-1: #0d1611;
+  --aos-panel-2: #101b14;
+  --aos-panel-hover-1: #142119;
+  --aos-panel-hover-2: #19281f;
+  --aos-code-bg: #070f0a;
+  /* 线条阶梯 */
+  --aos-line: #1b2c22;
+  --aos-line-soft: #23372b;
+  --aos-line-strong: #2f4739;
+  /* 品牌绿 accent（机房 LED：绿=健康=品牌；岗位收缩，仅五类：① CTA 健康面板描边
+     ② 终端系 prompt/光标/树形符 ③ 标题第二行 ④ 数据读出层 账本数值/板块标签/阶段名
+     ⑤ 交互点睛 按钮/胶囊/slash/hover/焦点。绿色忌大面积铺底，一切大底用 band/panel） */
+  --aos-accent: #2fe07a;
+  --aos-accent-hover: #58ea97;
+  --aos-accent-deep: #1fb85e;
+  --aos-accent-dim: #1a9149;
+  --aos-accent-soft: rgba(47, 224, 122, 0.11);
+  /* on-accent 深色文字族（accent 面上使用，如主按钮字/`::selection`） */
+  --aos-on-accent-strong: rgba(0, 20, 8, 0.72);
+  --aos-on-accent-soft: rgba(0, 20, 8, 0.66);
+  --aos-on-accent-line: rgba(0, 20, 8, 0.28);
+  --aos-on-accent-border: rgba(0, 20, 8, 0.18);
+  /* 文字（弱文字两档对 bg 均 ≥4.5:1，装饰元素才允许更暗值） */
+  --aos-text-1: #edf5ef;
+  --aos-text-2: #93a89b;
+  --aos-text-3: #708578;
+  --aos-text-dim: #7e9284;
+  --aos-code-text: #cfe3d6;
+  /* 品牌语义色（随色板联动；ok 与 accent 同族同值——绿=健康） */
+  --aos-signal-ok: #2fe07a;
+  --aos-signal-warn: #f0b429;
+  --aos-signal-danger: #ff5c47;
+  /* 固定语义色（永不联动） */
+  --aos-dot-red: #ff5f57;
+  --aos-dot-yellow: #febc2e;
+  --aos-dot-green: #28c840;
+}
+
+/* ── 具名字阶（全站唯一字号来源；组件禁止散点 clamp） ── */
+:root {
+  --aos-fs-display-1: clamp(40px, 7vw, 72px);   /* hero 主标题；中文经 .hero-headline--zh 降档 */
+  --aos-fs-display-2: clamp(26px, 4vw, 42px);   /* 板块 h2 / CTA 大标题 */
+  --aos-fs-title: 17px;                          /* 卡片标题 */
+  --aos-fs-lead: 16px;                           /* hero 副文案 */
+  --aos-fs-body: 13px;                           /* 卡片描述 */
+  --aos-fs-caption: 11px;                        /* mono 标签/尾注/状态章 */
+  --aos-fs-data: 20px;                           /* 账本数值 */
+  --aos-font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --aos-font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+}
+
+/* ── --vp-* 品牌映射（VitePress 自身 UI 跟随品牌色；文档区将来沿用） ── */
+:root {
+  --vp-c-brand-1: var(--aos-accent-dim);
+  --vp-c-brand-2: var(--aos-accent-deep);
+  --vp-c-brand-3: var(--aos-accent);
+  --vp-c-brand-soft: var(--aos-accent-soft);
+
+  --vp-font-family-base: var(--aos-font-body);
+  --vp-font-family-mono: var(--aos-font-mono);
+
+  --vp-c-bg: var(--aos-bg);
+  --vp-c-bg-soft: var(--aos-panel-2);
+  --vp-c-bg-mute: #121a15; /* 绿黑族档（文档区将来沿用） */
+  /* 浮起面板（语言切换/⋯ 下拉的 VPFlyout·VPMenu 底色，内部默认 #ffffff）；
+     漏映射时浅色 --vp-c-text-1 落在白底上不可读 */
+  --vp-c-bg-elv: var(--aos-panel-1);
+  --vp-c-text-1: var(--aos-text-1);
+  --vp-c-text-2: var(--aos-text-2);
+  --vp-c-text-3: var(--aos-text-dim);
+  --vp-c-divider: var(--aos-line-soft);
+  --vp-c-border: var(--aos-line-soft);
+}
+
+/* ── 全局画布（无条件深色；body 背景即视口画布） ── */
+html,
+body {
+  background: var(--aos-bg);
+}
+
+/* ── 可访问性地板 ──
+   键盘焦点可见（深底琥珀描边；CTA 琥珀底区内由组件 scoped 改深色描边） */
+:focus-visible {
+  outline: 2px solid var(--aos-accent);
+  outline-offset: 2px;
+}
+
+/* 动效总门控：偏好减少动效时全站动画/过渡静态化（内容完整呈现） */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ── 主题内部覆盖（单主题站点；每条注明压的内部规则） ── */
+
+/* 压 base.css `button:focus-visible`（outline: 4px auto 浏览器焦点环，特异性 0-1-1
+   高于全局 :focus-visible 0-1-0）：按钮与链接焦点统一为站点 2px 品牌描边 */
+button:focus-visible {
+  outline: 2px solid var(--aos-accent);
+  outline-offset: 2px;
+}
+
+/* 隐藏默认主题页脚：页脚由 Home.vue 自绘（themeConfig.footer 本就未配置，
+   压 .VPFooter 的默认渲染以防未来误配 footer 时出现双页脚） */
+.VPFooter {
+  display: none !important;
+}
+
+/* 压 .VPHome 的默认 margin-bottom（96px / min-width:768px 时 128px）：
+   主页页脚之后不留主题底部死滚动区 */
+.VPHome {
+  margin-bottom: 0 !important;
+}
+
+/* 主页外层容器背景压实底（压 .VPPage/.VPContent/.VPLayout 的亮色变量背景，
+   防未来换 --vp-c-bg 时主页边缘露白） */
+.VPPage,
+.VPContent,
+.VPLayout {
+  background: var(--aos-bg) !important;
+}
