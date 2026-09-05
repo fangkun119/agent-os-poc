@@ -221,7 +221,7 @@ agentos init   # 在当前目录下创建 .agentos/ 工作区
 │   └── MEMORY.md      # 长期记忆文件
 ├── logs/              # 结构化日志
 ├── mcp_servers.yaml   # MCP server 全局配置
-├── agentos.db         # SQLite（核心表，含 sessions、tool_invocations、llm_calls、notify_channels；scheduled_tasks、task_executions 后两张收尾阶段补齐，见 10 数据模型与技术方案 9.2）
+├── agentos.db         # SQLite（核心阶段 6 张表：sessions、tool_invocations、llm_calls 随第三周 SQLite 落地，notify_channels、scheduled_tasks、task_executions 随第四周收尾交付；另预留 memory_entries 条件表，扩展阶段 SQLite 记忆档启用时才建。见 10 数据模型与技术方案 9.2）
 ├── AGENTS.md          # Bootstrap：项目级 agent 行为说明
 ├── SOUL.md            # Bootstrap：默认 agent 人格定义
 └── USER.md            # Bootstrap：用户偏好
@@ -808,6 +808,8 @@ AgentOS 核心功能的实施按 **4 周节奏**组织，每周 3 小时，合�
 | 事项 | 说明 | 决议时间 |
 |------|------|---------|
 | GraalVM Native Image 引入时机 | 核心阶段还是扩展阶段 | 核心阶段结束后 |
+| 各触发源下的 Prompt 组装策略 | 受 LLM 上下文窗口限制，人推（`agentos chat`、`POST /agents/{name}/invoke`）、钟推（`AgentScheduler` 定时触发）及其他后续触发方式（如 Webhook）下，组装进 LLM 请求的内容（Bootstrap、长期记忆注入、对话历史轮数）是否按触发源差异化调整 | 核心阶段结束后 |
+| 工具返回结果的裁剪策略 | 当前设计中 Tool 返回结果不论体积、内容全部进入 Session messages 并随每轮 prompt 进入 LLM 请求，无体积上限、裁剪、淘汰、压缩、截断机制；后续需增加工具返回结果裁剪能力（截断、过滤、摘要等），具体策略结合实测决议 | 核心阶段结束后 |
 
 > 注：原未决项 Provider 抽象接口设计、Bootstrap 文件加载顺序和优先级已决，见正文 5.3 与技术方案 4.2。
 

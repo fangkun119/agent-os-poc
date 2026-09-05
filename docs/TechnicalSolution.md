@@ -21,7 +21,7 @@ AgentOS 是一个 **Spring Boot 3.x** 单体应用，跑在 **JDK 21** 上，基
 需求文档定义了五大核心能力，下面统一列出 7 个关键决策的取舍。先用一张表速览，再逐条展开。
 
 | # | 决策 | 选择 | 理由 |
-|---|------|------|------|
+| --- | ------ | ------ | ------ |
 | 1 | ReAct 循环 实现方式 | 自实现，不依赖 Spring AI Agent 抽象 | 完全可控，保留未来定制循环行为的空间 |
 | 2 | Spring AI 使用边界 | 只用 Provider 抽象 + 协议转换 + `@Tool` schema 生成，禁用自动 tool 执行 | 避免 tool 被调两次，ReAct 循环完全由 AgentOS 自己掌控 |
 | 3 | 执行模型 | 同步阻塞 + Java 21 virtual thread | 直观简洁，无需响应式编程，单节点撑高并发 |
@@ -35,6 +35,7 @@ AgentOS 是一个 **Spring Boot 3.x** 单体应用，跑在 **JDK 21** 上，基
 **决策二：明确划清 Spring AI 的使用边界。** 这是最容易埋 bug 的地方，单列为一条决策。Spring AI 自身带有一套完整的 tool calling 自动执行机制（能自动执行 tool 再把结果回灌给模型）。
 
 AgentOS **不使用**这套自动执行，只用 Spring AI 的两件事：
+
 - 一是 Provider 抽象和向各家 LLM 的协议转换
 - 二是 `@Tool` 注解的 JSON Schema 生成
 
@@ -182,7 +183,11 @@ ReAct 是 **Reason** 加 **Act** 的简称。算法步骤：
 
 **消息累积。** 每次迭代都把 LLM 响应和 Tool 结果追加到 Session 的 messages 列表。Session 的对话历史包含完整的 LLM 调用链和 Tool 调用链，对外可查可审计。人推 Session 完整保留；钟推 Session 的 messages_json 按 `max_history_turns` 物理裁剪（见 9.2），完整审计链路在 `tool_invocations`/`llm_calls`。
 
+> **工具结果裁剪（未决）：** 核心阶段 Tool 返回结果不做体积上限、裁剪、淘汰、压缩、截断，完整进入 Session messages 并随每轮 prompt 进入 LLM 请求；大结果场景（如 `read_file` 大文件、HTTP 大响应体）会快速挤占上下文预算。是否增加裁剪（截断、过滤、摘要）已在需求文档 12 章未决事项挂账，核心阶段结束后结合实测决议。
+
 **上下文长度管理。** 核心阶段策略简单：保留 system prompt 和最近 N 轮对话，超出部分丢弃，N 由 Profile 配置默认 20 轮。扩展阶段引入总结压缩。
+
+> **触发源差异化（未决）：** 核心阶段三个触发源（人推 `chat`/`invoke`、钟推 `AgentScheduler`）共用同一套组装策略，不按触发源差异化。受 LLM 上下文窗口限制，是否按触发源调整组装内容（Bootstrap、长期记忆注入量、对话历史轮数）已在需求文档 12 章未决事项挂账，核心阶段结束后结合实测决议。
 
 **核心阶段不做：** Tool 调用并行（一次响应里多个 Tool 调用按顺序执行）、Agent 间任务委托、流式响应。这些放扩展阶段。
 
@@ -351,7 +356,7 @@ ActionType     = FILE_READ | FILE_WRITE | SHELL_COMMAND | HTTP_REQUEST | NOTIFY
 **扩展阶段按信号驱动升级，接口不变，只新增实现类：**
 
 | 阶段 | 实现 | 升级信号 |
-|------|------|------|
+| ------ | ------ | ------ |
 | 核心阶段 | `SandboxChecker`（应用层 Path/Pattern 白名单） | — |
 | 扩展阶段一 | 容器隔离（namespace + cgroups + seccomp），经 `execute_code` Runner（新接口）承载，`Sandbox.check` 继续作为前置校验保留 | 要跑相对不可信代码，或要做多租户 |
 | 扩展阶段二 | microVM（Firecracker / Kata / gVisor），经 `execute_code` Runner（新接口）承载，`Sandbox.check` 继续作为前置校验保留 | 要跑完全不可信代码，或要规模化多租户 |
@@ -536,7 +541,7 @@ Channel 是 Agent 对外的消息接入入口，主要解决"消息进来、响�
 ### 8.6 三种运行模式
 
 | 命令 | 模式 | 说明 |
-|------|------|------|
+| ------ | ------ | ------ |
 | `agentos chat` | 交互对话 | 本地 CLI 交互 |
 | `agentos serve` | Web Service | 启动 REST API 服务（定时任务随 `serve`/`gateway` 一起常驻调度） |
 | `agentos gateway` | 守护进程 | 核心阶段与 `serve` 同义（预挂 CLI Channel），多 Channel 挂载扩展阶段启用 |
@@ -608,7 +613,7 @@ session list
 **`sessions` 实体字段：**
 
 | 字段 | 说明 |
-|------|------|
+| ------ | ------ |
 | `session_id` | 主键，channel 加 user 加 profile 联合生成 |
 | `profile_name` | 关联 Profile |
 | `channel` | 接入 Channel |
@@ -622,7 +627,7 @@ session list
 **`scheduled_tasks` 实体字段（收尾阶段补齐）：**
 
 | 字段 | 说明 |
-|------|------|
+| ------ | ------ |
 | `task_id` | 主键，schedule 的 id（AGENT.md frontmatter `schedules` 里声明） |
 | `profile_name` | 归属 Profile |
 | `cron` | cron 表达式 |
@@ -638,7 +643,7 @@ session list
 **`task_executions` 实体字段（收尾阶段补齐）：**
 
 | 字段 | 说明 |
-|------|------|
+| ------ | ------ |
 | `id` | 主键，自增 |
 | `task_id` | 关联 `scheduled_tasks` |
 | `session_id` | 本次触发所用的钟推 Session |
@@ -658,7 +663,7 @@ session list
 AgentOS 是 Maven 多模块项目，由 9 个模块组成：
 
 | 模块名 | 职责 |
-|--------|------|
+| -------- | ------ |
 | `agentos-core` | 核心抽象和接口：`AgentOSTool` 接口、`Session`、`Profile`、`ContextLoader`、`AgentLoader`（扫 `.agentos/agents/`、`deriveProfile`）、`ReActLoop`、`PromptBuilder`、`ToolExecutor`、`AgentService`、`AgentScheduler`（定时触发）、`AgentLifecycleService`（扩展阶段，编排"定义一个 Agent（Agent 目录落盘 + 派生 Profile + 注册 + Scheduler）"） |
 | `agentos-provider` | 核心能力一：`ProviderService`、Function Calling 适配、Provider 配置（provider name 到 `ChatModel` 显式映射） |
 | `agentos-memory` | 核心能力三：`MemoryService` 统一门面、`LongTermMemoryStore` 后端接口（含 Markdown/SQLite/Mem0 三档实现）、`MemoryTools`（`save_memory` / `recall_memory`） |
