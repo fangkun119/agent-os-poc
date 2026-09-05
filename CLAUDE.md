@@ -10,7 +10,7 @@
   AiProgrammingGuide（实施方法）、IndustryResearch（背景，不做实施依据）
 - 文档仲裁：实现细节以 TechnicalSolution 为准；需求范围/验收标准以 DemandAnalysis（第 13 章）为准
   （完整表述与"不改标题"等 docs 目录约定见 docs/CLAUDE.md）
-- .specify/memory/constitution.md 宪章；specs/<feature>/ 存 spec·plan·tasks
+- .specify/memory/constitution.md 宪章；`specs/<feature>/` 存 spec·plan·tasks
 - 运行时工作区 .agentos/（agentos init 生成）：agents/ skills/ memory/MEMORY.md logs/
   mcp_servers.yaml agentos.db + 三个 Bootstrap（AGENTS.md/SOUL.md/USER.md）
 - draft/ 过程与评审产物（仓库现状，不进构建）
@@ -50,10 +50,18 @@
 - PromptBuilder 五部分（TS 4.2）中两条结构性约束：system prompt 末尾附当前日期时间（定时场景的"今天"全靠它）；Memory 段只放长期记忆，会话历史由对话历史段独立注入一次
 - SQLite：首建走 ddl-auto=update（其在 SQLite 上唯一可靠场景）；方言需显式引入 hibernate-community-dialects；WAL 在 JDBC 连接层设置（TS 9.2）
 
+## 工具使用指南
+
+- 搜索和网页访问、爬取，只有提示词中显式指定时才使用 firecrawl ，以避免消耗 firecrawl 数量有限的 credits
+
 ## 实施工作流
 
 - 实施走 Spec-Kit（主体开发用 /speckit-* 命令），增量开发直接用 Claude Code，见 AG 第 6 章；
   流程约束由 speckit skills 与 AG 自身承载，此处不复述
+
+## 沟通要点
+
+- 在聊天框中回复时：采用清晰的、短句为主的表达方式；要清楚，用户并没有深入参与你所执行的具体操作，对细节不像你那样清楚；你的介绍必须清晰易懂；特别是一些描述某些处理步骤或指代某些设计的名词，要使用容易理解的词语（或者括号简短的备注在后面）以便对方能懂。
 
 ---
 
