@@ -2,6 +2,8 @@
 draft/
 chat/
 .venv/
+.playwright-mcp/
+**/.DS_Store
 
 # IDE
 .idea/
