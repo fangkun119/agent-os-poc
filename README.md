@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="website/public/images/logo_and_name.svg" width="320" alt="AgentOS logo" />
+  <img src="docs/imgs/logo_and_name.svg" width="320" alt="AgentOS logo" />
 </p>
 
 <p align="center"><strong>企业能完全掌控的、Java 原生的、私有可审计的 Agent 统一底座。</strong></p>
@@ -78,13 +78,13 @@
 | 方式二：用任何语言写 MCP server | 轻代码 | ⭐⭐ | 接入企业自有系统（ERP、CRM） |
 | 方式三：写 Java `@Tool` Bean | 重代码 | ⭐ | 深度集成，性能最好 |
 
-![Plugin Tool 三档：零代码 AGENT.md 目录+MCP、轻代码自写 MCP server、重代码 @Tool Java Bean，门槛从低到高](website/public/images/docs-plugin-tool-tiers.svg)
+![Plugin Tool 三档：零代码 AGENT.md 目录+MCP、轻代码自写 MCP server、重代码 @Tool Java Bean，门槛从低到高](docs/imgs/docs-plugin-tool-tiers.svg)
 
 **三种触发源**：CLI 交互 / REST API / 定时任务（cron）。
 
 ## 架构（设计）
 
-![AgentOS 整体架构：接入层→Agent 层→引擎层→能力层→基础层](website/public/images/docs-architecture-light.svg)
+![AgentOS 整体架构：接入层→Agent 层→引擎层→能力层→基础层](docs/imgs/docs-architecture-light.svg)
 
 - **部署形态**：AgentOS 是**独立常驻进程**（单二进制），企业现有系统经 REST API 接入；Java 体系可通过方式三在进程内写 `@Tool` Bean 做深度集成。
 - **Maven 多模块，9 个模块，单二进制交付**（GraalVM Native Image 为扩展阶段引入的优化方向）。
