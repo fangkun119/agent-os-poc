@@ -1,4 +1,4 @@
-# docs/ 目录约定
+# docs/design/ 目录约定
 
 本目录四份文档（DemandAnalysis / TechnicalSolution / AiProgrammingGuide / IndustryResearch）互有章节号锚点引用，修订时遵守以下项目约定：
 

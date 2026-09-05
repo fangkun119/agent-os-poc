@@ -16,18 +16,18 @@
   <version>0.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>AgentOS</name>
-  <description>基于 Java 的企业级 Agent OS 运行时内核。九模块清单以 docs/TechnicalSolution.md 第 10 章为准。</description>
+  <description>基于 Java 的企业级 Agent OS 运行时内核。九模块清单以 docs/design/TechnicalSolution.md 第 10 章为准。</description>
 
   <modules>
-    <module>agentos-core</module>
-    <module>agentos-provider</module>
-    <module>agentos-memory</module>
-    <module>agentos-tool</module>
-    <module>agentos-channel-cli</module>
-    <module>agentos-web</module>
-    <module>agentos-storage</module>
-    <module>agentos-cli</module>
-    <module>agentos-boot</module>
+    <module>agentos/agentos-core</module>
+    <module>agentos/agentos-provider</module>
+    <module>agentos/agentos-memory</module>
+    <module>agentos/agentos-tool</module>
+    <module>agentos/agentos-channel-cli</module>
+    <module>agentos/agentos-web</module>
+    <module>agentos/agentos-storage</module>
+    <module>agentos/agentos-cli</module>
+    <module>agentos/agentos-boot</module>
   </modules>
 
   <properties>

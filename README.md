@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/imgs/logo_and_name.svg" width="320" alt="AgentOS logo" />
+  <img src="website/public/logo.svg" width="320" alt="AgentOS logo" />
 </p>
 
 <p align="center"><strong>企业能完全掌控的、Java 原生的、私有可审计的 Agent 统一底座。</strong></p>
@@ -20,7 +20,7 @@
 - **3 分钟**：+ [五大核心能力](#五大核心能力设计目标) → [架构](#架构设计) → [Quickstart（预期行为）](#quickstart预期行为开发中)
 - **10 分钟**：+ [与 Dify / Spring AI 的关系](#与-dify--spring-ai-的关系边界声明) → [安全设计原则](#安全设计原则) → [Roadmap](#roadmap) → [文档导航](#文档导航) → [Contributing](#contributing)
 
-（术语说明：本文中的 **Agent / Profile / Provider / Tool / Skill / Channel / Workspace** 等概念，以[需求文档术语表](docs/DemandAnalysis.md)的定义为准。）
+（术语说明：本文中的 **Agent / Profile / Provider / Tool / Skill / Channel / Workspace** 等概念，以[需求文档术语表](docs/design/DemandAnalysis.md)的定义为准。）
 
 ---
 
@@ -30,17 +30,17 @@
 
 为什么现在做这件事，两个原因：
 
-1. **严监管企业的刚性需求。** 银行、证券、政企要跑 Agent，得过安全审查、要全程可审计、要私有部署。现有开源 Agent OS 偏个人到小团队定位，企业级治理不是它们的重心（详见[业界调研](docs/IndustryResearch.md)）。
+1. **严监管企业的刚性需求。** 银行、证券、政企要跑 Agent，得过安全审查、要全程可审计、要私有部署。现有开源 Agent OS 偏个人到小团队定位，企业级治理不是它们的重心（详见[业界调研](docs/design/IndustryResearch.md)）。
 2. **Java 生态在 Agent OS 层的缺位。** Java 是企业后端的事实标准，但“装好就跑的 Agent OS”这一层在 Java 生态是空的。Java 体系的企业今天只能用 Node.js 或 Python 的 Agent OS，再在技术栈接缝处写大量胶水。AgentOS 补的就是这个缺位，并且直接站在 Spring AI 与整套 JVM 运维工具链上。
 
 ## 为什么不是 OpenClaw / Hermes
 
-两句话讲清定位（详见[业界调研](docs/IndustryResearch.md)）：
+两句话讲清定位（详见[业界调研](docs/design/IndustryResearch.md)）：
 
 1. 如果你的 Agent 要跑在银行、政企的生产环境里，它得过安全审查、要全程可审计、要融进现有 Java 体系——OpenClaw（Node.js，个人向）和 Hermes（Python，小团队向）都填不了这个位置。
 2. AgentOS 与两者是同类不同定位：不比社区活力和可玩性，比私有部署、可审计和技术栈对齐——而完整的多租户/SSO/审计治理层在扩展阶段交付，我们不提前承诺。
 
-> **名称说明**：OpenClaw 与 Hermes 为本文对两类真实开源项目的化名指代（社区型 / 工程型），代表性对标项目与完整对比见[业界调研](docs/IndustryResearch.md)。两者在各自定位上的优势（社区活力与能力丰富度 / 工程健壮性）都是真实的，本文只做“定位不同”的陈述。
+> **名称说明**：OpenClaw 与 Hermes 为本文对两类真实开源项目的化名指代（社区型 / 工程型），代表性对标项目与完整对比见[业界调研](docs/design/IndustryResearch.md)。两者在各自定位上的优势（社区活力与能力丰富度 / 工程健壮性）都是真实的，本文只做“定位不同”的陈述。
 
 | 维度 | OpenClaw | Hermes Agent | AgentOS |
 |---|---|---|---|
@@ -78,13 +78,13 @@
 | 方式二：用任何语言写 MCP server | 轻代码 | ⭐⭐ | 接入企业自有系统（ERP、CRM） |
 | 方式三：写 Java `@Tool` Bean | 重代码 | ⭐ | 深度集成，性能最好 |
 
-![Plugin Tool 三档：零代码 AGENT.md 目录+MCP、轻代码自写 MCP server、重代码 @Tool Java Bean，门槛从低到高](docs/imgs/docs-plugin-tool-tiers.svg)
+![Plugin Tool 三档：零代码 AGENT.md 目录+MCP、轻代码自写 MCP server、重代码 @Tool Java Bean，门槛从低到高](docs/design/imgs/docs-plugin-tool-tiers.svg)
 
 **三种触发源**：CLI 交互 / REST API / 定时任务（cron）。
 
 ## 架构（设计）
 
-![AgentOS 整体架构：接入层→Agent 层→引擎层→能力层→基础层](docs/imgs/docs-architecture-light.svg)
+![AgentOS 整体架构：接入层→Agent 层→引擎层→能力层→基础层](docs/design/imgs/docs-architecture-light.svg)
 
 - **部署形态**：AgentOS 是**独立常驻进程**（单二进制），企业现有系统经 REST API 接入；Java 体系可通过方式三在进程内写 `@Tool` Bean 做深度集成。
 - **Maven 多模块，9 个模块，单二进制交付**（GraalVM Native Image 为扩展阶段引入的优化方向）。
@@ -92,7 +92,7 @@
 - 审计相关的 `tool_invocations` / `llm_calls` 两张表 **day one 写入**，让“可审计”的数据地基从第一天就立起来。
 - Sandbox 策略接口先行：核心阶段为应用层白名单（`SandboxChecker`），容器 / microVM 隔离按信号驱动在扩展阶段演进。
 
-详见[技术方案](docs/TechnicalSolution.md)。
+详见[技术方案](docs/design/TechnicalSolution.md)。
 
 ## Quickstart（预期行为，开发中）
 
@@ -122,20 +122,20 @@ agentos serve              # 预期：启动 Web Service，暴露 18 个 REST �
 
 **当前你能做的**（在可运行版本交付前）：
 
-- 阅读 [docs/](docs/) 四份设计文档，提出评审意见（不一致、过度承诺、遗漏场景都是宝贵输入）；
+- 阅读 [docs/](docs/design/) 四份设计文档，提出评审意见（不一致、过度承诺、遗漏场景都是宝贵输入）；
 - 通过 [Issue 列表](../../issues)（仓库公开后可用）参与能力边界与优先级的讨论；
 - Watch 本仓库，获取首个可运行版本发布的通知。
 
 ## 文档导航
 
-[docs/](docs/) 是本项目的权威设计来源：
+[docs/](docs/design/) 是本项目的权威设计来源：
 
 | 文档 | 回答的问题 | 一句话 |
 |---|---|---|
-| [DemandAnalysis.md](docs/DemandAnalysis.md) | What | 需求文档：目标用户、场景、五大能力与功能需求 |
-| [TechnicalSolution.md](docs/TechnicalSolution.md) | How | 技术方案：架构、模块、关键技术决策 |
-| [AiProgrammingGuide.md](docs/AiProgrammingGuide.md) | 实施 | AI 辅助编程指南：Spec-Kit 流程与四周开发计划 |
-| [IndustryResearch.md](docs/IndustryResearch.md) | 背景与定位 | 业界调研：Agent OS 格局、Java 生态缺位、定位与路线 |
+| [DemandAnalysis.md](docs/design/DemandAnalysis.md) | What | 需求文档：目标用户、场景、五大能力与功能需求 |
+| [TechnicalSolution.md](docs/design/TechnicalSolution.md) | How | 技术方案：架构、模块、关键技术决策 |
+| [AiProgrammingGuide.md](docs/design/AiProgrammingGuide.md) | 实施 | AI 辅助编程指南：Spec-Kit 流程与四周开发计划 |
+| [IndustryResearch.md](docs/design/IndustryResearch.md) | 背景与定位 | 业界调研：Agent OS 格局、Java 生态缺位、定位与路线 |
 
 **新贡献者阅读顺序建议**：IndustryResearch → DemandAnalysis → TechnicalSolution → AiProgrammingGuide。
 
@@ -147,7 +147,7 @@ agentos serve              # 预期：启动 Web Service，暴露 18 个 REST �
 | **扩展阶段** | 多租户 RBAC、SSO、完整审计查询、Tool Policy、IM Channel（企微/飞书/钉钉）、情景记忆、流式 SSE、Prometheus metrics、容器化沙箱、GraalVM Native Image、Memory 写入/清理等扩展端点 | ⏳ 规划中 |
 | **远期** | 单机 → 底座分布式部署（多实例 + 外置状态，Spring Cloud 生态）→ 分布式 Agent 协作（跨节点互发现、互委托） | ⏳ 愿景 |
 
-核心阶段细分进度以 [AiProgrammingGuide](docs/AiProgrammingGuide.md) 的任务清单为准。
+核心阶段细分进度以 [AiProgrammingGuide](docs/design/AiProgrammingGuide.md) 的任务清单为准。
 
 ## Contributing
 

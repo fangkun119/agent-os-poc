@@ -8,7 +8,7 @@
     <groupId>com.agentos</groupId>
     <artifactId>agentos</artifactId>
     <version>0.1.0-SNAPSHOT</version>
-    <relativePath>../pom.xml</relativePath>
+    <relativePath>../../pom.xml</relativePath>
   </parent>
 
   <artifactId>agentos-storage</artifactId>

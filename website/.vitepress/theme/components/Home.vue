@@ -28,7 +28,7 @@ const docRefs = (refs) =>
     }[key]
     return {
       label: ref,
-      href: `${REPO_URL}/blob/main/docs/${doc.file}`,
+      href: `${REPO_URL}/blob/main/docs/design/${doc.file}`,
       title: `${doc.title}${doc.file} §${num.join(' ')}`,
     }
   })

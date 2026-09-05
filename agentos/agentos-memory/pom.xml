@@ -8,12 +8,12 @@
     <groupId>com.agentos</groupId>
     <artifactId>agentos</artifactId>
     <version>0.1.0-SNAPSHOT</version>
-    <relativePath>../pom.xml</relativePath>
+    <relativePath>../../pom.xml</relativePath>
   </parent>
 
-  <artifactId>agentos-provider</artifactId>
-  <name>agentos-provider</name>
-  <description>核心能力一（TS 10）：ProviderService、Function Calling 适配、Provider 配置（provider name 到 ChatModel 显式映射）。Spring AI / Spring AI Alibaba 依赖按 TS 13 第一周 spike 结论引入，此处不预引入。</description>
+  <artifactId>agentos-memory</artifactId>
+  <name>agentos-memory</name>
+  <description>核心能力三（TS 10）：MemoryService 统一门面、LongTermMemoryStore 后端接口（Markdown 默认档核心阶段交付，SQLite/Mem0 档扩展阶段补齐）、save_memory / recall_memory 内置 Tool</description>
 
   <dependencies>
     <dependency>

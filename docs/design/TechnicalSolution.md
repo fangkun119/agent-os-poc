@@ -660,7 +660,7 @@ session list
 
 ## 10. 项目工程结构
 
-AgentOS 是 Maven 多模块项目，由 9 个模块组成：
+AgentOS 是 Maven 多模块项目，由 9 个模块组成（模块源码目录位于仓库 `agentos/` 下；聚合 pom 与 Maven wrapper 留在仓库根，构建命令仍在仓库根执行）：
 
 | 模块名 | 职责 |
 | -------- | ------ |

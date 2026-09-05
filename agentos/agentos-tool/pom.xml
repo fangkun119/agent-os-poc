@@ -8,22 +8,18 @@
     <groupId>com.agentos</groupId>
     <artifactId>agentos</artifactId>
     <version>0.1.0-SNAPSHOT</version>
-    <relativePath>../pom.xml</relativePath>
+    <relativePath>../../pom.xml</relativePath>
   </parent>
 
-  <artifactId>agentos-web</artifactId>
-  <name>agentos-web</name>
-  <description>核心能力五（TS 10）：WebServer、8 个 ApiController（NotifyChannel/Schedule 随第四周收尾交付）、GlobalExceptionHandler、OpenAPI 文档（springdoc 第三周引入）。默认端口 8080，Java 21 virtual thread（TS 7.1）。</description>
+  <artifactId>agentos-tool</artifactId>
+  <name>agentos-tool</name>
+  <description>核心能力四（TS 10，三合一模块）：内置 Tool（File/Shell/Http/Notify）、McpClientService、McpToolAdapter、ToolRegistry、Sandbox 接口 + SandboxChecker 实现、NotifyChannelAdapter 接口 + WebhookNotifyAdapter 实现</description>
 
   <dependencies>
     <dependency>
       <groupId>com.agentos</groupId>
       <artifactId>agentos-core</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
   </dependencies>
 </project>

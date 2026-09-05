@@ -102,8 +102,8 @@
 
 ### 2.5 内容源文件说明
 
-docs/ 权威文档（DA/TS/AG/IR）为官网内容唯一事实来源；其引用的配图已解耦至 `docs/imgs/`
-（docs/TechnicalSolution.md 以相对路径 `imgs/*.svg` 引用）。`website/public/images/` 仅存站内资产。
+docs/design/ 权威文档（DA/TS/AG/IR）为官网内容唯一事实来源；其引用的配图已解耦至 `docs/design/imgs/`
+（docs/design/TechnicalSolution.md 以相对路径 `imgs/*.svg` 引用）。`website/public/images/` 仅存站内资产。
 `website/CLAUDE.md`（站点开发规范）与本文经 `srcExclude` 排除、不作为站点页面发布。
 
 ---
@@ -324,7 +324,7 @@ website/
   能力卡删「不重启」过承诺、标题「无限 Agent」改「多 Agent 并存」；
   架构图 PromptBuilder 副标补齐五部分口径；theme 入口换 theme-without-fonts 去除死字体资产；
   `chat --profile` 经 DA 5.11 核实为有出处（DA 484/638），保留。
-- 2026-08-30：docs 与 websites 图片解耦后（配图移 docs/imgs/），本文曾被移入 docs/docs/ 并随该
+- 2026-08-30：docs 与 websites 图片解耦后（配图移 docs/design/imgs/），本文曾被移入 docs/docs/ 并随该
   误创建目录一并丢失；现按会话内完整编辑历史在 website/docs/plan.md 重建为最终状态，
   §2.5 / §5 / §6 中已失效的「website/docs 快照」描述同步更新为解耦后现状。
 - 2026-08-31：视觉刷新立项并实施完成（v3「机房 LED」色板——初选琥珀荧光同日改选——+

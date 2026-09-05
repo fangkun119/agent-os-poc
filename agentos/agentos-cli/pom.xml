@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.agentos</groupId>
+    <artifactId>agentos</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>agentos-cli</artifactId>
+  <name>agentos-cli</name>
+  <description>命令行入口（TS 10）：Picocli 主入口、12 个子命令（init/status/chat/serve/gateway/profile×4/provider/tool/session）、ConfigLoader（${ENV_VAR} 占位解析，TS 8.8）</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.agentos</groupId>
+      <artifactId>agentos-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.agentos</groupId>
+      <artifactId>agentos-channel-cli</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>info.picocli</groupId>
+      <artifactId>picocli</artifactId>
+      <version>${picocli.version}</version>
+    </dependency>
+  </dependencies>
+</project>

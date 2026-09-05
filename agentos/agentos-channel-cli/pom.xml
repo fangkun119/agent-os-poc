@@ -8,12 +8,12 @@
     <groupId>com.agentos</groupId>
     <artifactId>agentos</artifactId>
     <version>0.1.0-SNAPSHOT</version>
-    <relativePath>../pom.xml</relativePath>
+    <relativePath>../../pom.xml</relativePath>
   </parent>
 
-  <artifactId>agentos-tool</artifactId>
-  <name>agentos-tool</name>
-  <description>核心能力四（TS 10，三合一模块）：内置 Tool（File/Shell/Http/Notify）、McpClientService、McpToolAdapter、ToolRegistry、Sandbox 接口 + SandboxChecker 实现、NotifyChannelAdapter 接口 + WebhookNotifyAdapter 实现</description>
+  <artifactId>agentos-channel-cli</artifactId>
+  <name>agentos-channel-cli</name>
+  <description>CLI Channel（TS 10）：CliChannel、agentos chat 命令实现。核心阶段与 AgentScheduler 同进程直调 AgentService（不经 Web API，TS 10）。</description>
 
   <dependencies>
     <dependency>

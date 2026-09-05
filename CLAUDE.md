@@ -5,12 +5,13 @@
 
 ## 仓库地图
 
-- docs/ 权威文档：DemandAnalysis（需求 What，验收标准以第 13 章为唯一依据）、
+- docs/design/ 权威文档：DemandAnalysis（需求 What，验收标准以第 13 章为唯一依据）、
   TechnicalSolution（技术方案 How，模块/接口/数据模型权威定义）、
   AiProgrammingGuide（实施方法）、IndustryResearch（背景，不做实施依据）
 - 文档仲裁：实现细节以 TechnicalSolution 为准；需求范围/验收标准以 DemandAnalysis（第 13 章）为准
-  （完整表述与"不改标题"等 docs 目录约定见 docs/CLAUDE.md）
+  （完整表述与"不改标题"等目录约定见 docs/design/CLAUDE.md）
 - .specify/memory/constitution.md 宪章；`specs/<feature>/` 存 spec·plan·tasks
+- agentos/ 九个 Maven 模块源码目录（聚合 pom 与 mvnw 在仓库根，mvn 命令仍在仓库根执行）
 - 运行时工作区 .agentos/（agentos init 生成）：agents/ skills/ memory/MEMORY.md logs/
   mcp_servers.yaml agentos.db + 三个 Bootstrap（AGENTS.md/SOUL.md/USER.md）
 - draft/ 过程与评审产物（仓库现状，不进构建）
@@ -19,7 +20,7 @@
 
 ## 非协商原则（.specify/memory/constitution.md 的压缩复述，冲突时以 constitution.md 为准）
 
-1. JDK 21 + Spring Boot 3.x 单体应用，Maven 多模块、单二进制部署（9 模块：agentos-core/
+1. JDK 21 + Spring Boot 3.x 单体应用，Maven 多模块、单二进制部署（9 模块，源码在 agentos/ 目录下：agentos-core/
    provider/memory/tool/channel-cli/web/storage/cli/boot，模块清单以 TS 第 10 章为准）
 2. 五大核心能力优先：核心阶段交付运行时内核，企业级治理层放扩展阶段
 3. 自实现 ReAct 循环，不依赖 Spring AI 的 Agent 抽象
