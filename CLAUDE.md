@@ -16,6 +16,7 @@
   mcp_servers.yaml agentos.db + 三个 Bootstrap（AGENTS.md/SOUL.md/USER.md）
 - draft/ 过程与评审产物（仓库现状，不进构建）
 - 快查指针：REST 端点清单见 TS 7.2；CLI 命令见 TS 8.7
+- Spike 结论指针：W1 实现 Provider / ReAct 前，先读 `spike/007-react-loop/README.md`（D1-D4 实测结论：parent 保持 3.5.16、依赖坐标清单、手动循环标准路径、Provider 显式映射样例）
 - 阅读注记：TS 中"千级/几千并发"均为按 DA 8.1 目标（100 并发 Session）的 10 倍余量论证，非承诺值
 
 ## 非协商原则（.specify/memory/constitution.md 的压缩复述，冲突时以 constitution.md 为准）
@@ -37,7 +38,22 @@
 
 - 超时禁硬编码：llm/tool/total 三档分步预算，application.yaml 默认 + Profile settings.timeout 覆盖
 - Memory 经 MemoryService 三层统一门面，不得简化为与 Session 合并
-- 敏感凭证经环境变量注入（${ENV_VAR} 占位），不明文写配置
+- 敏感凭证经环境变量注入（${ENV_VAR} 占位），不明文写配置；API Key 仓库零落盘、日志与命令行最多 5 位前缀（详见「模型接入环境变量」一节）
+
+## 模型接入环境变量（API Key 红线）
+
+- 加载：`source ~/.agent-os-poc/script/agent-os-env.sh [vendor]`（无参=加载全部；必须 source 不能执行）。
+  脚本在仓库外、权限 600，是密钥在磁盘上的唯一落点；新增 vendor 在脚本 vendor 注册区加一块配置 + case 加一个分支
+- 导出变量与代码读取（application.yaml 只写 ${环境变量名} 占位符，禁止明文）：
+  OpenAI 兼容腿：`OPENAI_API_KEY` / `OPENAI_DEFAULT_MODEL` / `OPENAI_MODEL_LIST` ↔ `spring.ai.openai.api-key` / `.chat.options.model`（DEFAULT=缺省模型；LIST=可用模型清单，逗号分隔，仅用于校验与发现——运行时切换模型走每次调用的 options 参数，不走环境变量）。
+  ⚠️ `OPENAI_BASE_URL`（值带 `/v1`，OpenAI SDK 惯例）**不要**直接映射给 `spring.ai.openai.base-url`——Spring AI 的 OpenAiApi 会自己追加 `/v1/chat/completions`，直接映射会产生 `/v1/v1` 双写 404。base-url 非敏感：Spring AI 侧直接写 `https://api.minimax.cn`（不带 `/v1`），只有密钥必须走环境变量
+  Anthropic 兼容腿：`ANTHROPIC_API_KEY` / `ANTHROPIC_BASE_URL` / `ANTHROPIC_DEFAULT_MODEL` / `ANTHROPIC_MODEL_LIST` ↔ `spring.ai.anthropic.api-key` / `.base-url` / `.chat.options.model`
+- Provider 命名规则：环境变量按 Provider 命名，一个 Provider 一组四元组（`*_API_KEY` / `*_BASE_URL` / `*_DEFAULT_MODEL` / `*_MODEL_LIST`）。现有 Provider：`OPENAI`、`ANTHROPIC`、`MINIMAX` 并列、互不覆盖；`OPENAI_*` / `ANTHROPIC_*` 的取值可整体替换——当前填的是 MiniMax 兼容端点（只有 MiniMax 账号），有原生账号后直接改脚本注册区的值即可
+- 当前只有 MiniMax 账号：OPENAI / ANTHROPIC 两个 Provider 的配置值取自 MiniMax 双协议兼容端点；模型 MiniMax-M2.7（OPENAI Provider）/ MiniMax-M3（ANTHROPIC Provider），均已官方核验支持工具调用
+- **密钥红线（目的：防泄密——防止密钥被提交进代码库、或写进日志外漏）**：
+  API Key 只能从环境变量读取（未来可能迁移到专门存储秘钥的基础设施）；
+  不可以写入代码仓库——代码、配置、各类文本都不可以；
+  程序运行时不可以完整或大段打印到日志，也不可以完整写到命令行——最多打印前 5 位前缀用于 debug
 
 ## 架构关键事实
 

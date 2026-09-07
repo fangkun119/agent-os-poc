@@ -4,6 +4,9 @@ chat/
 .venv/
 .playwright-mcp/
 **/.DS_Store
+docs/**/workspace/
+**/logs/
+**/log/
 
 # AgentOS runtime workspace (agentos init 产物：agents/ skills/ memory/ logs/ agentos.db)
 .agentos/

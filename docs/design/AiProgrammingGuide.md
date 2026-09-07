@@ -233,7 +233,7 @@ docs/
 | 环境搭建类 | Maven 多模块骨架 9 个模块、Spring Boot 启动配置、Spring AI Alibaba 依赖 |
 | 核心抽象类 | `AgentOSTool` 接口、`Profile` 数据结构、`Message` 数据结构 |
 | Provider 实现类 | `ProviderService` 实现、provider name 到 `ChatModel` 的显式映射、Function Calling 适配 |
-| 配置类 | `application.yaml` 配置至少跑通 DeepSeek 或 Kimi，API key 经环境变量占位注入（`ConfigLoader` 统一加载在 US-5 交付，本阶段用 Spring 环境变量解析） |
+| 配置类 | `application.yaml` 配置至少跑通一个 Provider（当前密钥仅 MiniMax：OpenAI 兼容腿 MiniMax-M2.7 / Anthropic 兼容腿 MiniMax-M3；DeepSeek / Kimi 待账号到位后按新增 Provider 流程扩展），API key 经 `${环境变量名}` 占位注入（`ConfigLoader` 统一加载在 US-5 交付，本阶段用 Spring 环境变量解析；变量经 `source ~/.agent-os-poc/script/agent-os-env.sh` 加载，Provider 命名与密钥红线详见 docs/design/detail-supplement/001-model-config-export.md；依赖坐标与接线已实测，结论（D2/D4）见 spike/007-react-loop/README.md） |
 | 测试类 | 该能力面的单元测试 + 端到端 Demo 用例（每个 task 的完成标准含测试通过） |
 
 > **关键注意**：`ProviderService` 不能靠"扫描容器里所有 `ChatModel`"来区分 Provider，多 Provider 并存时 Bean 类型相同会有歧义，必须维护 provider name 到 `ChatModel` 的显式映射（技术方案 3.2）。AI agent 很容易写成类型扫描，要在 task 里点明。另：US-1 第一个 task 前安排 30 分钟 Spike，验证当前锁定版本中多 `ChatModel` Bean 注入与按 name 选择的推荐写法，结论回写技术方案 3.2。
@@ -241,7 +241,7 @@ docs/
 **Spike 执行清单**（30 分钟时间盒，超时停在当前发现、未决问题记 task，不恋战）：
 
 1. **锁版本**（5 min）：确定 Spring AI Alibaba 稳定版与配套 Spring AI 版本，写入 spike 工程 pom——结论同时作为 US-1 依赖清单输入（版本锁定原则见 7.1）
-2. **搭最小工程**（10 min）：独立单模块 Maven 工程（如 `spike/chatmodel-mapping/`，不进 9 模块主干），配两个 Provider（deepseek + 任一 OpenAI 兼容），API key 走环境变量。**在单独的 spike 分支上进行**（如 `spike/chatmodel-mapping`），避免污染开发分支
+2. **搭最小工程**（10 min）：独立单模块 Maven 工程（如 `spike/chatmodel-mapping/`，不进 9 模块主干），配两个 Provider——当前密钥仅 MiniMax：用 `MINIMAX_*` 与 `OPENAI_*` 两组 Provider 配置各起一个 OpenAI 兼容连接，两个 Bean 同型不同名，不影响第 3 步「不能类型扫描」的实证；变量经 `source ~/.agent-os-poc/script/agent-os-env.sh` 加载（密钥红线与 Provider 命名详见 docs/design/detail-supplement/001-model-config-export.md）。**在单独的 spike 分支上进行**（如 `spike/chatmodel-mapping`），避免污染开发分支
 3. **启动观察**（3 min）：启动时打印容器内全部 `ChatModel` Bean 的 name 与类型——实证"为何不能类型扫描"
 4. **按名调用**（10 min）：按 name 取 Bean，经 `ChatClientBuilderConfigurer` 构建 client（官方警告避免裸 `ChatClient.builder(chatModel)`，会绕过 observability 与 customizer），发一次真实调用（最便宜模型）；API key 不可得时本步降级为"待 key 就绪补验"，步骤 3 不受影响
 5. **记录结论**（2 min）：回答三问——多 Bean 如何注册（Bean name/类型）、按 name 取用的推荐写法（`@Qualifier` / 自建映射表 / `ObjectProvider`）、`ChatClient` 正确构建方式
@@ -285,7 +285,7 @@ US-1 + US-2 的 tasks 生成后跑 `/speckit.analyze` 检查 spec/plan/tasks 跨
 
 **验收 Demo 一**：每日天气（US-1 + US-2 阶段先以"人推"验证同一链路）
 
-对应需求文档 Demo 一。US-2 完成时通过 `agentos chat` 输入"查一下北京天气并告诉我穿什么"，Agent 通过 ReAct 循环调用 HTTP Tool 拉天气 JSON，根据数据回复穿搭建议，完整对话日志正确累积到 Session，至少跑通一个 Provider（DeepSeek 或 Kimi）。定时触发（`AgentScheduler`）和 `notify` 推送在 US-5 收尾阶段补齐后，以"钟推"完整跑通需求文档 Demo 一的验收标准（到点自动跑完整 ReAct 循环、推送、Session 可查）。
+对应需求文档 Demo 一。US-2 完成时通过 `agentos chat` 输入"查一下北京天气并告诉我穿什么"，Agent 通过 ReAct 循环调用 HTTP Tool 拉天气 JSON，根据数据回复穿搭建议，完整对话日志正确累积到 Session，至少跑通一个 Provider（当前密钥仅 MiniMax 可用：OpenAI 兼容腿跑 MiniMax-M2.7、Anthropic 兼容腿跑 MiniMax-M3；DeepSeek / Kimi 待账号到位后按新增 Provider 流程扩展，详见 docs/design/detail-supplement/001-model-config-export.md）。定时触发（`AgentScheduler`）和 `notify` 推送在 US-5 收尾阶段补齐后，以"钟推"完整跑通需求文档 Demo 一的验收标准（到点自动跑完整 ReAct 循环、推送、Session 可查）。
 
 ---
 
@@ -374,7 +374,7 @@ US-4 的 tasks 生成后跑 `/speckit.analyze`。
 | 8 个 ApiController 类 | Session + Agent + Profile + Memory + Tool + System + NotifyChannel + Schedule（后两个随收尾补齐），每个 Controller 一组端点，**可并行实现** |
 | 基础 10 个 REST 端点 + 收尾追加 8 个 | 基础：会话管理 4 个、Agent 调用 1 个、Profile/Memory/Tool 列表 3 个、health/info 2 个；收尾追加 8 个（notify-channels CRUD 4 个、schedules 管理 4 个） |
 | 持久化升级类 | Session 从内存版升级到 SQLite，`SessionRepository`，跨重启恢复，以及 **`tool_invocations` 和 `llm_calls` 审计表的写入** |
-| 配置与上下文类 | `ConfigLoader` 配置密钥加载，`ContextLoader` 的 Bootstrap 文件加载补全并跟 `PromptBuilder` 集成 |
+| 配置与上下文类 | `ConfigLoader` 配置密钥加载（密钥只从环境变量读取、yaml 只写 `${环境变量名}` 占位符、日志与命令行最多输出前 5 位前缀，详见 docs/design/detail-supplement/001-model-config-export.md），`ContextLoader` 的 Bootstrap 文件加载补全并跟 `PromptBuilder` 集成 |
 | CLI 完整版 | Picocli 12 个命令全部实现 |
 | 工程化类 | Logback + SLF4J 结构化日志 + 错误处理 |
 | 定时任务与通知类（收尾补齐） | `AgentScheduler` 第三触发源（Profile `schedules` 字段驱动）、`NotifyTools` 的 `notify` 内置 Tool、`NotifyChannelAdapter` 接口 + `WebhookNotifyAdapter` 实现与 `notify_channels` 注册；`SandboxChecker` 补 `checkNotifyUrl`（NOTIFY，独立 `notify.allowed_domains`）；`scheduled_tasks`/`task_executions` 落库 + `ScheduledTaskStore` 契约（core）/JPA 实现（storage），见技术方案 8.5/9.2；另含 scripts/ 最小链路手工演示（`AGENT.md + scripts/` 形态验证，见技术方案 12.3） |

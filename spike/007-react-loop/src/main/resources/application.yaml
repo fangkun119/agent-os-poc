@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: react-loop-spike
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:placeholder}        # 密钥：环境变量，E1/E2 离线项可用占位默认值
+      base-url: https://api.minimax.cn              # 非敏感：明文 yaml，不带 /v1（定稿 5.3）
+      chat:
+        options:
+          model: ${OPENAI_DEFAULT_MODEL:MiniMax-M2.7}
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:placeholder}
+      base-url: https://api.minimaxi.com/anthropic  # 属性名未获文档确认，E8 实测（002 §6 开放项）
+      chat:
+        options:
+          model: ${ANTHROPIC_DEFAULT_MODEL:MiniMax-M3}

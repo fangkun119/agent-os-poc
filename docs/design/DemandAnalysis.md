@@ -249,7 +249,7 @@ identity:
 
 provider:
   name: string                  # Provider 名称（deepseek/qwen/kimi 等）
-  model: string                 # 模型名
+  model: string                 # 模型名（按三级选择：Provider 缺省来自环境变量 *_DEFAULT_MODEL → Agent 级 frontmatter 覆盖 → 运行时经每次调用的 options 动态路由；运行时切换模型不走环境变量，详见 docs/design/detail-supplement/001-model-config-export.md）
   temperature: float            # 温度参数（可选）
 
 tools:
@@ -301,6 +301,8 @@ Provider 是 LLM 调用的统一抽象。所有 LLM 调用通过 Provider 接口
 - `模型名`
 - `API key`
 - `可选的 base URL`
+
+> 注：API key 一律经环境变量注入，密钥只放仓库外脚本 `~/.agent-os-poc/script/agent-os-env.sh`，变量名按 Provider 命名——`OPENAI_*` / `ANTHROPIC_*` / `MINIMAX_*` 各一组四元组、彼此并列；base URL 非敏感、可直接写配置文件，但 Spring AI 的 OpenAI 腿 base-url 不带 `/v1`（框架会自动追加 `/v1/chat/completions`，带了会 `/v1/v1` 双写 404）。变量 schema 与 Spring AI 属性对照详见 docs/design/detail-supplement/001-model-config-export.md
 
 **核心阶段不做**：fallback 和 hedge racing。Provider 故障时直接报错给 Agent；成本透明只做基础版（每次 LLM 调用记录 token 使用量、Provider、模型落到 SQLite 审计表 llm_calls，日志仅辅助）。
 
@@ -498,7 +500,8 @@ Session 是用户和 Agent 一次对话的上下文容器，包含起止时间�
 
 核心阶段做基础版：
 
-- 敏感配置通过**环境变量**注入或独立的本地配置文件加载，不明文写死在 `AGENT.md` frontmatter 里
+- 敏感配置（LLM API key 等密钥）只通过**环境变量**注入，禁止从配置文件读取，也不明文写死在 `AGENT.md` frontmatter 或 application.yaml 里
+- 密钥统一放仓库外脚本 `~/.agent-os-poc/script/agent-os-env.sh`（source 加载、权限 600），git 仓库内任何文件只允许写 `${环境变量名}` 占位符；日志与命令行最多输出前 5 位前缀（环境变量命名与加载方法详见 docs/design/detail-supplement/001-model-config-export.md）
 - Profile 里用 `${ENV_VAR}` 占位，加载时从环境变量解析
 - 配置加载时做基础校验（必填项、格式），缺失或非法时给出清晰报错
 
@@ -763,7 +766,7 @@ AgentOS 核心功能的实施按 **4 周节奏**组织，每周 3 小时，合�
 
 **第一周**（3 小时）：对接 LLM + ReAct 循环
 - `agentos init` 工作区初始化、`AGENT.md` frontmatter 解析
-- Provider 抽象（基于 Spring AI Alibaba，先跑通 DeepSeek 或 Kimi）
+- Provider 抽象（基于 Spring AI Alibaba，先跑通 MiniMax：当前唯一已配密钥的供应商，经其 OpenAI 兼容端点接入，环境变量与 Spring AI 接线详见 docs/design/detail-supplement/001-model-config-export.md；DeepSeek/Kimi 待密钥就绪后按该文档的新增 Provider 流程扩展。接入已由 spike 实测验证，结论见 spike/007-react-loop/README.md）
 - ReAct 循环（核心循环约数十行 Java，含 LLM 调用、Tool 调用解析、消息累积）
 - 一个基础内置 Tool（HTTP）、CLI Channel
 - Session 管理（内存版，第三周 Web Service 阶段加 SQLite 持久化）
@@ -823,7 +826,7 @@ AgentOS 核心功能的实施按 **4 周节奏**组织，每周 3 小时，合�
 
 - [ ] `agentos init` 工作区初始化
 - [ ] Profile 配置和管理（支持多 Profile 并存）
-- [ ] Provider 抽象（至少跑通一个 Provider：DeepSeek 或 Kimi）
+- [ ] Provider 抽象（至少跑通一个 Provider：当前以 MiniMax 跑通，唯一已配密钥的供应商，经其 OpenAI 兼容腿接入；密钥加载与环境变量命名详见 docs/design/detail-supplement/001-model-config-export.md；DeepSeek/Kimi 待密钥就绪后替换）
 - [ ] ReAct 循环（多轮 Tool 调用、正确累积消息历史、达到最大迭代次数时正确终止）
 - [ ] Memory 长期记忆（save_memory 写入、recall_memory 关键词检索、每轮注入（核心区全量 + 归档区截断））
 - [ ] 内置 Tool（文件、HTTP、Shell、save_memory、recall_memory、notify）

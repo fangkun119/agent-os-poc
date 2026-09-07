@@ -123,7 +123,7 @@ LLM 调用的复杂度都被 **Spring AI Alibaba** 吸收掉了。AgentOS 在其
 
 **Function Calling 适配模块。** 职责是把 AgentOS 内部的 **`AgentOSTool`** 抽象转成 Spring AI 的工具调用格式。Spring AI 已经做好了向各家 LLM 协议的转换（OpenAI tools、Anthropic tools、Gemini function declarations），AgentOS 不需要关心每家协议的差异。注意这里只用 Spring AI 的格式转换，不用它的自动执行（见决策二）。
 
-**Provider 配置模块。** 通过 `application.yaml` 配置 Provider 的 API key 和 base URL，Spring AI Alibaba 根据配置创建对应的 `ChatModel` Bean。
+**Provider 配置模块。** 通过 `application.yaml` 配置 Provider 的连接参数：API key 一律只写 `${环境变量名}` 占位符，真实密钥只存仓库外脚本 `~/.agent-os-poc/script/agent-os-env.sh`（source 加载），禁止明文进配置文件、完整进日志或命令行（debug 最多前 5 位前缀）；base URL 非敏感、可直接明文写 yaml，但 OpenAI 兼容腿必须不带 `/v1`——Spring AI 的 `OpenAiApi` 会自动追加 `/v1/chat/completions`，带了会 `/v1/v1` 双写 404（直接写 `https://api.minimax.cn`）。Spring AI Alibaba 根据配置创建对应的 `ChatModel` Bean（环境变量 Provider 命名规则、导出变量清单与 Spring AI 属性对照，详见 docs/design/detail-supplement/001-model-config-export.md）。
 
 ![Provider 架构：ReAct 循环 → ProviderService → 显式映射的 ChatModel → 各家 LLM API](imgs/docs-provider.svg)
 
@@ -502,7 +502,7 @@ Web Service 是 AgentOS 的对外完整门面，业务系统通过 REST API 接�
 
 **`AgentLoader` 模块。** 扫 `.agentos/agents/` 各子目录，`deriveProfile` 把每个 `AGENT.md` 的 frontmatter 派生成一个 `Profile`，注册到 `ProfileRegistry`。启动时做合法性校验：Provider 是否存在、Tool 是否注册、Channel 是否支持、Bootstrap 文件是否存在。校验失败的 Agent 不阻断启动但记录错误日志。
 
-**`ProfileRegistry` 模块。** Agent 派生 `Profile` 的内存索引，按 name 提供快速查找。Channel 接收消息时通过它拿到具体 Profile。派生自 `AGENT.md` frontmatter 的字段：`name`、`description`、`identity`（`agent_name`、`prompt`）、`provider`（`name`、`model`、`temperature`）、`tools`、`mcp_servers`、`channels`、`schedules`、`bootstrap`、`settings`（`max_iterations`、`max_history_turns`、`timeout`（llm_call/tool/total，见 7.4））。`notify_channels` 不属于 Profile 或 frontmatter；通知渠道由 SQLite 全局注册表管理，Agent 只在正文中按名称引用。核心阶段支持多个 Agent 并存，同一实例上同时可用，这是"OS"在核心阶段的最小体现。
+**`ProfileRegistry` 模块。** Agent 派生 `Profile` 的内存索引，按 name 提供快速查找。Channel 接收消息时通过它拿到具体 Profile。派生自 `AGENT.md` frontmatter 的字段：`name`、`description`、`identity`（`agent_name`、`prompt`）、`provider`（`name`、`temperature`。模型不固定在 provider 块，按三级选择：Provider 缺省取环境变量 `*_DEFAULT_MODEL` → Agent 级覆盖用 frontmatter `settings.model`（派生进 Profile）→ 运行时动态路由；切换靠每次调用的 options 参数带 model，不走环境变量。详见 docs/design/detail-supplement/001-model-config-export.md）、`tools`、`mcp_servers`、`channels`、`schedules`、`bootstrap`、`settings`（`max_iterations`、`max_history_turns`、`timeout`（llm_call/tool/total，见 7.4））。`notify_channels` 不属于 Profile 或 frontmatter；通知渠道由 SQLite 全局注册表管理，Agent 只在正文中按名称引用。核心阶段支持多个 Agent 并存，同一实例上同时可用，这是"OS"在核心阶段的最小体现。
 
 ### 8.3 上下文加载（Bootstrap + AGENT.md 正文）
 
@@ -568,7 +568,7 @@ session list
 
 ### 8.8 配置与密钥加载
 
-**`ConfigLoader` 模块** 负责统一加载 LLM API key、Provider 凭证、MCP server 凭证等敏感配置。核心阶段做基础版：敏感配置通过环境变量注入或独立的本地配置文件加载，不明文写死在 AGENT.md frontmatter 里（Profile 里用 `${ENV_VAR}` 占位，加载时从环境变量解析）；配置加载时做必填项和格式的基础校验，缺失或非法时给清晰报错。完整的加密存储、密钥轮转、对接企业 KMS/Vault 放扩展阶段。单列这个模块，是因为对企业级底座，配置和密钥的加载校验是 day one 该有的，不能散落各模块无人负责。
+**`ConfigLoader` 模块** 负责统一加载 LLM API key、Provider 凭证、MCP server 凭证等敏感配置。核心阶段做基础版：密钥类凭证（API Key / Auth Token）只从环境变量读取，禁止从任何配置文件读取——密钥在磁盘上的唯一落点是仓库外脚本 `~/.agent-os-poc/script/agent-os-env.sh`（权限 600，`source` 加载；导出 schema 与新增 vendor 步骤详见 docs/design/detail-supplement/001-model-config-export.md）；application.yaml 与 AGENT.md frontmatter 一律只写 `${环境变量名}` 占位符，加载时从环境变量解析，非敏感配置（如 base-url）直接写 application.yaml；密钥不写进命令行或日志，debug 最多输出前 5 位前缀（如 `sk-cp***`）。环境变量按 Provider 命名：每个 Provider 一组四元组（`*_API_KEY` / `*_BASE_URL` / `*_DEFAULT_MODEL` / `*_MODEL_LIST`），现有 `OPENAI_*` / `ANTHROPIC_*` / `MINIMAX_*` 并列、互不覆盖；OPENAI/ANTHROPIC 的取值可整体替换——当前填 MiniMax 兼容端点（只有 MiniMax 账号）；配置加载时做必填项和格式的基础校验，缺失或非法时给清晰报错。完整的加密存储、密钥轮转、对接企业 KMS/Vault 放扩展阶段。单列这个模块，是因为对企业级底座，配置和密钥的加载校验是 day one 该有的，不能散落各模块无人负责。
 
 ---
 
@@ -804,7 +804,7 @@ mvn clean package
 
 - 搭 Maven 多模块骨架（9 个模块）、`agentos init`、AGENT.md frontmatter 解析
 - 第一步先做 30 分钟 spike：验证所锁定 Spring AI Alibaba 版本中多 `ChatModel` Bean 注入与按 name 选择的推荐写法，结论回填 3.2
-- `ProviderService` 包装 Spring AI Alibaba（先跑通 DeepSeek 或 Kimi，含 provider name 映射）
+- `ProviderService` 包装 Spring AI Alibaba（先跑通 MiniMax——当前唯一有凭证的供应商，OpenAI/Anthropic 两条兼容腿正好当两个 `ChatModel` 验证 provider name 映射；DeepSeek/Kimi 属后续新增 Provider，凭证与环境变量命名规则详见 docs/design/detail-supplement/001-model-config-export.md；依赖坐标照 D2 清单引入、手动循环路径（D3）与显式映射（D4）已经 `spike/007-react-loop` 实测，结论见 `spike/007-react-loop/README.md`）
 - `ReActLoop` + `PromptBuilder` + `ToolExecutor`、一个内置 HTTP Tool（含 `SandboxChecker` 简化版：仅 URL 域名白名单，完整版第二周补齐，见 6.7）、`CliChannel`
 - Session 内存版（第三周 Web Service 阶段加 SQLite）
 

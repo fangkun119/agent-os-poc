@@ -18,7 +18,7 @@
 | 1 | 两份权威文档可按其实施 | 正确性层面自洽，所有数字、交付时点、表清单都能交叉验证；验收标准（DA 第 13 章）与技术方案完全对得上 |
 | 2 | 浮出的问题是"留白"，不是设计错误 | 集中在未定义参数：工具输出上限、归档区裁剪参数、`llm_calls` 失败记录形态、`WebhookNotifyAdapter` 报文细节等（见 2.3 风险清单） |
 | 3 | 最重要的元发现：需求文档曾滞后于技术方案 | `schedules` 字段、Profile 定性、每轮注入、notify 设计、`mcp_servers.yaml` 漏列等，同属"技术方案设计完了、需求文档没跟上"一个病根；本次评审已完成口径收敛 |
-| 4 | 版本风险是评审最重要的新发现 | Spring AI 2.0 已移除 `internalToolExecutionEnabled` 开关，会破坏"ReAct 自持 + 禁用自动 tool 执行"的设计，实现时必须锁定 1.0.x 线（见 8.2） |
+| 4 | 版本风险是评审最重要的新发现 | Spring AI 2.0 已移除 `internalToolExecutionEnabled` 开关，会破坏"ReAct 自持 + 禁用自动 tool 执行"的设计，实现时必须避开 2.0 线；**2026-09-06 晚决议变更：主线定为 SAA 1.1.2.0 + Spring AI 1.1.2（Boot 3.5.x 官方配套），开关在 1.0.x / 1.1.x 都存在，见 8.2 / 2.6** |
 | 5 | 最大交付风险在第四周 | 定时任务 + 通知推送整条线押在第四周里，降级预案已验证可行（见 9.2、9.3） |
 
 ### 1.3 名词与约定
@@ -83,7 +83,7 @@
 
 | 编号 | 风险 / 待办 | 说明 | 应对与时点 |
 |---|---|---|---|
-| R1 | Spring AI 版本与依赖引入风险 | 当前工程 parent 是 Spring Boot 3.5.16，而 SAA `1.0.0.2` 官方配套是 Boot 3.4.5 + Spring AI 1.0.0——引入时要么降 parent 到 3.4.x（官方验证组合），要么实测 3.5.x 兼容并记入风险表；必须锁定 Spring AI 1.0.x 线（SAA 1.0.0.2 BOM）：2.0 线已移除 `internalToolExecutionEnabled`，会破坏"ReAct 自持 + 禁用自动 tool 执行"的设计；环境要求 Maven ≥ 3.6.3、建议配阿里云镜像；全部 pom 当前未引入 spring-ai（provider 模块注明"按第一周 spike 结论引入，此处不预引入"） | 第一周 spike 决议（详见 8.2） |
+| R1 | Spring AI 版本与依赖引入风险 | 【2026-09-06 晚决议变更】主线 = SAA **1.1.2.0** + Spring AI **1.1.2** + Boot 3.5.x（官网版本页逐字"当前推荐"，工程 parent 3.5.16 直接配套，原"降 parent 或实测兼容"的决策消失）；SAA 1.0.0.2 线（Boot 3.4.x 配套，Spring AI 1.0.0 有 POM 依赖清单硬证据）降为对照备选。不变的底线：2.0 线已移除 `internalToolExecutionEnabled`，禁入；开关在 1.0.x / 1.1.x 都存在且默认开（v1.1.8 文档核验）。环境要求 Maven 3.6+（部分组件 3.8+，官方未点名阿里云镜像）；全部 pom 当前未引入 spring-ai（provider 模块注明"按第一周 spike 结论引入，此处不预引入"）。【2026-09-07 spike 实测】E1-E8 全绿：1.1.x 组合依赖解析零冲突、容器启动正常、开关关闭后无双执行、手动循环/工具链/双 Provider 全部实证通过（`spike/007-react-loop/README.md`），**本风险关闭** | 第一周 spike 决议（详见 8.2 / 2.6） |
 | R2 | 工具输出无上限 | tool 结果全量进 `messages_json` 和 prompt，单条大输出（`read_file` 大文件 / shell 大日志）可撑爆上下文，轮数截断对单条巨型消息无效——设计留白 | 实现时需自加输出上限 |
 | R3 | 归档记忆区裁剪参数未定义 | 机制有（`truncateIfNeeded`、md 裁字符串 / sqlite `LIMIT N`），但预算数值、裁剪方向（保新弃旧？）、粒度（字符 vs 条目）均留白；且 md/sqlite 两档粒度语义不一致 | 参数留白，实现时自行填补（见 5.5） |
 | R4 | 核心区无上限、无删除 API | `LongTermMemoryStore` 四方法不含 delete，写错只能手工修 MEMORY.md / 改库 | 无机制补救，只能手工修（见 5.4） |
@@ -96,7 +96,7 @@
 
 | 时点 | Action Item | 关联 |
 |---|---|---|
-| 第一周 spike | 锁定 Spring AI 1.0.x + SAA 1.0.0.2 BOM；决定 parent 降到 Boot 3.4.x 还是实测 3.5.x 兼容 | R1、8.2 节 |
+| 第一周 spike | 锁定 SAA 1.1.2.0 + Spring AI 1.1.2（Boot 3.5.x 官方配套，parent 3.5.16 直接可用；2026-09-06 变更）；1.0.0.2 + Spring AI 1.0.x 为对照备选线 | R1、8.2、2.6 节 |
 | 实现期 | 为工具返回结果增加输出上限（避免单条大输出撑爆上下文） | R2 |
 | 实现期 | 确定归档区裁剪三参数（预算数值、裁剪方向、粒度），并统一 md/sqlite 两档粒度语义 | R3 |
 | 实现期 | `WebhookNotifyAdapter` 落地时拍板报文模板映射与 errcode 成败判定 | R6 |
@@ -106,6 +106,34 @@
 | 核心阶段结束后 | 决议挂账 2：工具结果裁剪机制（体积上限、裁剪、淘汰、压缩、截断） | 2.2 |
 | 发布后补验 | 性能压测（验收标准里有、未排进任何周次） | 9.2 节 |
 | 扩展阶段 | GraalVM 引入时机（既有未决项） | 2.2 |
+
+### 2.5 Context7 文档复核修正（2026-09-06）
+
+背景：纪要写作时 Context7 不可用。2026-09-06 在 Context7 可用条件下，对第 8 章的 9 条 Spring AI 生态论断做了逐条独立复核（每条一验一对抗复核，2 条争议由官方源仲裁），报告见 `chat/temp/20260906-spring-ai-alibaba-api-validation-check.md`。**主结论全部坐实，第一周 spike 主决议不变**；下列修正已同步回正文：
+
+| # | 位置 | 修正内容 |
+|---|---|---|
+| 1 | 8.2 选型表 | 2.0.0-M1.1 实际配套 Spring AI 2.0.0-M1 + Boot 4.0.0（GitHub Release Notes 逐字），原表"↔ 1.1.x 分支"有误；Spring AI 1.1.x 线绑定的是 SAA 1.1.x（1.1.2.0 ↔ 1.1.2 ↔ Boot 3.5.x），已补进选型表 |
+| 2 | 8.2 选型表 / R1 / 冲突点 | "Boot 3.4.5"精确数字官方材料查无原文，统一改为"Boot 3.4.x + spike 时以依赖解析为准"；SAA 1.0.0.2 ↔ Spring AI 1.0.0 配套升级为 POM 依赖清单硬证据 |
+| 3 | 8.1(3) | 手动循环的标准回灌路径 = `ToolCallingManager.executeToolCalls()` + `conversationHistory()` 重建 Prompt；原"手工构造 `ToolResponseMessage`"降为"允许但未示例"的自定义路径 |
+| 4 | 8.1(1) | DeepSeek-R1 可经 DashScope/百炼托管直调；"不靠 SAA 直连"收紧为"不提供专属 ChatModel 实现类"；"spring-ai-extensions 社区仓库"删除待核 |
+| 5 | 8.2 环境 / R1 | Maven 要求 3.6+（部分组件 3.8+），原"3.6.3"无原文；"建议配阿里云镜像"非官方要求 |
+| 6 | 8.2 结论 | "2.0 移除开关"坐实（javadoc 方法清单级证据），并修正升级表述：自研 ReAct 循环在 2.0 仍是官方一等支持形态，升级只需删旧开关换新路径（见 8.2 复核注） |
+
+### 2.6 版本主线决议变更（2026-09-06 晚）
+
+决议：主线从「SAA 1.0.0.2 + Spring AI 1.0.x + Boot 3.4.x」切换为「**SAA 1.1.2.0 + Spring AI 1.1.2 + Boot 3.5.x**」；1.0.0.2 线降为对照备选（spike E9 触发时使用）。评审输入（本轮新核验证据）：
+
+| # | 证据 | 出处 |
+|---|---|---|
+| 1 | 官网版本页逐字："**1.1.2.0**（当前推荐）｜Spring AI 1.1.2｜Extensions 1.1.2.1 或 1.1.2.0｜Boot 3.5.x" | java2ai.com/docs/versions（firecrawl 抓取原文） |
+| 2 | 官方 quickstart = 双 BOM：`spring-ai-alibaba-bom:1.1.2.0` + `spring-ai-bom:1.1.2`（+ extensions-bom 1.1.2.1）——与 spike 002 原双 BOM 结构同构 | 同上 |
+| 3 | SAA 官方仓库自述技术栈 "built upon Spring Boot 3.5.x and Spring AI 1.1.x" | SAA 仓库 CLAUDE.md（Context7） |
+| 4 | Spring AI 1.1.8 文档：`internalToolExecutionEnabled` 存在、默认开（"execution is enabled if internalToolExecutionEnabled is true"）、手动循环官方标准路径与 1.0.x 完全同构（完整 while 示例） | spring-ai v1.1.8 api/tools.adoc（Context7） |
+| 5 | Maven Central：1.1.2.0 BOM 在架；1.1.x 补丁已到 1.1.2.3；1.0.x 有 1.0.0.3 / 1.0.0.4 及 CVE 补丁 1.0.0.3-20260305-cve | repo1.maven.org |
+
+连带变更：8.2 结论 / 选型表 / 版本锁定 / 冲突点 / R1、2.4 Action Item、10.3 决策日历已同步；spike 001 已重写主线并重定义 E9 为 1.0.0.2 对照线（原 E10 信息收集任务被主线吸收，删除）；spike 002 / 003 已删除、待基于新主线重新生成。
+
 ## 3. 存储与持久化
 
 ### 3.1 存储选型：SQLite 单文件定案
@@ -775,7 +803,7 @@ Spring AI Alibaba（SAA）：提供 ChatModel 的实现类（直连 DashScope/�
 AgentOS：按 provider 名 → ChatModel 实例做显式映射，包装成自己的 Provider
 ```
 
-核验微修正：SAA 直连的是 DashScope；DeepSeek/Kimi 等主要靠 Spring AI 的 OpenAI 兼容 starter（配 base-url）和社区扩展仓库（spring-ai-extensions）——即"SAA + Spring AI 生态"，SAA 的价值在它提供的实现类。
+核验微修正（2026-09-06 Context7 复核后进一步收紧）：SAA 直连的是 DashScope/通义系；SAA 不提供 DeepSeek/Kimi 专属 ChatModel 实现类——但 DeepSeek-R1 可经 DashScope/百炼平台托管直调（SAA 官方博客演示 `spring.ai.dashscope.chat.options.model=deepseek-r1`）；独立部署的 DeepSeek/Kimi 走 Spring AI 的 OpenAI 兼容 starter（配 base-url，DeepSeek 官方示例 `https://api.deepseek.com`；Kimi 同机制，系 OpenAI 兼容示例外推，无逐字引文）——注意环境变量按 Provider 命名：DeepSeek/Kimi 将来作为独立 Provider 各用一组四元组（`DEEPSEEK_*` / `KIMI_*`），与 `OPENAI_*` / `ANTHROPIC_*` 并列、互不覆盖（详见 docs/design/detail-supplement/001-model-config-export.md）；原表述中的"社区扩展仓库（spring-ai-extensions）"在官方文档未命中，删除待核——即"SAA + Spring AI 生态"，SAA 的价值在它提供的实现类。
 
 #### (2) 为什么落在 ChatModel（归因修正）
 
@@ -787,7 +815,7 @@ AgentOS：按 provider 名 → ChatModel 实例做显式映射，包装成自己
 |---|---|
 | **控制点放最薄的一层**（最主要） | 显式关闭内部执行 + 显式管理每轮 Prompt/响应，工具调度控制权全在自家的 `ReActLoop` + `ToolExecutor` 手里——与"循环必须自持"的决策绑定，不被任何高层门面的默认运行时绑架 |
 | **审计边界清晰** | `llm_calls` 要按"每次 LLM 调用"记 provider / model / token / 耗时——面对 ChatModel 的单次往返，usage 和计时拿得最直接，"一次模型往返"与一条审计记录一一对齐；隔着门面封装（advisors 等中间件）边界会变模糊 |
-| **实例级映射顺手** | ChatModel 是实例级接口，正适合"每个 Provider 一个实例、各带 api_key / base_url / model"的显式映射表用法；ChatClient 是构建器风格门面，包一层反而绕 |
+| **实例级映射顺手** | ChatModel 是实例级接口，正适合"每个 Provider 一个实例、各带 api_key / base_url / model"的显式映射表用法（实现时密钥按槽位名从环境变量读取、base-url 直接写 yaml 且不带 /v1——Spring AI 的 OpenAiApi 会自动追加 /v1/chat/completions，详见 docs/design/detail-supplement/001-model-config-export.md）；ChatClient 是构建器风格门面，包一层反而绕 |
 | **ChatClient 没被扔掉** | 门面仍可用于装配便利，只是不让它成为循环的承载层——分界线在"每次模型往返发生在哪一层" |
 
 #### (3) 核验结论与可行性
@@ -796,15 +824,17 @@ AgentOS：按 provider 名 → ChatModel 实例做显式映射，包装成自己
 |---|---|---|
 | 1 | ChatModel 是 Spring AI 本体核心接口、SAA 提供实现类 | 成立（SAA 官方定位是 Spring AI 的扩展） |
 | 2 | 自动执行是框架行为，`internalToolExecutionEnabled` 默认 true | 成立——机制成立，但归因从"ChatClient 特有"修正为"框架行为、两层都能设" |
-| 3 | 关闭自动执行即可让 ReAct 循环自持 | 成立，且有官方路径：`internalToolExecutionEnabled(false)` 进入手动模式，框架把 `AssistantMessage.ToolCall` 原样返回，调用方自行执行再构造 `ToolResponseMessage` 回灌 |
+| 3 | 关闭自动执行即可让 ReAct 循环自持 | 成立，且有官方路径：`internalToolExecutionEnabled(false)` 进入手动模式，调用方检查 `ChatResponse` 中的工具调用请求，自行执行后经 `ToolCallingManager.executeToolCalls()` 取回更新后的对话历史再次调用模型（2026-09-06 复核收紧：官方示例走 ToolCallingManager 路径；手工构造 `ToolResponseMessage` 属"文档允许但未示例"的自定义路径） |
 | 4 | SAA 已做好主流 LLM 的 connector | 部分准确（修正为 SAA 直连 DashScope，其余走 OpenAI 兼容 starter + 社区仓库） |
 | 5 | 不用 SAA 更高层的编排抽象 | 成立——SAA 自带 Graph 多智能体编排框架（LangGraph 风格），自实现 ReAct 循环意味着绕开它，避免锁进它的编排模型 |
 
-**可行性：高**。手动工具执行循环是 Spring AI 官方文档支持的标准模式，不是 hack。落地要点：`ProviderService` 用 `Map<String, ChatModel>` 显式构建；循环内 `ChatModel.call(prompt)` → 解析 `AssistantMessage.ToolCall` → 自己执行 → 构造 `ToolResponseMessage` 追加 → 再 `call`，与设计文档的 ReAct 步骤一一对应；`@Tool` 注解仅取 schema 生成（函数定义注册），配合开关关闭内部执行。
+**可行性：高**。手动工具执行循环是 Spring AI 官方文档支持的标准模式（v1.0.3 文档 "User-Controlled Tool Execution" 独立小节 + 两段官方示例），不是 hack。落地要点：`ProviderService` 用 `Map<String, ChatModel>` 显式构建；循环内 `ChatModel.call(prompt)` → 检查 `chatResponse.hasToolCalls()` → `ToolCallingManager.executeToolCalls(prompt, chatResponse)` 执行工具 → 用返回的 `conversationHistory()` 重建 Prompt → 再 `call`（2026-09-06 复核修正：这是官方示例的标准路径，比原设想的"手工构造 `ToolResponseMessage` 追加"更省事），与设计文档的 ReAct 步骤一一对应；`@Tool` 注解仅取 schema 生成（`ToolCallbacks.from(...)` 注册，定义解析与执行在 `ToolCallingManager` 层架构解耦），配合开关关闭内部执行。
 
 ### 8.2 版本风险与工程现状
 
-结论：**实现时必须锁定 Spring AI 1.0.x + SAA 1.0.0.2**——Spring AI 2.0 已移除 `internalToolExecutionEnabled` 开关（改为可组合的工具调用架构），若用 2.0，按 1.x 语境写的"ReAct 自持 + 禁用自动 tool 执行"设计会失效；升级 2.0 时需按新机制重写工具调度段。这是本次评审最重要的新发现（R1）。
+结论（2026-09-06 晚决议变更后）：**实现时锁定 SAA 1.1.2.0 + Spring AI 1.1.2 + Boot 3.5.x（parent 3.5.16 直接可用）**——该组合是 SAA 官网版本页逐字"当前推荐"，且开关行为已在 Spring AI 1.1.8 文档同构核验（`internalToolExecutionEnabled` 存在、默认开、手动循环官方标准路径与 1.0.x 一致）；原决议（1.0.0.2 + Spring AI 1.0.x）降为对照备选线。不变的底线：Spring AI 2.0 已移除 `internalToolExecutionEnabled` 开关（改为可组合的工具调用架构），按 1.x 语境写的"ReAct 自持 + 禁用自动 tool 执行"代码无法编译（`.internalToolExecutionEnabled(false)` 直接编译不过），2.0 线禁入。这是本次评审最重要的新发现（R1）。
+
+> **2026-09-06 Context7 复核注**：本条坐实——2.0.0 官方 javadoc 的 `ToolCallingChatOptions.Builder` 方法清单已无该开关（警惕误读：2.0.0 弃用清单里另一组 `ChatModel.Builder.toolCallingManager(...)` 方法标着"deprecated since 2.0.0, for removal in 3.0.0"，那是另一个 API 面，不代表本开关仍存续）。官方升级指引给出两条推荐迁移路径：① ToolCallingAdvisor 经 ChatClient（配 `spring.ai.chat.client.tool-calling.enabled=false` 或 `AdvisorParams.toolCallingAdvisorAutoRegister(false)` 关自动注册）；② 直接用 ChatModel 自驱循环——2.0 已删除模型内部执行，直接调用天然不自动执行工具。**自研 ReAct 循环的架构方向在 2.0 仍是官方一等支持形态**：原"升级 2.0 需按新机制重写工具调度段"据此修正为"删除旧开关调用 + 换用上述路径"，改动范围小于原表述；迁移窗口在 2.0→3.0。
 
 工程现状（刻意留空，不是遗漏）：
 
@@ -815,12 +845,16 @@ spike 时的选型参考与决策点：
 
 | Spring AI Alibaba | Spring AI | Spring Boot |
 |---|---|---|
-| **1.0.0.2**（正式版推荐） | 1.0.0 GA | 3.4.5 |
-| 2.0.0-M1.1（里程碑） | 1.1.x 分支 | — |
+| **1.1.2.0**（**主线**，2026-09-06 决议变更；官网版本页逐字"当前推荐"） | 1.1.2（spring-ai-bom 1.1.2，官方 quickstart 双 BOM 同款） | **3.5.x**（工程 parent 3.5.16 直接可用） |
+| 1.0.0.2（对照备选线；1.0 GA 首版，POM 硬证据配套 Spring AI 1.0.0） | 1.0.0 GA | 3.4.x（精确补丁版本官方查无原文） |
+| 2.0.0-M1.1（里程碑，prerelease） | **2.0.0-M1**（2026-09-06 复核修正：原表误写为 1.1.x） | **4.0.0** |
 
-- **版本锁定**：选 `com.alibaba.cloud.ai:spring-ai-alibaba-bom:1.0.0.2` + Spring AI 1.0.0——这一线才有 `internalToolExecutionEnabled` 开关；
-- **现成的冲突点**：当前 parent 是 Boot **3.5.16**，而 SAA 1.0.0.2 官方配套是 Boot **3.4.5**——spike 时要么把 parent 降到 3.4.x 换官方验证过的组合，要么实测 3.5.x 兼容并在风险表记一笔；
-- **环境**：Maven ≥ 3.6.3，部分组件建议配阿里云镜像；
+注（Maven Central，2026-09-06 查）：1.1.x 补丁已到 1.1.2.3；1.0.x 有 1.0.0.3 / 1.0.0.4 及 CVE 补丁 1.0.0.3-20260305-cve（提示 1.0.0.2 附近存在已知漏洞修复）。
+
+- **版本锁定（2026-09-06 变更）**：选 `com.alibaba.cloud.ai:spring-ai-alibaba-bom:1.1.2.0` + `spring-ai-bom:1.1.2`（官方 quickstart 双 BOM 同款）——开关在 1.0.x / 1.1.x 都存在且默认开（v1.1.8 文档核验），2.0 才删除；
+- **冲突点已消失（2026-09-06 变更）**：1.1.x 官方配套就是 Boot 3.5.x，工程 parent 3.5.16 直接可用，E1 依赖树确认即可；若切 1.0.0.2 对照线，才会面对"降 3.4.x 还是实测 3.5.x"的老问题；
+- **环境**：Maven 3.6+（admin 等部分组件要求 3.8+；官方文档未点名"阿里云镜像"，仅提示通配镜像需排除 spring-milestones 仓库——2026-09-06 复核修正，镜像按社区经验可选）；
+- **模型接入前置（2026-09-06 定稿）**：spike 跑真实模型调用前，先 `source ~/.agent-os-poc/script/agent-os-env.sh` 加载密钥（密钥只放仓库外脚本、权限 600，仓库内任何文件只写 `${环境变量名}` 占位符）；MiniMax 双兼容端点均支持工具调用，MiniMax-M3 思考内容默认混在返回文本的 `<think>` 标签里、断言前先剥离，Anthropic 兼容腿用 `thinking: adaptive` 参数控制思考（详见 docs/design/detail-supplement/001-model-config-export.md）；
 - **附带风险**：多 provider 时 connector 分属不同仓库，需逐一回归——缓解措施（先锁 OpenAI 协议跑稳）设计文档已有。
 
 ### 8.3 gateway 收窄与 Channel / 通知渠道的方向区分
@@ -950,7 +984,7 @@ W4 是全排期最挤的一段：一周要同时装下开发（AgentScheduler、
 - 人推补跑验证：三入口走同一条 `AgentService` 链路；
 - 功能验收清单逐项打勾（18 端点 / 9 Tool / 钟推）；
 - "`AGENT.md + scripts/`"第三档丰富度做手工演示（不设独立 Demo）；
-- Provider 至少跑通**一个**（DeepSeek / Kimi 等）。
+- Provider 至少跑通**一个**（DeepSeek / Kimi 等）。按 2026-09-06 定稿的接入现实，首个跑通的是 MiniMax——以 `MINIMAX_*` Provider 注册自己，并经 OpenAI / Anthropic 两条兼容腿接入，密钥经仓库外脚本环境变量注入（详见 docs/design/detail-supplement/001-model-config-export.md）。
 
 ## 10. 三视角补充
 
@@ -990,6 +1024,7 @@ W4 是全排期最挤的一段：一周要同时装下开发（AgentScheduler、
 - **白名单门禁统一前置**：notify 所有发送路径统一在 `NotifyTools` 做 `Sandbox.check(NOTIFY, url)`，Adapter 不各自绕行；
 - **审计不自建**：所有工具调用走同一条 `ToolExecutor → tool_invocations` 路径；
 - **`NotifyTarget.config` 别当报文 DSL**：协议差异用代码（策略/新 Adapter）解决，不塞配置。
+- **密钥只走环境变量**：模型 API Key 只从环境变量读取，仓库内任何文件只写 `${环境变量名}` 占位符，密钥不明文写进配置；日志与命令行最多输出前 5 位前缀（导出脚本与 Provider 命名详见 docs/design/detail-supplement/001-model-config-export.md）。
 
 #### (3) 关键不变量速查
 
@@ -1013,7 +1048,7 @@ W4 是全排期最挤的一段：一周要同时装下开发（AgentScheduler、
 
 | 时点 | 要决的事 |
 |---|---|
-| 第一周 spike | Spring AI 版本锁定（1.0.x + SAA 1.0.0.2 BOM）；parent 降 Boot 3.4.x 还是实测 3.5.x |
+| 第一周 spike | Spring AI 版本锁定（已决，2026-09-06 变更：SAA 1.1.2.0 + Spring AI 1.1.2，Boot 3.5.x 官方配套）；1.0.0.2 对照线备用 |
 | 实现期 | 工具输出上限、归档区裁剪三参数、Notify 报文模板与成败判定、`llm_calls` 失败记录形态 |
 | 核心阶段结束后 | 挂账 1（触发源差异化组装）、挂账 2（工具结果裁剪）——拿实测数据决议 |
 | 扩展阶段（按信号触发） | 容器/microVM 受控执行、完整 Tool Policy、Web 仪表板、多 Channel、向量检索、SSO 多租户、GraalVM 引入时机 |
