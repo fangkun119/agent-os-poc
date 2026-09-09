@@ -47,7 +47,8 @@
 - 导出变量与代码读取（application.yaml 只写 ${环境变量名} 占位符，禁止明文）：
   OpenAI 兼容腿：`OPENAI_API_KEY` / `OPENAI_DEFAULT_MODEL` / `OPENAI_MODEL_LIST` ↔ `spring.ai.openai.api-key` / `.chat.options.model`（DEFAULT=缺省模型；LIST=可用模型清单，逗号分隔，仅用于校验与发现——运行时切换模型走每次调用的 options 参数，不走环境变量）。
   ⚠️ `OPENAI_BASE_URL`（值带 `/v1`，OpenAI SDK 惯例）**不要**直接映射给 `spring.ai.openai.base-url`——Spring AI 的 OpenAiApi 会自己追加 `/v1/chat/completions`，直接映射会产生 `/v1/v1` 双写 404。base-url 非敏感：Spring AI 侧直接写 `https://api.minimax.cn`（不带 `/v1`），只有密钥必须走环境变量
-  Anthropic 兼容腿：`ANTHROPIC_API_KEY` / `ANTHROPIC_BASE_URL` / `ANTHROPIC_DEFAULT_MODEL` / `ANTHROPIC_MODEL_LIST` ↔ `spring.ai.anthropic.api-key` / `.base-url` / `.chat.options.model`
+  Anthropic 兼容腿：`ANTHROPIC_API_KEY` / `ANTHROPIC_DEFAULT_MODEL` / `ANTHROPIC_MODEL_LIST` ↔ `spring.ai.anthropic.api-key` / `.chat.options.model`。
+  ⚠️ `ANTHROPIC_BASE_URL` 同样**不要**直接映射给 `spring.ai.anthropic.base-url`——base-url 非敏感：Spring AI 侧直接写 `https://api.minimaxi.com/anthropic`（属性生效已经 spike E8 实测确认），只有密钥必须走环境变量
 - Provider 命名规则：环境变量按 Provider 命名，一个 Provider 一组四元组（`*_API_KEY` / `*_BASE_URL` / `*_DEFAULT_MODEL` / `*_MODEL_LIST`）。现有 Provider：`OPENAI`、`ANTHROPIC`、`MINIMAX` 并列、互不覆盖；`OPENAI_*` / `ANTHROPIC_*` 的取值可整体替换——当前填的是 MiniMax 兼容端点（只有 MiniMax 账号），有原生账号后直接改脚本注册区的值即可
 - 当前只有 MiniMax 账号：OPENAI / ANTHROPIC 两个 Provider 的配置值取自 MiniMax 双协议兼容端点；模型 MiniMax-M2.7（OPENAI Provider）/ MiniMax-M3（ANTHROPIC Provider），均已官方核验支持工具调用
 - **密钥红线（目的：防泄密——防止密钥被提交进代码库、或写进日志外漏）**：
