@@ -15,6 +15,11 @@ docs/**/workspace/
 .idea/
 .vscode/
 
+# Eclipse / JDT（jdtls 导入 Maven 工程自动生成）
+.project
+.classpath
+.settings/
+
 # Maven build output
 target/
 

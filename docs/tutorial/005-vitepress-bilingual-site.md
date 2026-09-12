@@ -1,5 +1,12 @@
 # 一个提交,从零交付双语官网:VitePress 站点变更精讲
 
+**读完你能带走什么**:
+
+- VitePress 怎么用一个 config.mts 定下双语言、子路径部署与社交分享 meta,以及 base 这类「一组约定」配置的三处联动坑;
+- 默认主题怎么靠 CSS 变量加 `--vp-*` 映射整体换成深色「机房 LED」脸,scoped 样式为什么覆盖不了框架内部;
+- 1225 行的单组件主页怎么用「数据数组 + v-for + t() 双语助手」把改文案的成本压到只动数组;
+- 一张可搬去任何 VitePress 项目的上线检查单(三处 base 联动、.nojekyll、computed、转义、动效门控),以及 6c168a7 提交的代码固定链接,点开即可对照核对。
+
 ## 1. 变更全貌:Java 项目为什么要一张网页门面
 
 AgentOS 是一个 Java 写的 Agent 运行时内核,代码、文档都在仓库里,但对外没有门面:潜在用户搜到仓库,看到的是一堵 README 墙。本次唯一提交 [6c168a7](https://github.com/fangkun119/agent-os-poc/commit/6c168a748da3c537c9231717385cfe4ad36d7e99) 补上这张门面——单页官网主页,中英双语,深色「机房 LED」视觉,单页八个板块,外加站点自己的开发规范文档。
@@ -18,12 +25,12 @@ AgentOS 是一个 Java 写的 Agent 运行时内核,代码、文档都在仓库�
 | 品牌资产 | [6c168a7](https://github.com/fangkun119/agent-os-poc/commit/6c168a748da3c537c9231717385cfe4ad36d7e99) | 双语架构图、og 分享图、favicon、logo、自托管字体 | 见第 5 章 | 次要合讲(第 5 章) |
 | 旧占位图清退 | [6c168a7](https://github.com/fangkun119/agent-os-poc/commit/6c168a748da3c537c9231717385cfe4ad36d7e99) | 删除 12 个旧 SVG | -369 | 次要合讲(第 5 章) |
 | 治理文档 | [6c168a7](https://github.com/fangkun119/agent-os-poc/commit/6c168a748da3c537c9231717385cfe4ad36d7e99) | [website/CLAUDE.md](https://github.com/fangkun119/agent-os-poc/commit/6c168a748da3c537c9231717385cfe4ad36d7e99/website/CLAUDE.md) +102、[spec plan.md](https://github.com/fangkun119/agent-os-poc/commit/6c168a748da3c537c9231717385cfe4ad36d7e99/website/spec/20260830-001-create-website/plan.md) +332 | +434 | 次要合讲(第 5 章) |
-| 生成物 | [6c168a7](https://github.com/fangkun119/agent-os-poc/commit/6c168a748da3c537c9231717385cfe4ad36d7e99) | package-lock.json +2561 | +2561 | 噪音,略过(理由见第 7 章) |
+| 生成物 | [6c168a7](https://github.com/fangkun119/agent-os-poc/commit/6c168a748da3c537c9231717385cfe4ad36d7e99) | package-lock.json +2561 | +2561 | 噪音,略过(理由见第 5 章) |
 | 合计 | 1 个提交 | 35 文件 | +4851 / -369 | — |
 
-本提交未触及本 skill 输出目录 chat/,无目录噪音需剔除。
-
 ## 2. 站点骨架:一个配置文件定下的六件事
+
+骨架六件事里,前五件写在 config.mts 一个文件:双 locale、base、srcExclude 与 head、常量来源、主页壳;第六件 Makefile 负责构建入口。逐件拆,每件都能点开 diff 核对。
 
 ### 2.1 双 locale:同一家店的两块门牌
 
@@ -38,6 +45,17 @@ locales: {
 
 为什么不做两个独立站?因为 VitePress 的 locale 是「同一家店的两块门牌」:厨房(构建管线、主题、组件)只有一套,门牌(路径前缀、语言标签、导航文案)各挂各的。英文访客走 `/`,中文访客走 `/zh/`,右上角语言切换器由框架自动生成并按路径前缀互跳。两套独立站点则意味着两份配置、两份依赖、两套构建,切换器还得手写。
 
+```mermaid
+flowchart LR
+    subgraph kitchen["一套厨房:同一份 config、同一套主题组件、同一条构建管线"]
+        cfg["config.mts 声明两个 locale"] --> en["英文门牌:根路径 /"]
+        cfg --> zh["中文门牌:路径 /zh/"]
+    end
+    visitorEn["英文访客"] --> en
+    visitorZh["中文访客"] --> zh
+    en <-.->|"语言切换器互跳"| zh
+```
+
 配置里有两条值得记住的纪律,都以注释形式写进了 diff:
 
 - locale 级只允许七键(`lang`/`dir`/`title`/`titleTemplate`/`description`/`head`/`themeConfig`)加语言切换器字段;`base`、`cleanUrls` 这类站点级键误写进 locale 层会被**静默忽略**——不报错、不生效,是最难查的一类配置错误。
@@ -45,7 +63,7 @@ locales: {
 
 ### 2.2 base:住在子路径里的站点
 
-config 第 22 行一行字决定全站资源路径:`base: '/agent-os-poc/'`。**base** 指站点部署在域名下的哪条子路径。GitHub Pages 给仓库站的 URL 形如 `用户名.github.io/仓库名/`,即站点不住在域名根部,而住在一个「文件夹」里;所有资源引用都必须带上这个前缀,否则上线即 404。
+config.mts 里一行字决定全站资源路径:`base: '/agent-os-poc/'`。**base** 指站点部署在域名下的哪条子路径。GitHub Pages 给仓库站的 URL 形如 `用户名.github.io/仓库名/`,即站点不住在域名根部,而住在一个「文件夹」里;所有资源引用都必须带上这个前缀,否则上线即 404。
 
 麻烦在于,前缀不是一处配置就完事。diff 注释点名了三处联动,各有各的坑:
 
@@ -53,13 +71,13 @@ config 第 22 行一行字决定全站资源路径:`base: '/agent-os-poc/'`。**
 | --- | --- | --- |
 | favicon(head 里的根绝对路径) | VitePress 不对 head 内路径做 base 重写,`/favicon.svg` 上线后指向域名根,404 | 唯一例外地硬编码 `/agent-os-poc/favicon.svg`,注释标注「改 base 时本行同步改」 |
 | og:image 分享图 | 协议要求绝对 URL(带域名),框架无法代劳 | `${SITE_URL}/agent-os-poc/images/og.png` 拼完整地址 |
-| sitemap hostname | 1.6.4 版生成站点地图只拼 hostname 加页面相对路径,不带 base 且缺尾斜杠会多一次 301 跳转 | hostname 写成 `${SITE_URL}/agent-os-poc/`,自带 base 与尾斜杠 |
+| sitemap hostname | VitePress 1.6.4 生成站点地图只拼 hostname 加页面相对路径,不带 base 且缺尾斜杠会多一次 301 跳转 | hostname 写成 `${SITE_URL}/agent-os-poc/`,自带 base 与尾斜杠 |
 
 **sitemap**(站点地图)是给搜索引擎看的全站 URL 清单;**301** 是「永久搬家」重定向,多一次意味着搜索引擎多绕一跳。三处坑的共同教训:base 类配置不是改一个字符串,而是改一组约定,每一处都要留注释说明成因。
 
 ### 2.3 srcExclude 与 head:不发布的与要补写的
 
-同文件里还有两类容易忽略的配置。其一是 `srcExclude: ['spec/**', 'CLAUDE.md']`:VitePress 默认把源码目录里所有 Markdown 都当页面发布,站点的实施计划与开发规范属于内部文档,漏排的结果是内部文件变成公开网页。其二是 `head` 数组:这里补写搜索引擎与社交平台用的 meta 标签,其中 **og meta**(Open Graph 协议)决定链接被分享到聊天工具、社交平台时显示的标题、描述与预览图。该提交把 og 的 title/description/image 按语言分写进两个 locale,中文访客分享出去看到中文卡片——双语不止翻译正文,访客可见的 meta 同属双语范围。注释同时警告:`mergeHead` 按「标签名加属性」去重,同一个 og 标签不能站点级与 locale 级并存,写了后者会静默覆盖前者。
+同一个 config.mts 里还有两类容易忽略的配置。其一是 `srcExclude: ['spec/**', 'CLAUDE.md']`:VitePress 默认把源码目录里所有 Markdown 都当页面发布,站点的实施计划与开发规范属于内部文档,漏排的结果是内部文件变成公开网页。其二是 `head` 数组:这里补写搜索引擎与社交平台用的 meta 标签,其中 **og meta**(Open Graph 协议)决定链接被分享到聊天工具、社交平台时显示的标题、描述与预览图。该提交把 og 的 title/description/image 按语言分写进两个 locale,中文访客分享出去看到中文卡片——双语不止翻译正文,访客可见的 meta 同属双语范围。注释同时警告:`mergeHead` 按「标签名加属性」去重,同一个 og 标签不能站点级与 locale 级并存,写了后者会静默覆盖前者。
 
 ### 2.4 constants.ts:常量的单一来源
 
@@ -77,6 +95,14 @@ config 第 22 行一行字决定全站资源路径:`base: '/agent-os-poc/'`。**
 [Makefile](https://github.com/fangkun119/agent-os-poc/commit/6c168a748da3c537c9231717385cfe4ad36d7e99/website/Makefile) 提供 install/dev/build/preview 四个目标,注释声明「构建/预览一律走 make 目标」——命令入口单一,agent 与人都不会各跑各的。真正值得注意的是 build 目标末尾的 `touch .vitepress/dist/.nojekyll`。
 
 你可能会问:构建完为什么还要塞一个空文件?GitHub Pages 默认会请一位叫 Jekyll 的「老管家」先翻检你交付的行李,下划线开头的目录会被它扣下不入库,而 VitePress 的产物恰好放在 `assets/` 这类路径下——缺了这个名为 `.nojekyll` 的免检标志,上线全站 404。另外 VitePress 的 `copyPublicDir` 不拷贝点开头的文件,所以这个文件不能放 `public/`,只能在构建后补进产物目录。一个字符都没有的文件,救的是整站。
+
+```mermaid
+flowchart LR
+    src["Markdown 与 Vue 源文件"] -->|"make build"| dist["dist/ 静态产物"]
+    dist -->|"构建末步补 .nojekyll"| out["带免检标志的产物"]
+    out -->|"推送 GitHub Pages"| live["Jekyll 免检,全站可访问"]
+    dist -.->|"漏补 .nojekyll"| dead["Jekyll 扣下文件,全站 404"]
+```
 
 骨架组还剩两个标准件没有专门讲:[package.json](https://github.com/fangkun119/agent-os-poc/commit/6c168a748da3c537c9231717385cfe4ad36d7e99/website/package.json) 是 npm 清单,单依赖 vitepress 加 dev/build/preview 三个脚本,第 1 章已带过;[.gitignore](https://github.com/fangkun119/agent-os-poc/commit/6c168a748da3c537c9231717385cfe4ad36d7e99/website/.gitignore) 四行,忽略 node_modules、构建缓存与产物目录,属通用约定,不再展开。
 
@@ -123,17 +149,25 @@ diff 里有一处典型修复:`--vp-c-bg-elv`(浮起面板底色)漏映射时保
 
 ### 3.4 appearance: false、最窄覆盖与可访问性地板
 
-本站是单主题站点:`appearance: false` 关掉明暗切换,全站恒深色。为什么不做亮色主题?「机房 LED」的视觉定位就是恒深画布,做双主题等于两套配色双倍维护;而 `false` 让切换按钮原生不渲染,比「渲染出来再藏起来」干净。注释还留了一条实测结论:该版本(1.6.4)没有 `'force-light'` 取值,写了这个不存在的字符串会落入 truthy 分支,退化成「跟随系统深色」——文档可能滞后,版本实测才算数。
+本站是单主题站点:`appearance: false` 关掉明暗切换,全站恒深色。你可能会问:为什么不顺手做个亮色主题?「机房 LED」的视觉定位就是恒深画布,做双主题等于两套配色双倍维护;而 `false` 让切换按钮原生不渲染,比「渲染出来再藏起来」干净。注释还留了一条实测结论:VitePress 1.6.4 没有 `'force-light'` 取值,写了这个不存在的字符串会落入 truthy 分支,退化成「跟随系统深色」——文档可能滞后,版本实测才算数。
 
-主题覆盖纪律在这个文件里执行得很严格。这里要先补一个概念:**scoped 样式**是 Vue 组件的样式隔离机制,编译时给选择器追加本组件专属的属性标记,保证样式只命中本组件模板。代价是它进不了别人家——子组件内部的元素打不上这个标记,所以在自己组件的 scoped 块里写「覆盖 VitePress 内部类」的规则会静默失效。因此主题覆盖只能写全局 custom.css,且每条覆盖都要注明压的是哪条内部规则、用最窄选择器。diff 里三处示范:`.VPFooter` 整体隐藏(页脚由 Home.vue 自绘,防未来误配出双页脚)、`.VPHome` 清零默认底部留白(消灭页脚后的死滚动区)、`.VPPage` 等容器背景压实底(防换变量时主页边缘露白)。
+主题覆盖纪律在 custom.css 里执行得很严格。这里要先补一个概念:**scoped 样式**是 Vue 组件的样式隔离机制,编译时给选择器追加本组件专属的属性标记,保证样式只命中本组件模板。代价是它进不了别人家——子组件内部的元素打不上这个标记,所以在自己组件的 scoped 块里写「覆盖 VitePress 内部类」的规则会静默失效。因此主题覆盖只能写全局 custom.css,且每条覆盖都要注明压的是哪条内部规则、用最窄选择器。diff 里三处示范:`.VPFooter` 整体隐藏(页脚由 Home.vue 自绘,防未来误配出双页脚)、`.VPHome` 清零默认底部留白(消灭页脚后的死滚动区)、`.VPPage` 等容器背景压实底(防换变量时主页边缘露白)。
 
-文件末尾是可访问性地板:**`:focus-visible`**(键盘聚焦时才显示的焦点环)统一为品牌色描边,保证纯键盘用户知道自己在哪;`@media (prefers-reduced-motion: reduce)` 一条媒体查询全站关停动画与过渡——访客系统里开了「减少动效」,页面就静态完整呈现,不留半成品状态。
+custom.css 末尾是可访问性地板:**`:focus-visible`**(键盘聚焦时才显示的焦点环)统一为品牌色描边,保证纯键盘用户知道自己在哪;`@media (prefers-reduced-motion: reduce)` 一条媒体查询全站关停动画与过渡——访客系统里开了「减少动效」,页面就静态完整呈现,不留半成品状态。
 
 ## 4. Home.vue:1225 行的单组件主页
 
 ### 4.1 数据驱动三件套:页面即数据
 
 主页八个板块全部塞进 [Home.vue](https://github.com/fangkun119/agent-os-poc/commit/6c168a748da3c537c9231717385cfe4ad36d7e99/website/.vitepress/theme/components/Home.vue) 一个组件:约 280 行 script(数据与逻辑)、260 行 template(结构)、680 行 scoped 样式。为什么单组件而不拆八个?因为单页站点的板块间没有复用关系,拆件只会增加文件跳转;真正的维护成本在文案,于是组件确立了「数据驱动三件套」:文案与条目全部定义在 script 顶部的数据数组里,模板只做 `v-for` 循环渲染,样式按类名承接。改一句产品文案,只动数组,不碰模板——注释原话是「段落/条目只改本文件顶部数据数组,模板只做 v-for 渲染」。
+
+```mermaid
+flowchart TD
+    arrays["script 顶部数据数组:heroLines、stats、capabilities 等"] -->|"v-for 循环"| tpl["template:按 type 分支渲染"]
+    tc["t() 双语助手与 computed 派生数组"] --> tpl
+    tpl --> css["scoped 样式按类名承接"]
+    css --> page["单页主页八个板块"]
+```
 
 以能力板块为例,数组每项是一张卡:文件树符号、条目名、标题、描述、代码示例、出处链接。模板里对应一段十行的 `v-for`。新增一张卡等于往数组加一项,模板与样式零改动。
 
@@ -149,11 +183,11 @@ const t = (zh, en) => (isZh.value ? zh : en)
 
 `useData()` 是 VitePress 提供的运行时数据入口,这里取当前 locale 的语言标签。所有用户可见文案写成 `t('中文', 'English')`,中文在前。stats、capabilities、heroLines 这类「随语言变化的数组」则统一包进 **computed**(计算属性:依赖变化时自动重算的派生值)。
 
-为什么不直接写普通常量?打个比方,常量是拍立得,按下快门那刻的画面永久固定;computed 是监控画面,镜头前的内容变了画面跟着变。用户切换语言时组件不会重建,普通常量数组就固化在首载语言上,界面出现「中文导航配英文卡片」的裂缝。diff 注释把这条教训写成了红线:「普通 const 会固化首载语言」。同一个道理还有一处变体:`docRefs` 因为内部要调 `t()`,也必须保持函数形态每次调用时求值,不能缓存成常量。
+你可能会问:双语数据为什么不直接写成普通常量?打个比方,常量是拍立得,按下快门那刻的画面永久固定;computed 是监控画面,镜头前的内容变了画面跟着变。用户切换语言时组件不会重建,普通常量数组就固化在首载语言上,界面出现「中文导航配英文卡片」的裂缝。diff 注释把这条教训写成了红线:「普通 const 会固化首载语言」。同一个道理还有一处变体:`docRefs` 因为内部要调 `t()`,也必须保持函数形态每次调用时求值,不能缓存成常量。
 
 ### 4.3 docRefs:页面上每个数字都有出处
 
-这个站点有一条内容纪律:页面上的每个数字与机制表述,必须能追溯到仓库权威文档。代码把纪律做成了机制——`docRefs(['DA 5.2', 'TS 11.1'])` 把「需求文档第 5.2 节」这类引用翻译成指向仓库文档对应文件的链接,渲染成每张卡片角落的「⟶ 溯源」行。访客点开能力卡,能直接跳到支撑这句话的文档章节。规划文档(plan.md)里配套一张「内容事实基线」表,列出页面允许出现的全部数字;页面侧再由 docRefs 把出处钉在文案旁边。宣传页最常见的问题是数字口径失控,这套「基线表加出处链接」的组合拳把口径锁在了代码里。
+这个站点有一条内容纪律:页面上的每个数字与机制表述,必须能追溯到仓库权威文档。代码把纪律做成了机制——`docRefs(['DA 5.2', 'TS 11.1'])` 把文档章节号翻译成指向仓库文档对应文件的链接(「DA 5.2」即需求文档 DemandAnalysis 第 5.2 节,「TS 11.1」即技术方案 TechnicalSolution 第 11.1 节),渲染成每张卡片角落的「⟶ 溯源」行。访客点开能力卡,能直接跳到支撑这句话的文档章节。规划文档(plan.md)里配套一张「内容事实基线」表,列出页面允许出现的全部数字;页面侧再由 docRefs 把出处钉在文案旁边。宣传页最常见的问题是数字口径失控,这套「基线表加出处链接」的组合拳把口径锁在了代码里。
 
 ### 4.4 终端 hero:唯一编排时刻与动效门控
 
@@ -190,6 +224,8 @@ Array.from(terminalBody.value.children).forEach((el, i) => {
 
 ## 5. 次要变更与噪音:资产、规范与生成物
 
+剩余变更按「资产、规范、生成物」三组合讲,一行一个结论;机制在前面章节讲过的,这里只留指针。
+
 | 组 | 文件 | 说明 |
 | --- | --- | --- |
 | 自托管字体 | `public/fonts/` 两个 woff2 | Inter(正文)与 JetBrains Mono(代码)的可变字体,站内托管,零运行时外部请求——私有部署定位下内网、离线都可渲染;`unicode-range` 限定只覆盖拉丁字符,中文字符自动落回系统字体栈,不为没有的字形白下载体积 |
@@ -198,7 +234,7 @@ Array.from(terminalBody.value.children).forEach((el, i) => {
 | 分享图 | og.png、og-zh.png | 1200×630 社交分享卡,与 og meta 按语言配对 |
 | 旧占位图清退 | 删除 12 个旧 SVG | 上一阶段为 docs 配图准备的占位文件(docs-*.svg、旧 logo 等),被自绘双语资产取代;其中 docs-architecture-light.svg 以纯改名方式变为 architecture.svg 留档 |
 | 站点规范 | website/CLAUDE.md | 102 条站点开发纪律(locale 键位、scoped 纪律、转义红线等),写成可拷贝到其他 VitePress 项目的模板 |
-| 实施计划 | spec/.../plan.md | 332 行:目标范围、内容事实基线(每个数字带文档出处)、设计规范、执行清单——第 4 章的「出处机制」源头在此 |
+| 实施计划 | spec/.../plan.md | 332 行:目标范围、内容事实基线(每个数字带文档出处)、设计规范、执行清单——第 4.3 节的「出处机制」源头在此 |
 | 生成物 | package-lock.json | npm 依赖锁定文件,自动生成,保证他人安装到相同版本;无教学价值,归为噪音 |
 
 值得一提的取舍:字体从「引外部 CDN」改成「文件进仓库」,代价是仓库体积增加约 80KB,换来的是零外部依赖与确定的加载行为。对私有部署产品,这是一笔明确的划算交易。
@@ -215,12 +251,20 @@ Array.from(terminalBody.value.children).forEach((el, i) => {
 
 更可迁移的是工作方法:先写「内容事实基线」再写页面、每个数字带出处、扩展期能力不提前承诺——让官网说真话的从来不是文案,是机制。
 
-## 7. 设计决策记录
+## 7. 附录:设计决策与改写校验记录
 
-1. 提交圈定:标记自 f93bd27 前进至 6c168a7(完整哈希 6c168a748da3c537c9231717385cfe4ad36d7e99),池内仅此一个提交,全部 35 个文件属本次主题,无范围外夹杂;仓库中其他未提交改动(CLAUDE.md、docs 等)按约定不纳入。
+### 7.1 设计决策记录
+
+1. 提交圈定:标记自 f93bd27 前进至 6c168a7(完整哈希 6c168a748da3c537c9231717385cfe4ad36d7e99),池内仅此一个提交,全部 35 个文件属本次主题,无范围外夹杂;仓库中其他未提交改动(CLAUDE.md、docs 等)按约定不纳入。本提交亦未触及教程输出目录 chat/,无目录噪音需剔除。
 2. 同主题旧文:chat/tutorials/ 下已存在 20260902_vitepress_bilingual_site.md,系此前对同一批代码的目录模式讲解(目录模式不推进标记,故标记仍停在 f93bd27)。本篇为提交模式正式成文,文件名日期前缀不同,不覆盖旧文。
 3. 色板演进考证:提交内 plan.md §1 锁定「黑底 #000 加橙 #f97316」,最终代码为绿 #2fe07a「机房 LED」v3。演进依据是 plan.md §8 变更记录「2026-08-31 视觉刷新立项并实施完成(初选琥珀荧光同日改选)」;定稿对比细节记录于 chat/consolidate/ 下的未跟踪文件,custom.css 头注释留有出处指针——指针目标不在本提交内,细节从提交中无法考证。
 4. base 演进:plan.md 锁定 `base: '/'`,最终 config.mts 为 `/agent-os-poc/`(GitHub Pages 子路径),config 注释说明成因;plan.md 变更记录未收录此变更,以代码为准。
 5. 场景板块缩编:plan.md §3.3 规划八张场景卡,执行清单 3.6 仍标「八卡 [x]」,最终代码为三张 run 卡加一行 personas(运维、客服、HR、知识管理、销售),3 加 5 恰覆盖原八项名单。plan 与代码不一致,按「矛盾以 git 为准」取代码口径。
 6. 噪音判定:package-lock.json(+2561 行)为依赖锁定生成物,略过不讲;12 个旧 SVG 删除属资产替换的收尾动作,并入第 5 章合讲而非单列。
 7. 动机来源:本篇无额外文件,全部动机取自提交信息、代码注释与提交内 plan.md;构建验证结论(make build 通过、Playwright 回归)引自提交信息,未独立复跑。
+
+### 7.2 改写校验记录
+
+- 两个提交哈希均经 `git cat-file -t` 验证存在:6c168a748da3c537c9231717385cfe4ad36d7e99、f93bd27,均为 commit;全文 GitHub 链接与原文逐一对应,未改 URL、未删链接。
+- 原文称 base 配置在 config.mts 第 22 行,经 `git show` 核对实际在第 14 行;改写稿删去行号表述,以 git 为准。
+- 相对原文新增:开篇学习目标、3 张 mermaid 图(2.1 双 locale 原理、2.6 构建部署流、4.1 数据驱动结构);原第 1 章末「未触及 chat/」一句并入 7.1 第 1 条。
