@@ -1,16 +1,35 @@
+# 工程唯一配置（方案 B：第一组 application.yaml 已随 src/ 归档）——三腿全量自含，腿 4 走显式构造。
 spring:
-  application:
-    name: react-loop-spike
   ai:
-    openai:
-      api-key: ${OPENAI_API_KEY:placeholder}        # 密钥：环境变量，E1/E2 离线项可用占位默认值
-      base-url: https://api.minimax.cn              # 非敏感：明文 yaml，不带 /v1（定稿 5.3）
+    # 关掉 Spring AI 默认重试链（默认 max-attempts=10、退避最长 3min）——
+    # 否则 V2 负向探针会拖满 surefire 180 秒被强杀；V6 的"一次调用 ↔ 一组计时"
+    # 也要求无隐式重试污染。正式实现按 agentos/CLAUDE.md 第 36 条显式设计重试与三档预算的关系
+    retry:
+      max-attempts: 1
+    openai:                                      # 腿 1：MiniMax 国内站 OpenAI 兼容端点（配置自第一组平移，值不变）
+      api-key: ${OPENAI_API_KEY:placeholder}
+      base-url: https://api.minimax.cn
       chat:
         options:
           model: ${OPENAI_DEFAULT_MODEL:MiniMax-M2.7}
-    anthropic:
+    anthropic:                                   # 腿 2：MiniMax 国内站 Anthropic 兼容端点（2026-09-14 国内站决议）
       api-key: ${ANTHROPIC_API_KEY:placeholder}
-      base-url: https://api.minimaxi.com/anthropic  # 属性名未获文档确认，E8 实测（002 §6 开放项）
+      base-url: https://api.minimax.cn/anthropic # 可达性未经实测，由 V6 顺带验证；不通则改回国际站值并另报评审
       chat:
         options:
           model: ${ANTHROPIC_DEFAULT_MODEL:MiniMax-M3}
+    minimax:                                     # 腿 3：MiniMax 原生 starter（路径 B 实测体）
+      api-key: ${MINIMAX_API_KEY:placeholder}   # 密钥：环境变量占位；placeholder 默认值只服务离线测试
+      base-url: https://api.minimax.cn           # V2 实测项：候选 A（不带 /v1）。
+                                                  # 失败（404 / 路径错）则改候选 B
+                                                  # https://api.minimax.cn/v1 重测；
+                                                  # 两候选结果都落盘 logs/r2/v2-properties.txt。
+                                                  # 实测前不得照搬任何一条现成结论（req 4.1 第 5 条注意事项）。
+                                                  # 源码口径（2026-09-14 核验，v1.1.8 MiniMaxApi 144/164 行）：
+                                                  # 客户端自动追加的是 MiniMax 原生协议路径
+                                                  # /v1/text/chatcompletion_v2（非 OpenAI 兼容路径）——
+                                                  # 即 minimax 腿是第三种协议形态，预期候选 A 正确；
+                                                  # 运行时候选实测照做，不因此跳过
+      chat:
+        options:
+          model: ${MINIMAX_DEFAULT_MODEL:MiniMax-M2.7}

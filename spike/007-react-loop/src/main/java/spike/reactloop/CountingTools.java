@@ -1,4 +1,4 @@
-package spike.reactloop.tool;
+package spike.reactloop;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -7,13 +7,12 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 
 /**
- * E3 对照 / E4 / E6 的确定性夹具工具：固定返回 + 执行计数 + 最近入参记录。
- * 追溯：002 §3.2。
+ * 确定性夹具工具：固定返回 + 执行计数 + 最近入参记录（参照第一组思路重写）。
+ * 计数器是 V4 按 E3 计数法判"无双执行"的依据。追溯：002-spec §3.1。
  */
 public class CountingTools {
 
     private final AtomicInteger weatherCalls = new AtomicInteger();
-    private final AtomicInteger adviceCalls = new AtomicInteger();
     private final Map<String, String> lastArgs = new LinkedHashMap<>();
 
     @Tool(description = "查询指定城市和日期的天气，返回固定内容")
@@ -26,16 +25,9 @@ public class CountingTools {
         return "晴，12°C";
     }
 
-    @Tool(description = "根据天气给穿衣建议，返回固定内容")
-    public String getAdvice(
-            @ToolParam(description = "天气描述，例如：晴") String weather) {
-        adviceCalls.incrementAndGet();
-        lastArgs.put("weather", weather);
-        return "穿外套";
-    }
-
+    /** 全部工具的执行总次数（V4 判定用：应等于模型发起工具调用的总个数）。 */
     public int totalCount() {
-        return weatherCalls.get() + adviceCalls.get();
+        return weatherCalls.get();
     }
 
     public Map<String, String> lastArgs() {
@@ -44,7 +36,6 @@ public class CountingTools {
 
     public void reset() {
         weatherCalls.set(0);
-        adviceCalls.set(0);
         lastArgs.clear();
     }
 }
