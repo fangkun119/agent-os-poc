@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: mcp-spike
+  ai:
+    retry:
+      max-attempts: 1        # 显式关停重试链（agentos/CLAUDE.md §1 C-32：默认 10 次退避会把超时兜底吃掉；spike 单次调用语义更利于证据归因）
+    openai:
+      api-key: ${OPENAI_API_KEY:placeholder}        # 密钥：环境变量（红线）；离线项用占位默认值即可启动
+      base-url: https://api.minimax.cn              # 非敏感：明文 yaml，不带 /v1（定稿 5.3——带 /v1 会双写 404）
+      chat:
+        options:
+          model: ${OPENAI_DEFAULT_MODEL:MiniMax-M2.7}
+    # 注意：不写 spring.ai.mcp.* ——自持路线（组合 A/B/C）不依赖 starter 自动装配；
+    # 组合 D（T6）的配置在 src/test/resources/application-starter.yaml
