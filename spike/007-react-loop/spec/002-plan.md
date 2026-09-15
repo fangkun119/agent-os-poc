@@ -1,7 +1,7 @@
 # Spike 实施计划（002-plan）
 
 > 位置：`spike/007-react-loop/spec/002-plan.md`
-> 创建：2026-09-14 · 状态：待执行
+> 创建：2026-09-14 · 状态：已执行（2026-09-15，T0-T7 全部完成、未触发跳过分支）
 > 上游：`spec/002-req.md`（下称 req，验收源头与决议规则）、`spec/002-spec.md`（下称 spec，工程形态与判定细则）
 > 格式底稿：第一组计划（`spec/001-plan.md`，其任务化结构与本计划同构；从未提交，2026-09-15 删除——已被 002- 替代）
 > 约定：① 所有命令在 `spike/007-react-loop/` 目录内执行；② mvn 一律用全路径 `/opt/homebrew/bin/mvn`（2026-09-14 定案，不建软链）；③ live 任务前先 `source ~/.agent-os-poc/script/agent-os-env.sh`（必须 source 不能执行）；④ 术语与验收标准沿用 spec——本计划只做任务化，**完成判定不弱于 spec §4 任何一条**

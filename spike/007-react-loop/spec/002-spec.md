@@ -1,7 +1,7 @@
 # Spike 实验代码规格说明（第二组：模型接入路径重验）
 
 > 位置：`spike/007-react-loop/spec/002-spec.md`
-> 创建：2026-09-14 · 状态：待评审
+> 创建：2026-09-14 · 状态：已执行（2026-09-15，配套实验全部完成，终验 7 测试 0 失败）
 > 上游：`spike/007-react-loop/spec/002-req.md`（本文下称 **req**——验证项 V0-V8、硬约束 4.1、规程 4.2、产出物 4.4 的唯一源头，本文只做代码层细化、不弱化其中任何标准）
 > 参照件（只参照、不拷贝代码）：`spike/007-react-loop/README.md`（下称 **007 README**，第一节为第一组结论存档——D1-D4 决议与 E1-E9 打勾表）。第一组规格三件套（001-expirement / 001-spec / 001-plan）已于 2026-09-15 删除（已被 002- 替代）；其中 001-expirement 可自 git 历史（2a01bee / edfadf3）恢复，001-spec / 001-plan 从未提交、删除后不可恢复
 > 下游：实施计划（建议命名 `spec/002-plan.md`，本文第 7.3 节给输入）
@@ -50,7 +50,6 @@
 | 第一组规格三件套 | `spec/001-expirement.md`（git 历史 2a01bee / edfadf3 可恢复）；`001-spec.md` / `001-plan.md`（从未提交，2026-09-15 删除；已被 002- 替代，确认不再保留） |
 | 007 README | `spike/007-react-loop/README.md` |
 | 定稿 | `docs/design/detail-supplement/001-model-config-export.md` |
-| 评审 001 | `docs/review/001-tech-review-based-on-requirement.md` |
 | TS / DA / AG（此式引用） | `docs/design/TechnicalSolution.md` / `DemandAnalysis.md` / `AiProgrammingGuide.md` 的对应章节号 |
 | 根 CLAUDE.md / spike/CLAUDE.md | 仓库根 `/CLAUDE.md` / `spike/CLAUDE.md` |
 
@@ -182,7 +181,7 @@ spring:
 
 ### 3.2 ManualLoop + LoopResult
 
-- 循环路径照 007 README D3（= 评审 001 8.1(3) 官方标准路径）重写：`ToolCallingChatOptions.builder().toolCallbacks(...).internalToolExecutionEnabled(false).build()` → `new Prompt(text, options)` → `chatModel.call(prompt)` → `hasToolCalls()` 为真则 `toolCallingManager.executeToolCalls(prompt, chatResponse)` → `conversationHistory()` 重建 Prompt → 再 call；为假则结束。
+- 循环路径照 007 README D3（官方标准路径）重写：`ToolCallingChatOptions.builder().toolCallbacks(...).internalToolExecutionEnabled(false).build()` → `new Prompt(text, options)` → `chatModel.call(prompt)` → `hasToolCalls()` 为真则 `toolCallingManager.executeToolCalls(prompt, chatResponse)` → `conversationHistory()` 重建 Prompt → 再 call；为假则结束。
 - 每轮 call 外裹计时、读响应元数据 usage——V6 的取数路径在这里（一次模型调用 ↔ 一组 (usage, duration)）。
 - `LoopResult` 字段：`finalText`、`iterations`、`toolCallRounds`、`usages`、`durationsMs`、`hitLimit`（迭代上限默认 10，防挂死，不抛异常）。
 - 支持以 per-call options 覆盖模型名（`.model("MiniMax-M3")`）——V3-V5 跑 M3、V6 跑缺省模型，三级选择的第 3 级由此覆盖。

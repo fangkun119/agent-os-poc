@@ -106,7 +106,7 @@ TS 6.4 McpClientService 职责句 + TS 8.8 密钥红线延伸。执行纪律（�
 
 ## 八、遗留与偏差
 
-- **连接时机策略待裁决（2026-09-14 发现）**：本 README D7 沿 TS 6.4 原文实测"启动时连接 + 失败跳过不阻断"；agentos/CLAUDE.md 编码规范另有一条"C-86：MCP server 连接懒加载（要用时才连接/列取），禁 @PostConstruct 全量初始化"（@PostConstruct=Spring Bean 初始化时自动执行的钩子注解）——两者对"不可达 server 不拖挂启动"给出了相反策略（启动连接+跳过 vs 干脆不启动连）。spike 未做连接时机的对照实验，D7 忠实记录的是 TS 现文方向。第二周 McpClientService 实现前需裁决：启动全量+跳过 / 纯懒加载 / 混合（启动只解析配置、首次使用才连接并缓存）；裁决结果回填 TS 6.4 与 agentos/CLAUDE.md 之一；
+- **连接时机策略（2026-09-14 发现，2026-09-15 已裁决闭环）**：本 README D7 沿 TS 6.4 原文实测"启动时连接 + 失败跳过不阻断"；agentos/CLAUDE.md 编码规范另有一条"C-86：MCP server 连接懒加载（要用时才连接/列取），禁 @PostConstruct 全量初始化"（@PostConstruct=Spring Bean 初始化时自动执行的钩子注解）——两者对"不可达 server 不拖挂启动"给出了相反策略（启动连接+跳过 vs 干脆不启动连）。spike 未做连接时机的对照实验，D7 忠实记录的是 TS 现文方向。**已裁决（2026-09-15）**：核心阶段维持"启动全量连接 + 失败跳过"——TS 6.4 现文即结论、不改动；agentos/CLAUDE.md C-86 已改写为意图表述，懒加载降为扩展阶段优化项并附升级信号（server 多到启动明显变慢 / 引入远程 SSE server 时重议懒加载/混合）。本条闭环；
 - 编排偏差仅 T6-4 一处（独立类 StarterProbeTest），001-plan 已同步；
 - logs/ 已 git 忽略；含 token 的旧日志文件已被重定向覆盖，复查 0 残留；
 - MiniMax-M2.7 的 `<think>` 剥离（ThinkStripper）有效，M5 两候选 finalText 剥后干净；

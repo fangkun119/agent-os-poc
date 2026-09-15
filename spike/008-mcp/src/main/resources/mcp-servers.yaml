@@ -1,5 +1,5 @@
 # spike/008 实验稿（002 §2.2；模拟 .agentos/mcp_servers.yaml 形态）
-# 四字段：name / transport / command / env（TS 6.4；评审 001 的 6.2 节语义）
+# 四字段：name / transport / command / env（字段定义 TS 6.4；语义由本 spike M7 验证）
 # env 值只允许 ${环境变量名} 占位符或非敏感值（TS 8.8 密钥红线延伸）
 servers:
   - name: everything

@@ -1,7 +1,7 @@
 # MCP Client 集成 Spike 实施计划（001-plan）
 
 > 位置：`spike/008-mcp/spec/001-plan.md`
-> 创建：2026-09-14 · 状态：待执行
+> 创建：2026-09-14 · 状态：已执行（2026-09-14，任务全部完成，结论见 README）
 > 上游：`001-req.md`（下称 001；M1-M8 问题清单与出口形态）、`001-spec.md`（下称 002；工程形态、组件规格、验收判定——本文步骤里的"002 §x"均指它的节号）
 > 约定：① 所有命令在 `spike/008-mcp/` 目录内执行 `mvn`（spike/CLAUDE.md）；② live 任务前先 `source ~/.agent-os-poc/script/agent-os-env.sh`；③ 术语沿用 001 术语表 + 002 §0.1；④ spike 执行期间不改 docs/design/ 与根 CLAUDE.md（001 §6.3 文档冻结令）
 
@@ -213,14 +213,14 @@ mvn dependency:tree -Dverbose > logs/m2-tree-a.txt    # 依赖树留档（按组
 
 ## 6. 不可违背约束（违反即停）
 
-> 盘点来源：根 CLAUDE.md（非协商原则 / 模型接入环境变量 / 工具使用指南）、TS 1.1 / 1.2 / 3.2 / 4.2 / 6.7 / 7.4 / 8.2 / 8.8、DA 13、评审 001（R1 / 8.2 / 10.2(2)）、定稿（docs/design/detail-supplement/001-model-config-export.md）、007 README D1-D4、001-req §6、002 §5。本节是执行期速查，仲裁以各出处原文为准。
+> 盘点来源：根 CLAUDE.md（非协商原则 / 模型接入环境变量 / 工具使用指南）、TS 1.1 / 1.2 / 3.2 / 4.2 / 6.7 / 7.4 / 8.2 / 8.8、DA 13、定稿（docs/design/detail-supplement/001-model-config-export.md）、007 README D1-D4、001-req §6、002 §5。本节是执行期速查，仲裁以各出处原文为准。
 
 ### 6.1 类库与技术选型（锁死项）
 
 | # | 项 | 锁定值 | 禁止 | 出处 |
 |---|---|---|---|---|
 | 1 | parent / JDK | `spring-boot-starter-parent:3.5.16` + Java 21 | 禁改 parent、禁升 Boot 4.x / 降 3.4.x | 007 README D1；根 CLAUDE.md 原则 1 |
-| 2 | Spring AI 版本线 | 1.1.x（spring-ai-bom 1.1.2 import），全程不动 | **Spring AI 2.0 线禁入**——`internalToolExecutionEnabled` 是 Spring AI 框架"自动执行工具"的开关（本项目的红线是关掉它、由自研循环自己执行工具，见 6.2 第 1 条）；Spring AI 2.0 删除了该开关，`.internalToolExecutionEnabled(false)` 这行代码在 2.0 下直接编译不过。T7 升降级只允许动 MCP SDK 版本，**任何情况下不动 Spring AI 版本** | 评审 001 R1 / 8.2；007 D2 |
+| 2 | Spring AI 版本线 | 1.1.x（spring-ai-bom 1.1.2 import），全程不动 | **Spring AI 2.0 线禁入**——`internalToolExecutionEnabled` 是 Spring AI 框架"自动执行工具"的开关（本项目的红线是关掉它、由自研循环自己执行工具，见 6.2 第 1 条）；Spring AI 2.0 删除了该开关，`.internalToolExecutionEnabled(false)` 这行代码在 2.0 下直接编译不过。T7 升降级只允许动 MCP SDK 版本，**任何情况下不动 Spring AI 版本** | 007 D2；agentos/CLAUDE.md 第 1 章（锁定 Spring AI 1.1.x） |
 | 3 | 模型连接器 | 仅 `spring-ai-starter-model-openai` 一条模型连接线（"腿"= 一条协议接入线；OPENAI 腿 = 经 OpenAI 协议接入，当前指向 MiniMax 的 OpenAI 兼容端点，缺省模型 MiniMax-M2.7；只引这一条已经 2026-09-14 用户裁决） | 禁再引第二条腿（anthropic 腿 = Anthropic 协议接入线）、禁引 SAA 自家 connector、禁引 `spring-ai-starter-model-minimax`（MiniMax 接入路径重验是 spike/007 第二组 002-req 的 V0-V8 另案，与本 spike 无关） | 002 §1.2 / §2.3；定稿 §2.1；007 002-req §3.2 |
 | 4 | SAA 参与方式 | 仅 `spring-ai-alibaba-bom:1.1.2.0` 双 import 管版本 | 禁引 SAA 任何 connector、graph-core 等 SAA 构件（007 的 graph-core 是其 E1 探针专用，本 spike 无此需求） | 007 D2；002 §1.2 |
 | 5 | MCP Java SDK 版本 | 组合 A 默认 0.17.0；T7 档位仅限 002 §1.2 所列 0.18.4 / 1.1.4 / 2.0.1 | 版本一律以 Maven Central（repo1.maven.org）为准，禁以 MCP Java SDK 官方文档站显示的版本号当坐标——该站文档 URL 固定挂在 latest-snapshot 快照路径下，版本号滞后于 Maven Central（2026-09-14 时点：文档快照显示 0.17.2，Central 当前 release 已是 2.0.1）。另注意：MCP SDK 的 2.x **不受**"Spring AI 2.0 禁入"约束——两者是不同项目的版本线，勿混淆 | 002 §1.2；001 §1.2；2026-09-14 Context7 与 repo1 对照实查 |

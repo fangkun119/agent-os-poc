@@ -1,7 +1,7 @@
 # MCP Client 集成 Spike 代码规格说明（001-spec）
 
 > 位置：`spike/008-mcp/spec/001-spec.md`
-> 创建：2026-09-14 · 状态：待评审
+> 创建：2026-09-14 · 状态：已执行（2026-09-14，配套实验全部完成，结论见 README）
 > 上游：`001-req.md`（下称 001；M1-M8 问题清单、方法、结论记录要求、一致性清单的唯一源头）
 > 平行输入：`spike/007-react-loop/README.md`（下称 007 README；D1-D4 决议与基线坐标）、`docs/design/detail-supplement/001-model-config-export.md`（下称定稿；密钥与 yaml 接线规则）
 > 下游：`001-plan.md`（待生成的实施计划，命名沿 007 先例）
@@ -79,7 +79,7 @@ MCP 相关依赖是 **M2 的实验对象，不在此预选**。四个实验组�
 
 两个注意：
 
-- **MCP Java SDK 的 1.x / 2.x 版本线与"Spring AI 2.0 禁入"是两码事**。评审 001 R1 禁的是 Spring AI 框架 2.0（`internalToolExecutionEnabled` 开关已删）；MCP Java SDK 是另一个项目的版本演进，不因 R1 连带禁入。
+- **MCP Java SDK 的 1.x / 2.x 版本线与"Spring AI 2.0 禁入"是两码事**。禁入 Spring AI 2.0 线禁的是框架本身（`internalToolExecutionEnabled` 开关已删；锁 1.1.x 见 007 D2 与 agentos/CLAUDE.md 第 1 章）；MCP Java SDK 是另一个项目的版本演进，不连带禁入。
 - **Jackson 线是组合 B / C 的已知风险点**：SDK 0.17.x 走 Jackson 2.x（与 Boot 3.5 同线）；SDK 新版默认 Jackson 3.x，官方另发 `mcp-json-jackson2` 兼容模块（SDK 官方文档 quickstart，2026-09-14 Context7 核验）。依赖树见冲突时按此对治，实测记录进 M2。
 
 ### 1.3 决议规则（实验结果 → 组合去留）
@@ -130,8 +130,8 @@ servers:
 
 说明：
 
-- 四字段 `name` / `transport` / `command` / `env` 的语义按评审 001 的 6.2 节。顶层用 `servers:` 列表是本 spike 的自定（docs 只定了字段、没定外层结构）——M7 结论回填 TS 6.4 时一并定案（001 的 6.2 节第 5 条）。
-- `command` 是一条启动命令字符串；加载时拆成"可执行文件 + 参数数组"传给 SDK 的进程构造，不经 Shell 解释（与评审 001 的 6.3 节"shell 执行模型：argv 直接 spawn"同一哲学）。
+- 四字段 `name` / `transport` / `command` / `env` 的语义按 TS 6.4 与 001-req M7。顶层用 `servers:` 列表是本 spike 的自定（docs 只定了字段、没定外层结构）——M7 结论回填 TS 6.4 时一并定案（001 的 6.2 节第 5 条）。
+- `command` 是一条启动命令字符串；加载时拆成"可执行文件 + 参数数组"传给 SDK 的进程构造，不经 Shell 解释（与 TS 6.7 的 argv 直传同一哲学）。
 - `env` 的值只允许 `${环境变量名}` 占位符或非敏感值（TS 8.8 密钥红线延伸，001 的 6.1 节第 5 条）。`MCP_SPIKE_PROBE` 的值不是凭证，用于验证"占位符解析 → 子进程环境变量 → server 侧可见"这条通路。
 - filesystem server 允许访问的目录以命令参数给定（`./sandbox-dir`，spike 目录内自建，预置一个可读文本文件）；两个 server 的具体命令形态以 spike 执行时官方仓库 modelcontextprotocol/servers 的当前形态为准（001 四章方法 1 同款口径）。
 
@@ -196,7 +196,7 @@ servers:
 ### 3.9 审计口径模拟（001 的 6.1 节第 3 条）
 
 - spike 不建 SQLite。每次工具执行按 `tool_invocations` 的字段口径打一行结构化日志：tool_name / input_json / success / error_message / duration_ms。
-- 目的：验证 MCP 工具与其他工具走同一条执行路径、留痕口径不特殊化（TS 4.2 ToolExecutor 统一写入；评审 001 10.2(2)"审计不自建"）。README 记录正式实现里这行日志的落点（ToolExecutor）。
+- 目的：验证 MCP 工具与其他工具走同一条执行路径、留痕口径不特殊化（TS 4.2 ToolExecutor 统一写入，审计不自建）。README 记录正式实现里这行日志的落点（ToolExecutor）。
 
 ## 4. 验证项与验收标准（M1-M8 → 测试类与判定）
 
@@ -219,7 +219,7 @@ servers:
 |---|---|---|
 | 1 | MCP 工具不经 SandboxChecker 校验；spike 实验不给 MCP 工具挂 Sandbox 校验 | 001 的 6.1 节第 1 条（TS 6.6 / 6.7、评审 Q5③） |
 | 2 | MCP 工具包装成 AgentOSTool 进 ToolRegistry，白名单过滤模拟 Profile `tools` 字段 | 001 的 6.1 节第 2 条（TS 6.6） |
-| 3 | 审计统一路径：MCP 工具执行与其他工具同一条留痕口径（3.9 节），不自建 | 001 的 6.1 节第 3 条（TS 4.2 / 6.1 / 9.2、评审 001 10.2(2)） |
+| 3 | 审计统一路径：MCP 工具执行与其他工具同一条留痕口径（3.9 节），不自建 | 001 的 6.1 节第 3 条（TS 4.2 / 6.1 / 9.2） |
 | 4 | 禁自动 tool 执行：`internalToolExecutionEnabled(false)`，M5 接线必须走手动循环 | 001 的 6.1 节第 4 条（根 CLAUDE.md 非协商原则 4、TS 1.1 决策二） |
 | 5 | 密钥红线：env 只写 `${环境变量名}` 占位符，不明文写配置；日志 / 命令行最多 5 位前缀 | 001 的 6.1 节第 5 条（TS 8.8） |
 | 6 | 基线不动：parent 3.5.16 + JDK 21 + 双 BOM（SAA 1.1.2.0 + spring-ai-bom 1.1.2） | 001 的 6.1 节第 6 条（007 README D1/D2） |

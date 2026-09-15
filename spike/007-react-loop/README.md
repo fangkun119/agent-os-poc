@@ -30,7 +30,7 @@
 | E3 计数法 | 判"无双执行"的方法：给工具加执行计数器，计数器读数 = 模型发起工具调用的总个数即通过 |
 | `<think>` 标签 | MiniMax-M3 模型把思考过程混在回答正文里，包在 `<think>...</think>` 中；断言前要先剥离 |
 | V0-V9 | 第二组验证项编号（定义见 `spec/002-req.md` 3.1 节）；E1-E9 为第一组验证项编号 |
-| D1-D4 / D5-D7 | 决议编号：D1-D4 = 第一组（第一节存档）；D5-D7 = 第二组（第二节） |
+| D1-D4 / D5-D8 | 决议编号：D1-D4 = 第一组（第一节存档）；D5-D8 = 第二组（第二节，D8 为 2026-09-15 ZHIPU 转正裁决） |
 | req / spec / plan | 本 spike 的三份规格文档：`spec/002-req.md`（需求与验证项）/ `spec/002-spec.md`（代码规格）/ `spec/002-plan.md`（任务计划） |
 | 定稿 | `docs/design/detail-supplement/001-model-config-export.md`（模型接入环境变量定稿） |
 | 根 CLAUDE.md | 仓库根 `/CLAUDE.md` |
@@ -96,7 +96,7 @@
 | V6 usage/耗时双腿 | V6UsageCaptureTest | ✅ | minimax：usages=[in=267,out=69, in=325,out=64]，durationsMs=[5238, 2580]；anthropic：usages=[in=477,out=41, in=282,out=48]，durationsMs=[4611, 3708]；一次调用 ↔ 一组样本，重试已关无污染；**anthropic 国内站 `api.minimax.cn/anthropic` 实测可达**（补齐第一组 E7 缺的第二协议样本）——`logs/r2/v6-usage.txt` |
 | V7 `<think>` 剥离 | 内建于 V3/V4 | ✅（含差异记录） | 本轮 MiniMax-M3 经原生端点的回答**未混入** `<think>`（第一组 openai 腿 M3 混入）；ThinkStripper 保留（幂等无害）——`logs/r2/v3-tool-loop.txt` |
 | V8 决议收口 | 无代码 | ✅ | 即本 README 第二节 |
-| V9 双 OpenAI 协议实例并存 | V9DualOpenAIInstanceTest | ✅ | openai 腿（MiniMax 兼容端点）与 zhipu 腿（智谱 Coding Plan 端点，glm-5.3-flash）并存互不干扰、各自 2 轮闭环；tools/tool_calls 往返双端可用；mutate() 反射探测透出 completionsPath=true——`logs/r2/v9-dual-openai.txt` |
+| V9 双 OpenAI 协议实例并存 | V9DualOpenAIInstanceTest | ✅ | openai 腿（MiniMax 兼容端点）与 zhipu 腿（智谱 Coding Plan 端点，glm-5.3-flash）并存互不干扰、各自 2 轮闭环；tools/tool_calls 往返双端可用；mutate() 反射探测透出 completionsPath=true——`logs/r2/v9-dual-openai.txt`。（转正接线见 D8：ZHIPU 用官方 starter，勿照抄本腿手法） |
 
 ### 路径 B 属性表（V2 实测）
 
@@ -114,6 +114,7 @@
 | D5 | **MiniMax 接入采路径 B**：`spring-ai-starter-model-minimax:1.1.2` + `spring.ai.minimax.*` 属性族 + base-url 写纯主机（客户端自动追加原生路径 `/v1/text/chatcompletion_v2`）；OPENAI / ANTHROPIC 两条腿保留，语义回归"真 OpenAI / Anthropic 协议腿、待原生账号"（req 3.3 第 1 行） | V1-V7 全绿 |
 | D6 | **显式构造的 ChatModel 必须显式传 RetryTemplate**（Spring Retry 的重试模板，控制失败后重试几次、间隔多久）：手动 new 的 ChatModel 内置默认模板（10 次退避、最长 3min），不吃 `spring.ai.retry.*` 配置（那只注入自动配置创建的 Bean）——正式实现的 `ProviderService` 显式构造实例时照此办理（与 agentos/CLAUDE.md「配置纪律」章互为印证） | V2 首跑实证（探针被退避链拖满 surefire 180s 强杀） |
 | D7 | SAA BOM 维持 1.1.2.0 不升级（1.1.2.2 / 1.1.2.3 差异仅记录，升级另行评审——req 1.3 口径） | 版本线现状核查 |
+| D8 | **ZHIPU Provider 转正，接线用官方 starter（2026-09-15 用户裁决）**：转正实现引入 `spring-ai-starter-model-zhipuai`（1.1 线存在，见 spec 路径 D 注；BOM 仲裁版本与 `spring.ai.zhipuai.*` 属性族以 W1 核验为准）。本组 V9 的接法（OpenAI starter + `OpenAiApi.builder()` 显式构造 + completionsPath 覆盖）定性为"Spring AI 无官方 starter 的 Provider"兜底模式——ZHIPU 转正**不得照抄**，该模式仅供将来无 starter 厂商套用。已知待核验风险：官方 starter 默认智谱标准 API 端点，当前 `ZHIPU_BASE_URL` 是 Coding Plan 端点——若 starter 的 base-url 不可配、或 Coding Plan key 不通标准端点，ZHIPU 回退本兜底模式并记录 | 用户裁决；spec 路径 D 注（智谱有官方 starter、本腿刻意不用） |
 
 ### 附带发现（供正式实现与后续排障）
 
@@ -121,22 +122,23 @@
 2. 本机 fake-IP 代理会解析任意假域名——负向探针须用 `127.0.0.1:1` 这类确定性地址
 3. MiniMax-M3 经**原生协议端点**的回答默认不含 `<think>` 思考正文（与 OpenAI 兼容腿不同）；剥离逻辑保留
 4. `OpenAiChatModel` 在 1.1.2 **没有两参构造器**（v1.1.8 文档示例超前），显式构造需五参：api + options + toolCallingManager + retryTemplate + observationRegistry
-5. `OpenAiApi.mutate()` 派生 builder 透出 completionsPath（反射探测 true）——多兼容端点场景可用官方 mutate 模式
-6. 智谱 OpenAI 兼容端点路径布局非标准（`<base>/api/paas/v4/chat/completions`，无 `/v1` 段），必须用 `OpenAiApi.builder().completionsPath("/chat/completions")` 显式覆盖，否则 404
+5. `OpenAiApi.mutate()` 派生 builder 透出 completionsPath（反射探测 true）——多兼容端点场景可用官方 mutate 模式（兜底模式专用；ZHIPU 转正用官方 starter，见 D8）
+6. 智谱 OpenAI 兼容端点路径布局非标准（`<base>/api/paas/v4/chat/completions`，无 `/v1` 段），必须用 `OpenAiApi.builder().completionsPath("/chat/completions")` 显式覆盖，否则 404（兜底模式专用，见 D8）
 
-### 联动清单命中情况（req 5.2，路径 B 全绿触发；执行时机 = 评审确认后）
+### 联动清单命中情况（req 5.2，路径 B 全绿触发；已于 2026-09-15 随两项 Spike 裁决的合并 wave 执行）
 
 | req 5.2 条目 | 命中 | 状态 |
 |---|---|---|
-| 1 定稿 §2.3 MINIMAX 行（加 `spring.ai.minimax.*` 映射、删"无自动映射"句） | ✅ | 待执行 |
-| 2 根 CLAUDE.md（MINIMAX 腿接线 + 是否结构性修订由用户裁决） | ✅ | 待裁决执行 |
+| 1 定稿 §2.3 MINIMAX 行（加 `spring.ai.minimax.*` 映射、删"无自动映射"句） | ✅ | 已执行（2026-09-15：§0 增第 5 条结论、§2.3 MINIMAX 拆四行、§4.2 yaml 增 minimax 块） |
+| 2 根 CLAUDE.md（MINIMAX 腿接线 + 是否结构性修订由用户裁决） | ✅ | 已执行（2026-09-15 用户裁决"改"：增 MiniMax 原生腿行、ANTHROPIC 行注记清除、Provider 行更新） |
 | 3 007 README D2 注记 | ✅ | 本 README 已全新创建、两节结构，注记即本节 |
-| 4/5 Q7 共 12 处表述（docs 四篇"基于 SAA 做调用"改为"MiniMax 原生 starter"口径） | ✅ | 待执行 |
-| 6 AG §4.1 / §4.2 接线指引 | ✅ | 待执行 |
-| 7 定稿 §2.1 + 根 CLAUDE.md 四元组语义 | ✅ | 待执行 |
-| 8 DA 13 Provider 条目 | ✅ | 待执行 |
-| 9 架构图 SVG 字样 | ✅ | 待执行 |
-| 追加：V6 已实证国内站 /anthropic 可达 → spec §7.2 ⑥"待 V6 实测"解除 | ✅ | 定稿 / 根 CLAUDE.md 相应注记可随联动 wave 移除 |
+| 4/5 Q7 共 12 处表述（docs 四篇"基于 SAA 做调用"改为"MiniMax 原生 starter"口径） | ✅ | 已执行（2026-09-15：TS 1 / 1.2 / 3.1 / 3.2 / 13 / 15、DA 1.1 / 5.3 / 11 / 13、AG §3.4 / §4.1；IndustryResearch 按范围口径不纳入） |
+| 6 AG §4.1 / §4.2 接线指引 | ✅ | 已执行（2026-09-15：配置类行、Spike 执行清单步骤 1/2、§4.2 验收行按新接线改写） |
+| 7 定稿 §2.1 + 根 CLAUDE.md 四元组语义 | ✅ | 已执行（2026-09-15：OPENAI/ANTHROPIC 回归"真协议腿、待原生账号"） |
+| 8 DA 13 Provider 条目 | ✅ | 已执行（2026-09-15：改为"经 MiniMax 原生 starter 接入"） |
+| 9 架构图 SVG 字样 | ✅ | 无需改（2026-09-15 核验：docs-provider.svg 内无 SAA / Spring AI Alibaba 字样） |
+| 追加：V6 已实证国内站 /anthropic 可达 → spec §7.2 ⑥"待 V6 实测"解除 | ✅ | 已执行（2026-09-15：定稿 §1 / §2.3 与根 CLAUDE.md 的"待 V6 实测"注记全部清除） |
+| 追加：ZHIPU 转正（D8）与接入优先级 | ✅ | 已执行（2026-09-15：定稿 §0/§2.1/§2.3、根 CLAUDE.md、TS 3.1 落"官方 starter 优先、无 starter 才兜底"原则） |
 
 ### 执行记录
 
