@@ -16,7 +16,7 @@
 2. **统一对外渠道接入**。IM（企业微信、飞书、钉钉、Slack、Telegram、Discord 等）、邮件等消息渠道，所有 Agent 共用一套渠道层（HTTP API / Web 接入归 Web Service 层，不算渠道）。
 3. **统一对内系统接入**。LLM Provider、工具（MCP 或插件）、企业 IT 系统、知识库，所有 Agent 共享一套接入层。
 4. **统一记忆**。跨 Session 的长期记忆、可复用的 Skill 模板、跨 Agent 的知识沉淀。
-5. **Tool 调用和沙箱执行**。Agent 通过 LLM Function Calling 调用 Tool，Tool 调用经安全校验（核心阶段是应用层白名单校验，容器级沙箱隔离属扩展阶段）保证安全边界。
+5. **Tool 调用和沙箱执行**。Agent 通过 LLM Function Calling 调用 Tool，凡申报涉外动作的内置 Tool 调用经安全校验（核心阶段是应用层白名单校验——九个内置 Tool 中七个申报动作受检、记忆组申报空清单无可拦动作，MCP 工具与 @Tool Bean 工具不经过此校验、由管理员配置信任边界，详见 TechnicalSolution.md - 6.7 Sandbox 检查；容器级沙箱隔离属扩展阶段）保证安全边界。
 
 这里要把一个容易混的词辨清楚：**Agent OS** 跟 **agent runtime**（Agent 运行时）不是一回事。
 
@@ -228,9 +228,9 @@ OpenClaw 的安全问题（CVE、恶意 skill、凭证收割、第三方 skill �
 
 1. **Skill 和 Tool 来源受控，不做无约束的公开市场。** 企业内的 Skill 和 Tool 要经过注册、审核、签名、版本管理，来源可追溯。
 2. **最小权限，而不是默认全开。** 每个 Agent、每个 Tool 拿到的权限是显式授予的最小集合，文件系统、网络、shell 的访问范围默认收紧，按需放开。
-3. **安全校验是强制的，不是可选的。** 核心阶段每个 Tool 调用都强制经过应用层白名单校验（SandboxChecker：文件路径、Shell 命令、HTTP 域名白名单、通知渠道域名（notify.allowed_domains，独立于 HTTP 白名单））；容器级沙箱隔离、资源和能力边界、多租户完全隔离属扩展阶段，按信号驱动升级。
-4. **凭证不落地，走企业密钥体系。** API key、token、企业系统的凭证不硬编码、不明文存储，对接企业现有的密钥管理（KMS、Vault 等），凭证的使用全程可审计。核心阶段先做环境变量注入 + `${ENV_VAR}` 占位（落地规则已定稿：密钥只放仓库外脚本 `~/.agent-os-poc/script/agent-os-env.sh`，必须 source 加载、权限 600；仓库内任何文件只写 `${ENV_VAR}` 占位符；日志与命令行最多输出前 5 位前缀，详见 docs/design/detail-supplement/001-model-config-export.md），完整加密存储与密钥轮转放扩展阶段。
-5. **prompt injection 和数据外泄要主动防御。** 借鉴 Hermes 的做法，记忆写入和工具输入要经过安全扫描，检测注入和外泄模式（检测能力放扩展阶段；核心阶段先靠 Sandbox 白名单与审计兜底）。
+3. **安全校验是强制的，不是可选的。** 核心阶段凡申报涉外动作的内置 Tool——九个中的七个，记忆组申报空清单（见 TechnicalSolution.md - 6.7 Sandbox 检查）——调用都强制经过应用层白名单校验（SandboxChecker：文件路径、Shell 命令、HTTP 域名白名单、通知渠道域名（notify.allowed_domains，独立于 HTTP 白名单）；覆盖边界见 TechnicalSolution.md - 6.7 Sandbox 检查——MCP 工具与 @Tool Bean 工具不经过此校验，由管理员配置与 Profile 工具子集治理）；容器级沙箱隔离、资源和能力边界、多租户完全隔离属扩展阶段，按信号驱动升级。
+4. **凭证不落地，走企业密钥体系。** API key、token、企业系统的凭证不硬编码、不明文存储，对接企业现有的密钥管理（KMS、Vault 等），凭证的使用全程可审计。核心阶段先做环境变量注入 + `${ENV_VAR}` 占位（落地规则已定稿：密钥只放仓库外脚本 `~/.agent-os-poc/script/agent-os-env.sh`，必须 source 加载、权限 600；仓库内任何文件只写 `${ENV_VAR}` 占位符；日志与命令行最多输出前 5 位前缀，详见 docs/design/detail/model-config.md），完整加密存储与密钥轮转放扩展阶段。
+5. **prompt injection 和数据外泄要主动防御。** 借鉴 Hermes 的做法，记忆写入和工具输入要经过安全扫描，检测注入和外泄模式（检测能力放扩展阶段；核心阶段先靠审计兜底——白名单对记忆路径无动作可拦，记忆组工具申报空清单，见 TechnicalSolution.md - 6.7 Sandbox 检查）。
 6. **全链路审计是底座能力，不是事后补。** 谁、在什么时候、让哪个 Agent、调了什么 Tool、访问了什么数据、产生了什么结果，全程结构化留痕（核心阶段即落 `tool_invocations`、`llm_calls` 审计表），可接入企业现有审计和 SIEM 系统的能力放扩展阶段。
 
 AgentOS 既然是 Java/Spring 实现、跑在企业自己基础设施上，它就能纳入企业现有的代码审计、安全扫描、合规过审流程。安全不是额外加的一层壳，是从架构里长出来的。
@@ -241,7 +241,7 @@ AgentOS 借鉴了开源 Agent OS 领域已经被验证的设计哲学。Agent �
 
 - **AgentOS 跟 OpenClaw、Hermes 的关系**是同类不同定位。三者都是 Agent OS，OpenClaw 偏个人、Hermes 偏个人到小团队，AgentOS 直接定位严监管企业场景。三者都采用 markdown + frontmatter 的目录形态，社区的优质 Skill 经过企业审查后理论上可以导入 AgentOS 的全局 Skill 库（`.agentos/skills/`）。
 - **AgentOS 跟 Dify、Coze 这类编排平台的关系**是互补。两者甚至可以组合（Dify 作应用层，AgentOS 作基础设施层）。
-- **AgentOS 跟 Spring AI、Spring AI Alibaba、LangChain4j 这些 Java AI 框架的关系**是复用。AgentOS 的 LLM Provider 抽象直接基于 Spring AI Alibaba 的主流 LLM connector，不重复造轮子。
+- **AgentOS 跟 Spring AI、Spring AI Alibaba、LangChain4j 这些 Java AI 框架的关系**是复用。AgentOS 的 LLM Provider 抽象基于 Spring AI 官方 starter（MiniMax 走原生 starter），Spring AI Alibaba 只以 BOM 参与版本对齐、不用其 connector，不重复造轮子。
 
 ---
 

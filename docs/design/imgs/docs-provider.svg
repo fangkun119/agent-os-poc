@@ -13,17 +13,20 @@
   <text x="410" y="132" fill="#b45309" font-size="16" font-weight="bold" text-anchor="middle">ProviderService（前台 / 统一抽象层）</text>
   <text x="410" y="152" fill="#92400e" font-size="12" text-anchor="middle">按 Profile 显式映射 ChatModel · 屏蔽各家差异</text>
   <line x1="410" y1="164" x2="410" y2="184" stroke="#f59e0b" stroke-width="2"/>
-  <line x1="140" y1="184" x2="680" y2="184" stroke="#f59e0b" stroke-width="2"/>
-  <line x1="140" y1="184" x2="140" y2="212" stroke="#f59e0b" stroke-width="2" marker-end="url(#tsam1)"/>
-  <line x1="410" y1="184" x2="410" y2="212" stroke="#f59e0b" stroke-width="2" marker-end="url(#tsam1)"/>
-  <line x1="680" y1="184" x2="680" y2="212" stroke="#f59e0b" stroke-width="2" marker-end="url(#tsam1)"/>
-  <rect x="40" y="214" width="200" height="48" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
-  <text x="140" y="243" fill="#1d4ed8" font-size="14" font-weight="bold" text-anchor="middle">ChatModel · DeepSeek</text>
-  <rect x="310" y="214" width="200" height="48" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
-  <text x="410" y="243" fill="#1d4ed8" font-size="14" font-weight="bold" text-anchor="middle">ChatModel · Kimi</text>
-  <rect x="580" y="214" width="200" height="48" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
-  <text x="680" y="243" fill="#1d4ed8" font-size="14" font-weight="bold" text-anchor="middle">ChatModel · Qwen</text>
+  <line x1="110" y1="184" x2="710" y2="184" stroke="#f59e0b" stroke-width="2"/>
+  <line x1="110" y1="184" x2="110" y2="212" stroke="#f59e0b" stroke-width="2" marker-end="url(#tsam1)"/>
+  <line x1="310" y1="184" x2="310" y2="212" stroke="#f59e0b" stroke-width="2" marker-end="url(#tsam1)"/>
+  <line x1="510" y1="184" x2="510" y2="212" stroke="#f59e0b" stroke-width="2" marker-end="url(#tsam1)"/>
+  <line x1="710" y1="184" x2="710" y2="212" stroke="#f59e0b" stroke-width="2" marker-end="url(#tsam1)"/>
+  <rect x="20" y="214" width="180" height="48" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="110" y="243" fill="#1d4ed8" font-size="13.5" font-weight="bold" text-anchor="middle">ChatModel · minimax</text>
+  <rect x="220" y="214" width="180" height="48" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="310" y="243" fill="#1d4ed8" font-size="13.5" font-weight="bold" text-anchor="middle">ChatModel · openai</text>
+  <rect x="420" y="214" width="180" height="48" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="510" y="243" fill="#1d4ed8" font-size="13.5" font-weight="bold" text-anchor="middle">ChatModel · anthropic</text>
+  <rect x="620" y="214" width="180" height="48" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="710" y="243" fill="#1d4ed8" font-size="13.5" font-weight="bold" text-anchor="middle">ChatModel · zhipu</text>
   <line x1="410" y1="262" x2="410" y2="298" stroke="#22c55e" stroke-width="2" marker-end="url(#tsgr1)"/>
   <rect x="40" y="300" width="740" height="52" rx="10" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
-  <text x="410" y="331" fill="#15803d" font-size="14" font-weight="bold" text-anchor="middle">各家 LLM API（OpenAI / Anthropic / Gemini 协议）</text>
+  <text x="410" y="331" fill="#15803d" font-size="14" font-weight="bold" text-anchor="middle">各家 LLM API（MiniMax 原生 / OpenAI 兼容 / Anthropic 兼容协议）</text>
 </svg>

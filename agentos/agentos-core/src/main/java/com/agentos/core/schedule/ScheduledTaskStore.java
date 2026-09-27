@@ -3,7 +3,7 @@ package com.agentos.core.schedule;
 import java.util.List;
 
 /**
- * 定时任务状态契约（TS 8.5）：契约在 core、实现在 storage（依赖倒置）。
+ * 定时任务状态契约（TechnicalSolution.md - 8.5 定时任务）：契约在 core、实现在 storage（依赖倒置）。
  * JPA 实现 JpaScheduledTaskStore 位于 agentos-storage 模块。
  *
  * <p>定义来源仍是 AGENT.md frontmatter 的 schedules——本接口只存"状态 + 历史"，不作为定义源。
@@ -11,7 +11,7 @@ import java.util.List;
  */
 public interface ScheduledTaskStore {
 
-    /** 启动扫描时登记任务（task_id 即 frontmatter schedules 里声明的 id）。 */
+    /** 启动扫描时登记任务（task_id = &lt;agent&gt;__&lt;scheduleId&gt; 组合键，TechnicalSolution.md - 9.2 SQLite 关系型数据；2026-09-29 E1-A（修订））。 */
     void register(String taskId, String profileName, String cron, String zone, String message);
 
     /** 每次执行（成功失败都记）留痕：审计原则 day one 落库。 */

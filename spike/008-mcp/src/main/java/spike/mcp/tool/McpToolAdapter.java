@@ -12,7 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * MCP 工具 → AgentOSTool 适配（TS 6.4 McpToolAdapter 的 spike 形态；002 §3.5）。
+ * MCP 工具 → AgentOSTool 适配（TechnicalSolution.md - 6.4 Plugin Tool 方式二 的 McpToolAdapter 的 spike 形态；002 §3.5）。
  *
  * <p>映射：tools/list 的每个工具包装成一个 AgentOSTool 注册进 ToolRegistry（M3）。
  * 结果映射（M4）：成功取全部 text 段拼接；isError / 异常 / 超时 → ToolResult 四要素。
