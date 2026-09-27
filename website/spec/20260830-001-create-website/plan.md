@@ -54,7 +54,7 @@
 
 | 数字 | 内容 | 出处 |
 | --- | --- | --- |
-| 9 | Maven 模块（core/provider/memory/tool/channel-cli/web/storage/cli/boot） | TS 10 |
+| 9 | Maven 模块（core/provider/memory/tool/channel-cli/web/storage/cli/agentos-boot） | TS 10 |
 | 9 | 内置 Tool，5 组：FileTools×3（read_file/write_file/list_dir）、ShellTools×1（shell）、HttpTools×2（http_get/http_post）、MemoryTools×2（save_memory/recall_memory）、NotifyTools×1（notify） | TS 6.2 / DA 5.6 |
 | 18 | REST 端点 = 基础 10（sessions×4、agents/{name}/invoke×1、profiles/memory/tools 查询×3、health/info×2）+ 收尾 8（notify-channels CRUD×4、schedules×4） | TS 7.2 / DA 5.8 |
 | 12 | CLI 子命令：init/status/chat/serve/gateway/profile list\|create\|show\|delete/provider list/tool list/session list | TS 8.7 / DA 5.11 |

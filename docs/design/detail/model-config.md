@@ -1,16 +1,17 @@
 # 模型接入环境变量：导出脚本设计与使用（定稿）
 
-> 位置：`docs/design/detail-supplement/001-model-config-export.md`
+> 位置：`docs/design/detail/model-config.md`
 > 创建：2026-09-06 · 状态：定稿
 > 实现体：`~/.agent-os-poc/script/agent-os-env.sh`（git 仓库外，权限 600）
-> 过程稿：`chat/temp/20260906-model-config-export-design.md`（保留作过程记录；本文是入库存档，两处不一致以本文为准）
+> 过程稿：2026-09-06 的设计过程稿，成稿于会话临时目录（不入库存档、可能已清理；本文是入库存档，不一致以本文为准）
 
-## 0. 先看结论（4 条）
+## 0. 先看结论（5 条）
 
 1. **密钥只放一个地方**：仓库外的脚本 `~/.agent-os-poc/script/agent-os-env.sh`（权限 600）。仓库内任何文件只允许写 `${环境变量名}` 占位符。
-2. **环境变量按 Provider（供应商）命名**：一个 Provider 一组四元组（`*_API_KEY` / `*_BASE_URL` / `*_DEFAULT_MODEL` / `*_MODEL_LIST`）。现有三个 Provider 并列：`OPENAI`、`ANTHROPIC`、`MINIMAX`；`OPENAI_*` / `ANTHROPIC_*` 的取值当前来自 MiniMax 兼容端点（因为只有 MiniMax 账号），用户可整体替换为原生账号或其它兼容服务。
+2. **环境变量按 Provider（供应商）命名**：一个 Provider 一组四元组（`*_API_KEY` / `*_BASE_URL` / `*_DEFAULT_MODEL` / `*_MODEL_LIST`）。现有四个 Provider 并列：`OPENAI`、`ANTHROPIC`、`MINIMAX`、`ZHIPU`（ZHIPU 已于 2026-09-15 裁决转正，接线用官方 starter，见 2.1 Provider 清单与当前取值 / 2.3 导出的环境变量 → Spring AI 属性对照）；`OPENAI_*` / `ANTHROPIC_*` 的取值当前来自 MiniMax 兼容端点（因为只有 MiniMax 账号，语义为真 OpenAI/Anthropic 协议腿、待原生账号），用户可整体替换为原生账号或其它兼容服务。
 3. **Spring AI 接 OpenAI 兼容端点，base-url 不带 `/v1`**：Spring AI 会自动追加 `/v1/chat/completions`，base-url 写 `https://api.minimax.cn` 即可；base-url 非敏感、直接写 yaml，只有密钥走环境变量。
 4. **运行时切换模型不靠环境变量**：靠每次调用的 options 参数覆盖缺省值；环境变量只提供"缺省模型 + 可用模型清单"。
+5. **MiniMax 原生腿（主用）base-url 写纯主机**：`spring.ai.minimax.base-url` 写 `https://api.minimax.cn`（不带任何路径），客户端自动追加**原生协议路径** `/v1/text/chatcompletion_v2`——与 OpenAI 兼容腿的 `/v1` 陷阱同因不同路径（spike/007-react-loop/README.md 第二组 D5/V2 实测，2026-09-15）。
 
 ## 0.x 术语表
 
@@ -34,9 +35,9 @@
 | 兼容协议 | MiniMax 端点 | 可用模型 |
 |---|---|---|
 | OpenAI 兼容 | `https://api.minimax.cn/v1` | MiniMax-M3、MiniMax-M2.7、MiniMax-M2.7-highspeed |
-| Anthropic 兼容 | `https://api.minimaxi.com/anthropic` | 同上 |
+| Anthropic 兼容 | `https://api.minimax.cn/anthropic`（国内站；属性名生效经第一组 E8 实测、国内站路径可达经第二组 V6 实测，2026-09-15 确认） | 同上 |
 
-域名说明：`.cn` 是国内站，`.minimaxi.com` 是国际站；实测哪个通用哪个，互为备选。MINIMAX 自己也是一个 Provider（`MINIMAX_*`），与 OPENAI、ANTHROPIC 并列（见第 2 节）。
+域名口径（2026-09-14 用户决议）：**统一使用国内站** `api.minimax.cn`，国际站 `api.minimaxi.com` 不再使用。国内站 /anthropic 路径已由第二组 spike V6 实测确认可达（2026-09-15）。MINIMAX 自己也是一个 Provider（`MINIMAX_*`，原生腿主用），与 OPENAI、ANTHROPIC 并列（见第 2 节环境变量命名规则）。
 
 **密钥安全红线（目的：防泄密——不进代码库、不进日志）**：
 
@@ -55,9 +56,11 @@
 | OPENAI | `OPENAI_*` | MiniMax 的 OpenAI 兼容端点（当前唯一账号） | OpenAI 协议接入（Spring AI openai 连接器栈） |
 | ANTHROPIC | `ANTHROPIC_*` | MiniMax 的 Anthropic 兼容端点 | Anthropic 协议接入（Spring AI anthropic 连接器栈） |
 | MINIMAX | `MINIMAX_*` | MiniMax 自己 | 以供应商名字注册的 Provider |
+| ZHIPU | `ZHIPU_*` | 智谱 GLM（GLM Coding Plan 端点） | 已转正（2026-09-15 裁决）：接线用官方 starter `spring-ai-starter-model-zhipuai` + `spring.ai.zhipuai.*`（属性族与 base-url 可配性 W1 核验，见 2.3 导出的环境变量 → Spring AI 属性对照）；spike V9 的 OpenAI-starter 显式构造手法仅作"无官方 starter 厂商"兜底（spike/007-react-loop/README.md 的 D8 决议），ZHIPU 转正不照抄 |
 
-- 三个 Provider 并列、互不影响；将来的 DEEPSEEK、KIMI 各占一组前缀，与现有 Provider 并列
-- **OPENAI / ANTHROPIC 的四元组是"可整体替换的配置值"**：用户有原生账号（或想换其它兼容服务）时，直接改注册区的四个值即可，变量名与代码零改动；MINIMAX 不受影响
+- 四个 Provider 并列、互不影响；将来的 DEEPSEEK、KIMI 各占一组前缀，与现有 Provider 并列
+- Provider 接入优先级（2026-09-15 裁决）：有 Spring AI 官方 starter 就用官方 starter（MiniMax→minimax starter、智谱→zhipuai starter）；官方没有的才走 OpenAI 兼容腿显式构造兜底（模式见 spike/007-react-loop/README.md V9/D8）
+- **OPENAI / ANTHROPIC 的四元组是"可整体替换的配置值"**：当前取值来自 MiniMax 兼容端点（语义为真 OpenAI/Anthropic 协议腿、待原生账号）；用户有原生账号（或想换其它兼容服务）时，直接改注册区的四个值即可，变量名与代码零改动；MINIMAX 不受影响
 
 ### 2.2 脚本注册区的命名模式
 
@@ -77,14 +80,18 @@
 | 导出的变量 | 对应 Spring AI 属性（yaml 只写占位符） | 说明 |
 |---|---|---|
 | `OPENAI_API_KEY` | `spring.ai.openai.api-key: ${OPENAI_API_KEY}` | SDK 标准名（OpenAI 生态通用） |
-| `OPENAI_BASE_URL` | ⚠️ **不直接映射**（SDK 惯例值带 `/v1`，原因见 5.3 节）。base-url 非敏感，Spring AI 侧直接写 yaml：`spring.ai.openai.base-url: https://api.minimax.cn` | OpenAI SDK 语境的端点（带 /v1） |
+| `OPENAI_BASE_URL` | ⚠️ **不直接映射**（SDK 惯例值带 `/v1`，原因见 5.3 MiniMax 两份文档是同一个端点）。base-url 非敏感，Spring AI 侧直接写 yaml：`spring.ai.openai.base-url: https://api.minimax.cn` | OpenAI SDK 语境的端点（带 /v1） |
 | `OPENAI_DEFAULT_MODEL` | `spring.ai.openai.chat.options.model: ${OPENAI_DEFAULT_MODEL}` | 缺省模型 |
 | `OPENAI_MODEL_LIST` | （无对应属性） | 可用模型清单，逗号分隔 |
 | `ANTHROPIC_API_KEY` | `spring.ai.anthropic.api-key: ${ANTHROPIC_API_KEY}`（属性名已经 E8 实测生效） | SDK 标准名 |
-| `ANTHROPIC_BASE_URL` | ⚠️ **不直接映射**（与 OpenAI 腿同规则）：base-url 非敏感，Spring AI 侧直接写 yaml——`spring.ai.anthropic.base-url: https://api.minimaxi.com/anthropic`（属性生效已经 E8 实测确认） | MiniMax Anthropic 兼容端点 |
+| `ANTHROPIC_BASE_URL` | ⚠️ **不直接映射**（与 OpenAI 腿同规则）：base-url 非敏感，Spring AI 侧直接写 yaml——`spring.ai.anthropic.base-url: https://api.minimax.cn/anthropic`（属性名生效经 E8 实测、国内站路径可达经第二组 V6 实测） | MiniMax Anthropic 兼容端点（国内站） |
 | `ANTHROPIC_DEFAULT_MODEL` | `spring.ai.anthropic.chat.options.model: ${ANTHROPIC_DEFAULT_MODEL}` | 缺省模型 |
 | `ANTHROPIC_MODEL_LIST` | （无对应属性） | 可用模型清单 |
-| `MINIMAX_API_KEY` / `MINIMAX_BASE_URL` / `MINIMAX_DEFAULT_MODEL` / `MINIMAX_MODEL_LIST` | 无自动映射（正式实现由 `ProviderService` 显式构造实例时读取） | MINIMAX Provider |
+| `MINIMAX_API_KEY` | `spring.ai.minimax.api-key: ${MINIMAX_API_KEY}` | 密钥：环境变量注入（第二组 V2 实测绑定生效） |
+| `MINIMAX_BASE_URL` | ⚠️ **不直接映射**（值带 `/v1`，与 OpenAI 腿同因）：base-url 非敏感，Spring AI 侧直接写 yaml——`spring.ai.minimax.base-url: https://api.minimax.cn`（写纯主机；客户端自动追加**原生协议路径** `/v1/text/chatcompletion_v2`，第二组 D5/V2 实测） | MiniMax 原生端点（纯主机） |
+| `MINIMAX_DEFAULT_MODEL` | `spring.ai.minimax.chat.options.model: ${MINIMAX_DEFAULT_MODEL}` | 缺省模型 |
+| `MINIMAX_MODEL_LIST` | （无对应属性） | 可用模型清单，逗号分隔 |
+| `ZHIPU_API_KEY` / `ZHIPU_BASE_URL` / `ZHIPU_DEFAULT_MODEL` / `ZHIPU_MODEL_LIST` | 待 W1 核验后回填（预期为 `spring.ai.zhipuai.*` 属性族）。已知风险：官方 starter 默认智谱标准 API 端点，当前 `ZHIPU_BASE_URL` 为 Coding Plan 端点——若 base-url 不可配、或 Coding Plan key 不通标准端点，回退 V9 兜底模式（spike/007-react-loop/README.md 的 D8 决议） | ZHIPU Provider（已转正，2026-09-15） |
 
 ## 3. 脚本：生成方法与要领
 
@@ -99,8 +106,8 @@
 
 | 段 | 名字 | 职责 |
 |---|---|---|
-| 1 | Provider 注册区 | 每个 Provider 一组 `<PROVIDER>_*` 四元组（按 2.2 模式命名），密钥的真实值只出现在这里 |
-| 2 | 加载函数 `agentos_env_load()` | `case` 按 vendor 分支：把注册区变量映射成第 2.3 节的标准名并 `export`；未知 vendor 报错返回 1 |
+| 1 | Provider 注册区 | 每个 Provider 一组 `<PROVIDER>_*` 四元组（按 2.2 脚本注册区的命名模式命名），密钥的真实值只出现在这里 |
+| 2 | 加载函数 `agentos_env_load()` | `case` 按 vendor 分支：把注册区变量映射成第 2.3 节导出的环境变量 → Spring AI 属性对照的标准名并 `export`；未知 vendor 报错返回 1 |
 | 3 | 状态函数 `agentos_env_status()` | 打印各槽位状态；**key 只输出前 5 位**（红线第 3 条） |
 
 入口逻辑：无参数 = 加载全部 vendor；有参数 = 只加载指定的（如 `minimax`）。
@@ -108,7 +115,7 @@
 ### 3.3 密钥占位示例（注册区一块的样子；真实值以 `<你的密钥>` 占位）
 
 ```bash
-OPENAI_API_KEY='<你的 API Key>'   # 当前值 = MiniMax 的 key（取值来源见 2.1 节）
+OPENAI_API_KEY='<你的 API Key>'   # 当前值 = MiniMax 的 key（取值来源见 2.1 Provider 清单与当前取值）
 OPENAI_BASE_URL='https://api.minimax.cn/v1'
 OPENAI_DEFAULT_MODEL='MiniMax-M2.7'
 OPENAI_MODEL_LIST='MiniMax-M3,MiniMax-M2.7,MiniMax-M2.7-highspeed'
@@ -116,7 +123,7 @@ OPENAI_MODEL_LIST='MiniMax-M3,MiniMax-M2.7,MiniMax-M2.7-highspeed'
 
 ### 3.4 新增 Provider 的操作清单（3 步，改的都是这个脚本）
 
-1. 注册区加一组 `<PROVIDER>_*` 四元组（按 2.2 模式）
+1. 注册区加一组 `<PROVIDER>_*` 四元组（按 2.2 脚本注册区的命名模式）
 2. `agentos_env_load()` 的 `case` 加一个分支：export 自己的 `<PROVIDER>_*` 四件套
 3. `agentos_env_status()` 加一行状态输出（key 保持 5 位前缀）
 
@@ -139,10 +146,16 @@ spring:
   ai:
     openai:
       api-key: ${OPENAI_API_KEY}            # 密钥：只有它走环境变量
-      base-url: https://api.minimax.cn      # 非敏感：明文写 yaml，注意不带 /v1（原因见 5.3）
+      base-url: https://api.minimax.cn      # 非敏感：明文写 yaml，注意不带 /v1（原因见 5.3 MiniMax 两份文档是同一个端点）
       chat:
         options:
           model: ${OPENAI_DEFAULT_MODEL}    # 缺省模型
+    minimax:                                # MiniMax 原生腿（主用，第二组 D5）
+      api-key: ${MINIMAX_API_KEY}
+      base-url: https://api.minimax.cn      # 纯主机，不带路径——客户端自动追加 /v1/text/chatcompletion_v2
+      chat:
+        options:
+          model: ${MINIMAX_DEFAULT_MODEL}
 ```
 
 ### 4.3 非 Spring AI 工具（OpenAI SDK、curl、Python）
@@ -162,7 +175,7 @@ export OPENAI_API_KEY=...                          # 已由脚本 export
 | 把 `OPENAI_BASE_URL`（带 /v1）映射给 `spring.ai.openai.base-url` | `/v1/v1` 双写，请求 404 | base-url 明文写 yaml 且不带 /v1 |
 | 把密钥写进 yaml / 提交进仓库 | 违反红线第 1、2 条 | yaml 只写 `${OPENAI_API_KEY}` 占位符 |
 | 日志打印完整密钥 | 违反红线第 3 条 | 最多输出前 5 位前缀 |
-| 换取值来源时只改四元组中的一个值（如换了 endpoint 没换 key） | 配置指向不一致，请求失败或选错模型 | 换来源时整组四元组一起换（见 2.1） |
+| 换取值来源时只改四元组中的一个值（如换了 endpoint 没换 key） | 配置指向不一致，请求失败或选错模型 | 换来源时整组四元组一起换（见 2.1 Provider 清单与当前取值） |
 
 ## 5. 定稿的设计决策（从过程稿收编）
 
@@ -185,7 +198,7 @@ export OPENAI_API_KEY=...                          # 已由脚本 export
 
 ### 5.3 MiniMax 两份文档是同一个端点（2026-09-06 核验）
 
-MiniMax 提供的两份文档——"OpenAI SDK 方式"（base url `https://api.minimax.cn/v1`）与"OpenAI Chat Completion 方式"（请求 URL `https://api.minimax.cn/v1/chat/completions`）——是**同一个后端端点**的两种写法：前者是客户端用法指南，后者是原始 API 参考。差异在客户端的 URL 拼接惯例：OpenAI SDK 的 base_url 带 `/v1`（SDK 只追加 `/chat/completions`）；Spring AI 的 OpenAiApi 自己追加 `/v1/chat/completions`。证据：SAA 官方测试代码注释原话 "OpenAiApi appends /v1/chat/completions itself; do NOT include /v1 here"。结论（已采入 4.2 节 yaml 示例）：**Spring AI 侧 base-url 写 `https://api.minimax.cn`，不带 `/v1`**。
+MiniMax 提供的两份文档——"OpenAI SDK 方式"（base url `https://api.minimax.cn/v1`）与"OpenAI Chat Completion 方式"（请求 URL `https://api.minimax.cn/v1/chat/completions`）——是**同一个后端端点**的两种写法：前者是客户端用法指南，后者是原始 API 参考。差异在客户端的 URL 拼接惯例：OpenAI SDK 的 base_url 带 `/v1`（SDK 只追加 `/chat/completions`）；Spring AI 的 OpenAiApi 自己追加 `/v1/chat/completions`。证据：SAA 官方测试代码注释原话 "OpenAiApi appends /v1/chat/completions itself; do NOT include /v1 here"。结论（已采入 4.2 Spring AI 项目接线的 yaml 示例）：**Spring AI 侧 base-url 写 `https://api.minimax.cn`，不带 `/v1`**。
 
 ### 5.4 MiniMax 工具调用与思考标签（写实验代码要用）
 
@@ -200,7 +213,7 @@ MiniMax 提供的两份文档——"OpenAI SDK 方式"（base url `https://api.m
 | 1 | Spring AI 1.0.x starter 坐标：`org.springframework.ai:spring-ai-starter-model-openai`、`org.springframework.ai:spring-ai-starter-model-anthropic` | Spring AI v1.0.3 官方文档（GitHub tag v1.0.3） |
 | 2 | OpenAI 属性名：`spring.ai.openai.api-key / .base-url / .chat.completions-path / .chat.options.model`（官方 Perplexity 示例演示了 base-url 指向兼容端点 + completions-path 覆盖） | 同上 |
 | 3 | Anthropic 属性名：`spring.ai.anthropic.api-key / .chat.options.model`；手动构造 `new AnthropicApi(System.getenv("ANTHROPIC_API_KEY"))` | 同上（anthropic-chat.adoc） |
-| 4 | Spring AI 的 OpenAiApi 自动追加 `/v1/chat/completions`（base-url 不要带 /v1） | SAA 官方测试代码注释 + Spring AI 官方 Perplexity 示例（见 5.3） |
+| 4 | Spring AI 的 OpenAiApi 自动追加 `/v1/chat/completions`（base-url 不要带 /v1） | SAA 官方测试代码注释 + Spring AI 官方 Perplexity 示例（见 5.3 MiniMax 两份文档是同一个端点） |
 | 5 | MiniMax 双端点均支持工具调用 | MiniMax 官方文档 text-m3-function-call、text-chat-anthropic |
 | 6 | Spring AI 1.x 自动执行工具默认开、2.0 全部移除 | Spring AI upgrade-notes（main 分支） |
 
@@ -215,14 +228,14 @@ MiniMax 提供的两份文档——"OpenAI SDK 方式"（base url `https://api.m
 
 | 对象 | 关系 |
 |---|---|
-| `spike/007-react-loop/spec/001-expirement.md` | 本脚本是 spike E3-E8（真实模型调用）的前置条件；E8 两条腿 = OpenAI 兼容腿 + Anthropic 兼容腿，单把 key 可跑满 |
-| 正式实现第一周（Provider 抽象） | `ProviderService` 按 `Map<provider 名, ChatModel>` 显式构建（TS 3.2）；密钥按本文档的 Provider 变量名从环境变量读取 |
-| `CLAUDE.md`「模型接入环境变量」节 | 使用规则的速查版；本文是完整定稿 |
-| `chat/temp/20260906-model-config-export-design.md` | 过程稿（含决策演进记录）；与本文不一致处以本文为准 |
+| `spike/007-react-loop/README.md`（第一节，第一组结论存档原文） | 本脚本是 spike E3-E8（真实模型调用）的前置条件；E8 两条腿 = OpenAI 兼容腿 + Anthropic 兼容腿，单把 key 可跑满。原引用 `spec/001-expirement.md` 已于 2026-09-15 随第一组规格删除、可自 git 历史（2a01bee / edfadf3^）恢复 |
+| 正式实现第一周（Provider 抽象） | `ProviderService` 按 `Map<provider 名, ChatModel>` 显式构建（TechnicalSolution.md - 3.2 Provider 名到 ChatModel 的显式映射）；密钥按本文档的 Provider 变量名从环境变量读取 |
+| CLAUDE.md - 模型接入环境变量（API Key 红线） | 使用规则的速查版；本文是完整定稿 |
+| 2026-09-06 设计过程稿（会话临时稿，不入库存档） | 含决策演进记录；与本文不一致处以本文为准 |
 
 ## 7. 附录：脚本全文（sample）
 
-与真实文件 `~/.agent-os-poc/script/agent-os-env.sh` 的**唯一差异**：`MINIMAX_API_KEY` 的值替换为占位符 `'<你的 MiniMax API Key>'`（密钥红线：真实密钥只存在于仓库外脚本）。其余逐字一致；新增 Provider 时照第 3.4 节的三步操作改这份文件。
+与真实文件 `~/.agent-os-poc/script/agent-os-env.sh` 的**唯一差异**：`MINIMAX_API_KEY` 与 `ZHIPU_API_KEY` 的值替换为占位符 `'<你的 MiniMax API Key>'` / `'<你的智谱 API Key>'`（密钥红线：真实密钥只存在于仓库外脚本）。其余逐字一致；新增 Provider 时照第 3.4 节新增 Provider 的操作清单的三步操作改这份文件。
 
 ```bash
 #!/usr/bin/env bash
@@ -235,7 +248,7 @@ MiniMax 提供的两份文档——"OpenAI SDK 方式"（base url `https://api.m
 #
 # 概念：环境变量按 Provider（供应商）命名，一个 Provider 一组四元组：
 #   <PROVIDER>_API_KEY / <PROVIDER>_BASE_URL / <PROVIDER>_DEFAULT_MODEL / <PROVIDER>_MODEL_LIST
-#   现有 Provider：OPENAI、ANTHROPIC、MINIMAX（并列、互不覆盖）。
+#   现有 Provider：OPENAI、ANTHROPIC、MINIMAX、ZHIPU（并列、互不覆盖）。
 #   OPENAI / ANTHROPIC 的四元组是"可整体替换的配置值"——当前只有 MiniMax 账号，
 #   所以取值来自 MiniMax 的协议兼容端点；换成原生账号或其它兼容服务时，直接改注册区的值即可。
 #
@@ -255,7 +268,13 @@ MiniMax 提供的两份文档——"OpenAI SDK 方式"（base url `https://api.m
 #     ANTHROPIC_BASE_URL      <-> spring.ai.anthropic.base-url
 #     ANTHROPIC_DEFAULT_MODEL <-> spring.ai.anthropic.chat.options.model（缺省模型）
 #     ANTHROPIC_MODEL_LIST    <-> 可用模型清单（项目约定层）
-#   MINIMAX Provider：无 Spring AI 自动映射，由 ProviderService 显式构造实例时读取
+#   MINIMAX Provider（原生腿，主用）：spring.ai.minimax.* 自动映射
+#     （base-url 写纯主机，客户端自动追加原生路径 /v1/text/chatcompletion_v2——007 第二组 D5）
+#   ZHIPU Provider（已转正 2026-09-15）：
+#     ZHIPU_API_KEY / ZHIPU_BASE_URL / ZHIPU_DEFAULT_MODEL / ZHIPU_MODEL_LIST
+#     （转正接线用官方 starter spring-ai-starter-model-zhipuai + spring.ai.zhipuai.* 属性族，
+#      W1 核验；spike V9 的 OpenAI-starter 显式构造手法仅作"无官方 starter 厂商"兜底，
+#      见 spike/007-react-loop/README.md 的 D8 决议，ZHIPU 转正不照抄）
 #
 # 运行时切换模型：不靠环境变量，靠每次调用的 options（如
 # ToolCallingChatOptions.builder().model("MiniMax-M3")...）覆盖缺省值——
@@ -269,15 +288,15 @@ MiniMax 提供的两份文档——"OpenAI SDK 方式"（base url `https://api.m
 # 扩展新 Provider：在下方"Provider 注册区"加一组四元组，再在 agentos_env_load() 的
 # case 里加一个分支（文件末尾有 deepseek 的注释示例）。
 # 设计定稿（生成方法 / schema / 使用说明 / 设计决策记录）：
-#   仓库 docs/design/detail-supplement/001-model-config-export.md
-#   （过程稿：仓库 chat/temp/20260906-model-config-export-design.md）
+#   仓库 docs/design/detail/model-config.md
+#   （过程稿：2026-09-06 会话临时稿，不入库存档）
 # =====================================================================
 
 # ---------------- Provider 注册区（每个 Provider 一组四元组，新增在这里加一块） ----------------
 #
-# MINIMAX：供应商自己的注册项（以供应商名字注册的 Provider）。
-# 域名说明：.cn 为国内站，.io 与 .minimaxi.com 为国际站；以下取值来自
-# ~/.agent-os-poc/doc/api-key-doc.md 的 JSON 配置块，实测不通时两个域名可互为备选。
+# MINIMAX：供应商自己的注册项（以供应商名字注册的 Provider）。原生腿主用：yaml 侧
+# spring.ai.minimax.* 自动映射，base-url 写纯主机（007 第二组 D5）。
+# ~/.agent-os-poc/doc/api-key-doc.md 的 JSON 配置块
 MINIMAX_API_KEY='<你的 MiniMax API Key>'
 MINIMAX_BASE_URL='https://api.minimax.cn/v1'
 MINIMAX_DEFAULT_MODEL='MiniMax-M2.7'
@@ -293,9 +312,17 @@ OPENAI_MODEL_LIST='MiniMax-M3,MiniMax-M2.7,MiniMax-M2.7-highspeed'
 # ANTHROPIC Provider：Anthropic 协议的接入配置。当前取值 = MiniMax 的 Anthropic 兼容端点
 # （只有 MiniMax 账号）；换成原生 Anthropic 账号或其它兼容服务时，直接改这四行。
 ANTHROPIC_API_KEY="$MINIMAX_API_KEY"   # 当前与 OPENAI 共用同一把 MiniMax key
-ANTHROPIC_BASE_URL='https://api.minimaxi.com/anthropic'
+ANTHROPIC_BASE_URL='https://api.minimax.cn/anthropic'
 ANTHROPIC_DEFAULT_MODEL='MiniMax-M3'
 ANTHROPIC_MODEL_LIST='MiniMax-M3,MiniMax-M2.7,MiniMax-M2.7-highspeed'
+
+# ZHIPU Provider：智谱 GLM（已转正 2026-09-15），转正接线用官方 starter spring-ai-starter-model-zhipuai。
+# 现取值为 GLM Coding Plan 端点（非标准端点，与官方 starter 的兼容性 W1 核验——不通则回退
+# OpenAI 兼容显式构造兜底，见 spike/007-react-loop/README.md 的 D8 决议）
+ZHIPU_API_KEY='<你的智谱 API Key>'
+ZHIPU_BASE_URL='https://open.bigmodel.cn/api/coding/paas/v4/'
+ZHIPU_DEFAULT_MODEL='glm-5.3-flash'
+ZHIPU_MODEL_LIST='glm-5.3, glm-5.3-flash'
 
 # ---------------- 加载函数（新增 Provider 在 case 里加一个分支） ----------------
 
@@ -310,6 +337,9 @@ agentos_env_load() {
     minimax)
       export MINIMAX_API_KEY MINIMAX_BASE_URL MINIMAX_DEFAULT_MODEL MINIMAX_MODEL_LIST
       ;;
+    zhipu)
+      export ZHIPU_API_KEY ZHIPU_BASE_URL ZHIPU_DEFAULT_MODEL ZHIPU_MODEL_LIST
+      ;;
     # -------- 未来新增 Provider 的示例（注册区加四元组 + 这里加一个分支） --------
     # deepseek)
     #   export DEEPSEEK_API_KEY DEEPSEEK_BASE_URL DEEPSEEK_DEFAULT_MODEL DEEPSEEK_MODEL_LIST
@@ -318,7 +348,7 @@ agentos_env_load() {
     #   export KIMI_API_KEY KIMI_BASE_URL KIMI_DEFAULT_MODEL KIMI_MODEL_LIST
     #   ;;
     *)
-      echo "[agent-os-env] 未知 Provider: $1（当前可用：openai / anthropic / minimax）" >&2
+      echo "[agent-os-env] 未知 Provider: $1（当前可用：openai / anthropic / minimax / zhipu）" >&2
       return 1
       ;;
   esac
@@ -329,6 +359,7 @@ agentos_env_status() {
   echo "[agent-os-env] Provider OPENAI:    base=${OPENAI_BASE_URL:-未设置}  key=${OPENAI_API_KEY:0:5}***  default_model=${OPENAI_DEFAULT_MODEL:-未设置}  可用模型: ${OPENAI_MODEL_LIST:-未设置}"
   echo "[agent-os-env] Provider ANTHROPIC: base=${ANTHROPIC_BASE_URL:-未设置}  key=${ANTHROPIC_API_KEY:0:5}***  default_model=${ANTHROPIC_DEFAULT_MODEL:-未设置}  可用模型: ${ANTHROPIC_MODEL_LIST:-未设置}"
   echo "[agent-os-env] Provider MINIMAX:   base=${MINIMAX_BASE_URL:-未设置}  key=${MINIMAX_API_KEY:0:5}***  default_model=${MINIMAX_DEFAULT_MODEL:-未设置}  可用模型: ${MINIMAX_MODEL_LIST:-未设置}"
+  echo "[agent-os-env] Provider ZHIPU:     base=${ZHIPU_BASE_URL:-未设置}  key=${ZHIPU_API_KEY:0:5}***  default_model=${ZHIPU_DEFAULT_MODEL:-未设置}  可用模型: ${ZHIPU_MODEL_LIST:-未设置}"
 }
 
 # ---------------- 入口：无参数 = 加载全部 Provider；有参数 = 只加载指定 Provider ----------------
@@ -337,6 +368,7 @@ if [ $# -eq 0 ]; then
   agentos_env_load openai
   agentos_env_load anthropic
   agentos_env_load minimax
+  agentos_env_load zhipu
 else
   for _provider in "$@"; do
     agentos_env_load "$_provider"

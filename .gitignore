@@ -1,6 +1,6 @@
 # Temp File
 draft/
-chat/
+chat/*
 .venv/
 .playwright-mcp/
 **/.DS_Store

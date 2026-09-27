@@ -4,7 +4,7 @@ import com.agentos.core.tool.AgentOSTool;
 import com.agentos.core.tool.ToolResult;
 
 /**
- * 内置 Tool：shell（TS 6.2 ShellTools 组）。
+ * 内置 Tool：shell（TechnicalSolution.md - 6.2 内置 Tool 的 ShellTools 组）。
  *
  * <p>直接执行白名单内的可执行文件与参数数组，带超时，不经 Shell 解释。execute 开头先
  * {@code Sandbox.check(new SandboxAction(ActionType.SHELL_COMMAND, command))}，
@@ -31,6 +31,6 @@ public class ShellTool implements AgentOSTool {
 
     @Override
     public ToolResult execute(String jsonInput) {
-        throw new UnsupportedOperationException("尚未实现：ShellTool.execute（TS 6.2）");
+        throw new UnsupportedOperationException("尚未实现：ShellTool.execute（TechnicalSolution.md - 6.2 内置 Tool）");
     }
 }

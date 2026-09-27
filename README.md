@@ -16,7 +16,7 @@
 
 **阅读路径**
 
-- **30 秒**：tagline → 顶部状态横幅 → [AgentOS 是什么](#agentos-是什么-为什么需要它) → [对比表](#为什么不是-openclaw--hermes)
+- **30 秒**：tagline → 顶部状态横幅 → [AgentOS 是什么](#agentos-是什么--为什么需要它) → [对比表](#为什么不是-openclaw--hermes)
 - **3 分钟**：+ [五大核心能力](#五大核心能力设计目标) → [架构](#架构设计) → [Quickstart（预期行为）](#quickstart预期行为开发中)
 - **10 分钟**：+ [与 Dify / Spring AI 的关系](#与-dify--spring-ai-的关系边界声明) → [安全设计原则](#安全设计原则) → [Roadmap](#roadmap) → [文档导航](#文档导航) → [Contributing](#contributing)
 
@@ -40,7 +40,7 @@
 1. 如果你的 Agent 要跑在银行、政企的生产环境里，它得过安全审查、要全程可审计、要融进现有 Java 体系——OpenClaw（Node.js，个人向）和 Hermes（Python，小团队向）都填不了这个位置。
 2. AgentOS 与两者是同类不同定位：不比社区活力和可玩性，比私有部署、可审计和技术栈对齐——而完整的多租户/SSO/审计治理层在扩展阶段交付，我们不提前承诺。
 
-> **名称说明**：OpenClaw 与 Hermes 为本文对两类真实开源项目的化名指代（社区型 / 工程型），代表性对标项目与完整对比见[业界调研](docs/design/IndustryResearch.md)。两者在各自定位上的优势（社区活力与能力丰富度 / 工程健壮性）都是真实的，本文只做“定位不同”的陈述。
+> **名称说明**：OpenClaw 与 Hermes Agent 为两类真实开源项目的直呼其名（非化名；社区型 / 工程型两类定位的代表性项目，背景与出处见[业界调研](docs/design/IndustryResearch.md)）。两者在各自定位上的优势（社区活力与能力丰富度 / 工程健壮性）都是真实的，本文只做“定位不同”的陈述。
 
 | 维度 | OpenClaw | Hermes Agent | AgentOS |
 |---|---|---|---|
@@ -49,14 +49,14 @@
 | 治理能力 | 企业级安全治理非其重心 | 部分企业方向投入，多租户/SSO/完整审计未见完整方案 | 多租户 / SSO / 完整审计 / Tool Policy——**扩展阶段交付** ⏳ |
 | 分布式前景 | 未见公开规划（以各自官方信息为准） | 未见公开规划（以各自官方信息为准） | 单机做扎实 → Spring Cloud 生态分布式 → 分布式 Agent 协作（远期） |
 
-> **面向安全评审的诚实声明**：核心阶段的沙箱为**应用层白名单校验**（`SandboxChecker`），不是容器 / microVM 级强隔离；容器化隔离按信号驱动在扩展阶段演进（见[安全设计原则](#安全设计原则)）。评估时请以此口径判断是否满足贵司的隔离要求。
+> **面向安全评审的诚实声明**：核心阶段的沙箱为**应用层白名单校验**（`SandboxChecker`，只覆盖内置 Tool——MCP 工具与 `@Tool` Bean 工具不经此校验，治理边界见[安全设计原则](#安全设计原则)第 2 条白名单强制），不是容器 / microVM 级强隔离；容器化隔离按信号驱动在扩展阶段演进。评估时请以此口径判断是否满足贵司的隔离要求。
 
 ## 与 Dify / Spring AI 的关系（边界声明）
 
 **AgentOS 做运行时，不做编排。**
 
 - **与 Dify / Coze 等编排平台是互补，不是竞争。** Dify 编排的是“流程”，AgentOS 承载的是“常驻的 Agent”。两者可以组合：Dify 作为应用层/客户端，调用 AgentOS 的 API，AgentOS 作基础设施层。
-- **与 Spring AI / Spring AI Alibaba 是复用，不是重复造轮子。** 框架是“给你材料自己盖房子”，AgentOS 是“盖好的房子拎包入住”。AgentOS 内部的 LLM 调用层正是直接复用 Spring AI / Spring AI Alibaba 实现的——框架作组件，AgentOS 作运行时。
+- **与 Spring AI / Spring AI Alibaba 是复用，不是重复造轮子。** 框架是“给你材料自己盖房子”，AgentOS 是“盖好的房子拎包入住”。AgentOS 内部的 LLM 调用层正是复用 **Spring AI 官方 starter** 实现的（Spring AI Alibaba 只以 BOM 参与版本对齐、不用其 connector）——框架作组件，AgentOS 作运行时。
 
 ## 五大核心能力（设计目标）
 
@@ -64,9 +64,9 @@
 
 | # | 能力 | 阶段 | 说明 |
 |---|---|---|---|
-| 1 | **Provider 多模型对接** | ✅ | 基于 Spring AI Alibaba 复用主流 LLM connector（通义、DeepSeek、Kimi、智谱等），`ProviderService` 统一屏蔽厂商差异；Provider Fallback 三层 failover 为扩展项 ⏳ |
-| 2 | **ReAct 循环（自实现）** | ✅ | 不依赖框架的 Agent 抽象，循环行为对使用者完全透明：每一轮“思考-行动-观察”可审计、可调试、可干预；Tool 失败由 LLM 在循环内自行决策重试，框架级重试与流式中断处理在扩展阶段补齐 ⏳ |
-| 3 | **Memory 三层记忆** | ✅/⏳ | 会话记忆 ✅ + 长期记忆 ✅（Markdown 默认档，`LongTermMemoryStore` 接口预留 SQLite/Mem0 档切换）+ 情景记忆 ⏳ |
+| 1 | **Provider 多模型对接** | ✅ | 基于 Spring AI 官方 starter 包装主流 LLM Provider（MiniMax、OpenAI、Anthropic、智谱等），无官方 starter 的厂商经 OpenAI 兼容端点显式构造兜底；`ProviderService` 统一屏蔽厂商差异；Provider Fallback 三层 failover 为扩展项 ⏳ |
+| 2 | **ReAct 循环（自实现）** | ✅ | 不依赖框架的 Agent 抽象，循环行为对使用者完全透明：每一次迭代“思考-行动-观察”可审计、可调试、可干预；Tool 失败由 LLM 在循环内自行决策重试，框架级重试与流式中断处理在扩展阶段补齐 ⏳ |
+| 3 | **Memory 三层记忆** | ✅/⏳ | 会话记忆 ✅ + 长期记忆 ✅（Markdown 默认档，按 <Agent, 用户> 二元组分档，见 TechnicalSolution.md - 5.1 模块组成；`LongTermMemoryStore` 接口预留 SQLite/Mem0 档切换）+ 情景记忆 ⏳ |
 | 4 | **Tool 体系** | ✅ | 核心阶段 9 个内置 Tool；三档接入（见下表），主推 `AGENT.md` 目录 + MCP 零代码 |
 | 5 | **Web Service** | ✅ | 核心阶段 18 个 REST 端点（基础 10 + 收尾 8），覆盖会话、调用、信息查询与系统状态，以及通知渠道、定时任务的管理操作；流式 SSE、Prometheus metrics 等为扩展项 ⏳ |
 
@@ -80,15 +80,15 @@
 
 ![Plugin Tool 三档：零代码 AGENT.md 目录+MCP、轻代码自写 MCP server、重代码 @Tool Java Bean，门槛从低到高](docs/design/imgs/docs-plugin-tool-tiers.svg)
 
-**三种触发源**：CLI 交互 / REST API / 定时任务（cron）。
+**三种触发源**（核心阶段）：CLI 交互 / REST API / 定时任务（cron）；扩展阶段另加 generate 端点（一句话生成 AGENT.md 草稿，单轮会话）⏳。
 
 ## 架构（设计）
 
-![AgentOS 整体架构：接入层→Agent 层→引擎层→能力层→基础层](docs/design/imgs/docs-architecture-light.svg)
+![AgentOS 整体架构：接入层→Agent 层→引擎层→能力层→存储层](docs/design/imgs/docs-architecture-light.svg)
 
 - **部署形态**：AgentOS 是**独立常驻进程**（单二进制），企业现有系统经 REST API 接入；Java 体系可通过方式三在进程内写 `@Tool` Bean 做深度集成。
 - **Maven 多模块，9 个模块，单二进制交付**（GraalVM Native Image 为扩展阶段引入的优化方向）。
-- **技术栈**：JDK 21 + Spring Boot 3.x + Spring AI Alibaba + 自实现 ReAct 循环 + SQLite（Spring Data JPA）+ Picocli 命令行。
+- **技术栈**：JDK 21 + Spring Boot 3.x + Spring AI 官方 starter（SAA BOM 管版本）+ 自实现 ReAct 循环 + SQLite（Spring Data JPA；SQLite 无官方 Hibernate 方言，方言包 hibernate-community-dialects 引入、版本随 Spring Boot BOM 托管）+ Picocli 命令行。
 - 审计相关的 `tool_invocations` / `llm_calls` 两张表 **day one 写入**，让“可审计”的数据地基从第一天就立起来。
 - Sandbox 策略接口先行：核心阶段为应用层白名单（`SandboxChecker`），容器 / microVM 隔离按信号驱动在扩展阶段演进。
 
@@ -96,7 +96,7 @@
 
 ## Quickstart（预期行为，开发中）
 
-> **注意**：以下为设计中的命令示意，当前仓库尚无可运行代码，构建与命令在未来版本交付后可用。仓库公开地址待发布，下述 clone URL 为占位符，发布时替换。
+> **注意**：以下为设计中的命令示意。仓库公开地址待发布，下述 clone URL 为占位符，发布时替换。
 
 从源码构建（未来可用）：
 
@@ -122,7 +122,7 @@ agentos serve              # 预期：启动 Web Service，暴露 18 个 REST �
 
 **当前你能做的**（在可运行版本交付前）：
 
-- 阅读 [docs/](docs/design/) 四份设计文档，提出评审意见（不一致、过度承诺、遗漏场景都是宝贵输入）；
+- 阅读 [docs/](docs/design/) 下的设计文档，提出评审意见（不一致、过度承诺、遗漏场景都是宝贵输入）；
 - 通过 [Issue 列表](../../issues)（仓库公开后可用）参与能力边界与优先级的讨论；
 - Watch 本仓库，获取首个可运行版本发布的通知。
 
@@ -136,14 +136,18 @@ agentos serve              # 预期：启动 Web Service，暴露 18 个 REST �
 | [TechnicalSolution.md](docs/design/TechnicalSolution.md) | How | 技术方案：架构、模块、关键技术决策 |
 | [AiProgrammingGuide.md](docs/design/AiProgrammingGuide.md) | 实施 | AI 辅助编程指南：Spec-Kit 流程与四周开发计划 |
 | [IndustryResearch.md](docs/design/IndustryResearch.md) | 背景与定位 | 业界调研：Agent OS 格局、Java 生态缺位、定位与路线 |
+| [detail/api.md](docs/design/detail/api.md) | 契约 | 线上契约：请求响应体、参数约束、错误码封闭集（与技术方案冲突时以其为准） |
+| [detail/model-config.md](docs/design/detail/model-config.md) | 配置 | Provider 配置、密钥加载与环境变量命名 |
 
 **新贡献者阅读顺序建议**：IndustryResearch → DemandAnalysis → TechnicalSolution → AiProgrammingGuide。
+
+**实测留档**：[spike/](spike/) 目录——007（Provider 与 ReAct）、008（MCP）、009（SQLite 持久化）；技术选型与已知弱面以各目录 README 的 D 编号决议为准。
 
 ## Roadmap
 
 | 阶段 | 内容 | 状态 |
 |---|---|---|
-| **核心阶段（当前）** | 运行时内核：Provider / ReAct / Memory（两层）/ Tool（9 内置 + 三档）/ Web Service（18 端点） | 设计文档完成 ✅；实现开发中（未开始勾选实现项） |
+| **核心阶段（当前）** | 运行时内核：Provider / ReAct / Memory（两层）/ Tool（9 内置 + 三档）/ 定时任务（AgentScheduler）+ 通知推送（notify）/ Web Service（18 端点） | 设计文档完成 + 关键机制已实测背书 ✅ |
 | **扩展阶段** | 多租户 RBAC、SSO、完整审计查询、Tool Policy、IM Channel（企微/飞书/钉钉）、情景记忆、流式 SSE、Prometheus metrics、容器化沙箱、GraalVM Native Image、Memory 写入/清理等扩展端点 | ⏳ 规划中 |
 | **远期** | 单机 → 底座分布式部署（多实例 + 外置状态，Spring Cloud 生态）→ 分布式 Agent 协作（跨节点互发现、互委托） | ⏳ 愿景 |
 
@@ -155,21 +159,21 @@ POC 阶段的贡献以**设计评审、Issue 讨论、文档改进**为主：
 
 **如何参与**（仓库公开后）：
 
-- **提评审意见**：对四份设计文档提出评审意见（不一致、过度承诺、遗漏场景都是宝贵输入）——直接开 [Issue](../../issues)；
+- **提评审意见**：对 docs/design/ 下的设计文档提出评审意见（不一致、过度承诺、遗漏场景都是宝贵输入）——直接开 [Issue](../../issues)；
 - **参与讨论**：通过 Issue 讨论能力边界与优先级（含 License 之外的所有开放项）；
 - **改进文档**：直接提 PR。
 
 **开发流程**：本项目按 Spec-Kit 流程开发（spec → plan → tasks），每个功能先成文、再评审、再实现。
 
-**社区共建方向（预留）**：更多 Provider connector、MCP server 生态适配、IM Channel、Skill 库共建、文档与示例 Agent。
+**社区共建方向（预留）**：更多 Provider 接入（Spring AI 官方 starter 优先）、MCP server 生态适配、IM Channel、Skill 库共建、文档与示例 Agent。
 
 ### 安全设计原则
 
 定位严监管企业，安全是 day one 设计而非事后补丁：
 
-1. **最小权限**：文件操作限制工作目录，Shell 命令白名单，HTTP 域名白名单；
-2. **白名单强制**：核心阶段即落地 `SandboxChecker` 应用层校验（注意：是应用层白名单，非容器/microVM 强隔离，后者为扩展阶段 ⏳）；
-3. **凭证不落地**：敏感配置经环境变量或独立本地配置注入，不明文写入 `AGENT.md`；
+1. **最小权限**：文件操作限制工作目录，Shell 仅执行白名单内可执行文件与参数数组（不经 Shell 解释），HTTP 域名白名单，通知渠道独立域名白名单（`notify.allowed_domains`——webhook URL 含 token 等同凭证，不与通用 HTTP 白名单混用）；
+2. **白名单强制**：核心阶段凡申报涉外动作的内置 Tool（九个中的七个；记忆组 `save_memory`/`recall_memory` 申报空清单——记忆读写无模型可控的路径/地址参数，见 TechnicalSolution.md - 6.7 Sandbox 检查）调用都经 `ToolExecutor` 单一入口统一过 `SandboxChecker` 应用层校验；MCP 工具与 `@Tool` Bean 工具不经此校验——前者属管理员配置的信任边界内组件、后者与 AgentOS 同进程同信任级，其余治理靠 Profile 工具子集与扩展阶段 Tool Policy（注意：应用层白名单是“劝阻级”防线、防模型误操作而非防蓄意绕过，非容器/microVM 强隔离，后者按信号驱动在扩展阶段演进 ⏳）；
+3. **凭证不落地**：API Key 只从环境变量读取，真实密钥只存放在仓库外的 source 加载脚本（权限 600）；仓库内所有文件（代码、`AGENT.md`、application.yaml）只写 `${ENV_VAR}` 占位符；日志与命令行最多输出前 5 位前缀；
 4. **全链路审计**：`tool_invocations` / `llm_calls` 从核心阶段第一天写入 SQLite（完整审计查询接口为扩展阶段 ⏳）。
 
 ## License

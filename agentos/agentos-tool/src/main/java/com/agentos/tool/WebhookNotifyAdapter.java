@@ -1,7 +1,7 @@
 package com.agentos.tool;
 
 /**
- * 通知核心阶段唯一实现（TS 6.8）：通用 HTTP webhook。
+ * 通知核心阶段唯一实现（TechnicalSolution.md - 6.8 通知推送）：通用 HTTP webhook。
  *
  * <p>用通用 HTTP webhook 承接所有场景——企业微信、飞书、钉钉的群机器人都提供 webhook 地址，
  * 核心阶段不逐家接专用 API（签名算法、AccessToken 刷新这些认证细节核心阶段不做），直接把
@@ -15,6 +15,6 @@ public class WebhookNotifyAdapter implements NotifyChannelAdapter {
 
     @Override
     public void send(NotifyTarget target, String content) {
-        throw new UnsupportedOperationException("尚未实现：WebhookNotifyAdapter.send（TS 6.8）");
+        throw new UnsupportedOperationException("尚未实现：WebhookNotifyAdapter.send（TechnicalSolution.md - 6.8 通知推送）");
     }
 }
