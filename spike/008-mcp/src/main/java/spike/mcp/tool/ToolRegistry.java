@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 工具统一注册表（TS 6.6 的 spike 形态；002 §3.4）。
+ * 工具统一注册表（TechnicalSolution.md - 6.6 ToolRegistry 的 spike 形态；002 §3.4）。
  * 正式实现按 Profile 的 tools 字段过滤可用子集，这里用 subset() 模拟同一语义。
  */
 public class ToolRegistry {
@@ -30,7 +30,7 @@ public class ToolRegistry {
         return List.copyOf(tools.values());
     }
 
-    /** 白名单子集（模拟 Profile 的 tools 字段过滤，TS 6.6）；names 中不存在的名字静默忽略 */
+    /** 白名单子集（模拟 Profile 的 tools 字段过滤，TechnicalSolution.md - 6.6 ToolRegistry）；names 中不存在的名字静默忽略 */
     public List<AgentOSTool> subset(List<String> names) {
         return names.stream()
                 .filter(tools::containsKey)

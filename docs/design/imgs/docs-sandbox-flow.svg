@@ -2,38 +2,98 @@
   <rect width="820" height="400" fill="#ffffff"/>
   <defs>
     <marker id="tsda" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#94a3b8"/></marker>
+    <marker id="tsdar" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ef4444"/></marker>
   </defs>
-  <rect x="40" y="30" width="200" height="50" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
-  <text x="140" y="60" fill="#1d4ed8" font-size="13" font-weight="bold" text-anchor="middle">FileTools.execute()</text>
-  <rect x="40" y="100" width="200" height="50" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
-  <text x="140" y="130" fill="#1d4ed8" font-size="13" font-weight="bold" text-anchor="middle">ShellTools.execute()</text>
-  <rect x="40" y="170" width="200" height="50" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
-  <text x="140" y="200" fill="#1d4ed8" font-size="13" font-weight="bold" text-anchor="middle">HttpTools.execute()</text>
-  <line x1="240" y1="55" x2="318" y2="105" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
-  <line x1="240" y1="125" x2="318" y2="125" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
-  <line x1="240" y1="195" x2="318" y2="145" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
-  <rect x="40" y="240" width="200" height="50" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
-  <text x="140" y="259" fill="#1d4ed8" font-size="12" font-weight="bold" text-anchor="middle">NotifyTools.execute()</text>
-  <text x="140" y="274" fill="#1d4ed8" font-size="8" text-anchor="middle">经 WebhookNotifyAdapter 的 NOTIFY 动作</text>
-  <line x1="240" y1="265" x2="318" y2="152" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
-  <rect x="320" y="90" width="220" height="70" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.6"/>
-  <text x="430" y="118" fill="#b45309" font-size="13" font-weight="bold" text-anchor="middle">SandboxChecker</text>
-  <text x="430" y="136" fill="#92400e" font-size="10" text-anchor="middle">.check(action)</text>
-  <line x1="430" y1="160" x2="430" y2="208" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
-  <polygon points="430,210 510,240 430,270 350,240" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
-  <text x="430" y="236" fill="#475569" font-size="9.5" text-anchor="middle">命令/路径/域名/通知域名</text>
-  <text x="430" y="248" fill="#475569" font-size="9.5" text-anchor="middle">在白名单里？</text>
-  <text x="150" y="330" fill="#475569" font-size="9" text-anchor="middle">路径 → file.allowed_paths</text>
-  <text x="150" y="344" fill="#475569" font-size="9" text-anchor="middle">命令 → shell.allowed_commands</text>
-  <text x="150" y="358" fill="#475569" font-size="9" text-anchor="middle">域名 → http.allowed_domains</text>
-  <text x="150" y="372" fill="#475569" font-size="9" text-anchor="middle">通知域名 → notify.allowed_domains（独立白名单）</text>
-  <line x1="510" y1="240" x2="558" y2="240" stroke="#22c55e" stroke-width="1.8" marker-end="url(#tsda)"/>
-  <text x="534" y="230" fill="#16a34a" font-size="11" text-anchor="middle">是</text>
-  <rect x="560" y="215" width="200" height="50" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
-  <text x="660" y="245" fill="#15803d" font-size="12" font-weight="bold" text-anchor="middle">继续执行 Tool</text>
-  <line x1="430" y1="270" x2="430" y2="308" stroke="#ef4444" stroke-width="1.8" marker-end="url(#tsda)"/>
-  <text x="450" y="295" fill="#dc2626" font-size="11" text-anchor="middle">否</text>
-  <rect x="330" y="310" width="220" height="50" rx="8" fill="#fee2e2" stroke="#ef4444" stroke-width="2"/>
-  <text x="440" y="340" fill="#b91c1c" font-size="12" font-weight="bold" text-anchor="middle">抛 SandboxViolationException</text>
-  <text x="410" y="390" fill="#64748b" font-size="11.5" text-anchor="middle">不管放行还是拒绝，走的都是 ToolExecutor 原有的成功/失败审计路径，不需要新增审计代码</text>
+  <rect x="14" y="14" width="150" height="28" rx="7" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="89" y="27" fill="#1d4ed8" font-size="12" font-weight="bold" text-anchor="middle">FileTools</text>
+  <text x="89" y="37" fill="#1d4ed8" font-size="8" text-anchor="middle">.sandboxActions(inputJson)</text>
+  <rect x="14" y="44" width="150" height="28" rx="7" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="89" y="57" fill="#1d4ed8" font-size="12" font-weight="bold" text-anchor="middle">ShellTools</text>
+  <text x="89" y="67" fill="#1d4ed8" font-size="8" text-anchor="middle">.sandboxActions(inputJson)</text>
+  <rect x="14" y="74" width="150" height="28" rx="7" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="89" y="87" fill="#1d4ed8" font-size="12" font-weight="bold" text-anchor="middle">HttpTools</text>
+  <text x="89" y="97" fill="#1d4ed8" font-size="8" text-anchor="middle">.sandboxActions(inputJson)</text>
+  <rect x="14" y="104" width="150" height="28" rx="7" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="89" y="117" fill="#1d4ed8" font-size="12" font-weight="bold" text-anchor="middle">NotifyTools</text>
+  <text x="89" y="127" fill="#1d4ed8" font-size="8" text-anchor="middle">.sandboxActions(inputJson)</text>
+  <line x1="164" y1="28" x2="250" y2="55" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
+  <line x1="164" y1="58" x2="250" y2="68" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
+  <line x1="164" y1="88" x2="250" y2="81" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
+  <line x1="164" y1="118" x2="250" y2="94" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
+  <text x="207" y="24" fill="#64748b" font-size="8.5" text-anchor="middle">sandboxActions 申报</text>
+  <rect x="250" y="40" width="180" height="70" rx="10" fill="#e0e7ff" stroke="#6366f1" stroke-width="2.6"/>
+  <text x="340" y="64" fill="#4338ca" font-size="13" font-weight="bold" text-anchor="middle">ToolExecutor</text>
+  <text x="340" y="82" fill="#4c1d95" font-size="9.5" text-anchor="middle">执行入口 · 单一咽喉</text>
+  <text x="340" y="98" fill="#4c1d95" font-size="8.5" text-anchor="middle">各 Tool 只申报动作、不自行调用 check</text>
+  <line x1="430" y1="75" x2="490" y2="75" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
+  <text x="460" y="67" fill="#64748b" font-size="9" text-anchor="middle">统一校验</text>
+  <rect x="490" y="40" width="190" height="70" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.6"/>
+  <text x="585" y="64" fill="#b45309" font-size="13" font-weight="bold" text-anchor="middle">SandboxChecker</text>
+  <text x="585" y="82" fill="#92400e" font-size="10" text-anchor="middle">.check(actions)</text>
+  <text x="585" y="98" fill="#92400e" font-size="8.5" text-anchor="middle">未知 ActionType 默认拒绝</text>
+  <line x1="585" y1="110" x2="585" y2="142" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
+  <text x="596" y="134" fill="#64748b" font-size="9" text-anchor="start">按动作类型分流</text>
+  <line x1="109" y1="142" x2="585" y2="142" stroke="#94a3b8" stroke-width="1.6"/>
+  <line x1="109" y1="142" x2="109" y2="152" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
+  <line x1="317" y1="142" x2="317" y2="152" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
+  <line x1="525" y1="142" x2="525" y2="152" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
+  <rect x="14" y="152" width="190" height="28" rx="7" fill="#e0e7ff" stroke="#6366f1" stroke-width="2"/>
+  <text x="109" y="165" fill="#4338ca" font-size="12" font-weight="bold" text-anchor="middle">HTTP GET</text>
+  <text x="109" y="176" fill="#4c1d95" font-size="8.5" text-anchor="middle">只看 SSRF 与请求头</text>
+  <rect x="222" y="152" width="190" height="28" rx="7" fill="#e0e7ff" stroke="#6366f1" stroke-width="2"/>
+  <text x="317" y="165" fill="#4338ca" font-size="12" font-weight="bold" text-anchor="middle">HTTP 非 GET</text>
+  <text x="317" y="176" fill="#4c1d95" font-size="8.5" text-anchor="middle">域名白名单必查</text>
+  <rect x="430" y="152" width="190" height="28" rx="7" fill="#e0e7ff" stroke="#6366f1" stroke-width="2"/>
+  <text x="525" y="165" fill="#4338ca" font-size="12" font-weight="bold" text-anchor="middle">NOTIFY 通知</text>
+  <text x="525" y="176" fill="#4c1d95" font-size="8.5" text-anchor="middle">通知域名白名单必查</text>
+  <line x1="109" y1="180" x2="109" y2="192" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
+  <line x1="317" y1="180" x2="317" y2="192" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
+  <line x1="525" y1="180" x2="525" y2="192" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
+  <rect x="14" y="192" width="190" height="34" rx="7" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="109" y="207" fill="#b45309" font-size="10.5" font-weight="bold" text-anchor="middle">SSRF 闸（私网地址闸）</text>
+  <text x="109" y="219" fill="#92400e" font-size="8.5" text-anchor="middle">GET 请求同样要过私网闸</text>
+  <rect x="222" y="192" width="190" height="34" rx="7" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="317" y="207" fill="#b45309" font-size="10.5" font-weight="bold" text-anchor="middle">SSRF 闸（私网地址闸）</text>
+  <text x="317" y="219" fill="#92400e" font-size="8.5" text-anchor="middle">先过私网闸，再查域名白名单</text>
+  <rect x="430" y="192" width="190" height="34" rx="7" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="525" y="207" fill="#b45309" font-size="10.5" font-weight="bold" text-anchor="middle">私网地址闸</text>
+  <text x="525" y="219" fill="#92400e" font-size="8.5" text-anchor="middle">通知目标同样查私网地址</text>
+  <line x1="109" y1="226" x2="109" y2="238" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
+  <line x1="317" y1="226" x2="317" y2="238" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
+  <line x1="525" y1="226" x2="525" y2="238" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
+  <rect x="14" y="238" width="190" height="34" rx="7" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="5 3"/>
+  <text x="109" y="253" fill="#64748b" font-size="10.5" font-weight="bold" text-anchor="middle">不查域名白名单</text>
+  <text x="109" y="265" fill="#64748b" font-size="8.5" text-anchor="middle">GET 请求豁免</text>
+  <rect x="222" y="238" width="190" height="34" rx="7" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="317" y="253" fill="#b45309" font-size="10.5" font-weight="bold" text-anchor="middle">域名白名单</text>
+  <text x="317" y="265" fill="#92400e" font-size="8" text-anchor="middle">agentos.sandbox.http.allowed-domains</text>
+  <rect x="430" y="238" width="190" height="34" rx="7" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="525" y="253" fill="#b45309" font-size="10.5" font-weight="bold" text-anchor="middle">通知域名白名单</text>
+  <text x="525" y="265" fill="#92400e" font-size="8" text-anchor="middle">agentos.sandbox.notify.allowed-domains</text>
+  <line x1="109" y1="272" x2="109" y2="284" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
+  <line x1="317" y1="272" x2="317" y2="284" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
+  <line x1="525" y1="272" x2="525" y2="284" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
+  <rect x="14" y="284" width="190" height="34" rx="7" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="109" y="299" fill="#b45309" font-size="10.5" font-weight="bold" text-anchor="middle">请求头黑名单</text>
+  <text x="109" y="311" fill="#92400e" font-size="8.5" text-anchor="middle">命中即拒绝</text>
+  <rect x="222" y="284" width="190" height="34" rx="7" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="317" y="299" fill="#b45309" font-size="10.5" font-weight="bold" text-anchor="middle">请求头黑名单</text>
+  <text x="317" y="311" fill="#92400e" font-size="8.5" text-anchor="middle">命中即拒绝</text>
+  <rect x="430" y="284" width="190" height="34" rx="7" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="5 3"/>
+  <text x="525" y="299" fill="#64748b" font-size="10.5" font-weight="bold" text-anchor="middle">不适用</text>
+  <text x="525" y="311" fill="#64748b" font-size="8.5" text-anchor="middle">通知没有请求头</text>
+  <line x1="109" y1="318" x2="109" y2="330" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
+  <line x1="317" y1="318" x2="317" y2="330" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
+  <line x1="525" y1="318" x2="525" y2="330" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#tsda)"/>
+  <rect x="14" y="330" width="606" height="28" rx="7" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+  <text x="317" y="348" fill="#15803d" font-size="11" font-weight="bold" text-anchor="middle">全部闸通过 → 放行 · 继续执行 Tool（写审计 tool_invocations）</text>
+  <rect x="636" y="198" width="168" height="120" rx="10" fill="#fee2e2" stroke="#ef4444" stroke-width="2"/>
+  <text x="720" y="238" fill="#b91c1c" font-size="9.5" text-anchor="middle">任一闸不通过</text>
+  <text x="720" y="260" fill="#b91c1c" font-size="10" font-weight="bold" text-anchor="middle">抛 SandboxViolationException</text>
+  <text x="720" y="282" fill="#991b1b" font-size="9" text-anchor="middle">写审计 tool_invocations</text>
+  <text x="720" y="304" fill="#991b1b" font-size="9" text-anchor="middle">ToolExecutor 统一收尾</text>
+  <line x1="620" y1="258" x2="636" y2="258" stroke="#ef4444" stroke-width="1.8" marker-end="url(#tsdar)"/>
+  <text x="14" y="372" fill="#475569" font-size="8.5" text-anchor="start">文件类动作 → 先判「当前 Agent 目录隐式放行」（仅 FILE_READ、含 list_dir），未命中再走路径白名单 agentos.sandbox.file.allowed-paths</text>
+  <text x="14" y="383" fill="#475569" font-size="8.5" text-anchor="start">Shell → 命令白名单 agentos.sandbox.shell.allowed-commands（绝对路径精确匹配）</text>
+  <text x="14" y="394" fill="#64748b" font-size="8.5" text-anchor="start">MCP 工具与 @Tool Bean 返回空清单＝豁免；放行与拒绝都走 ToolExecutor 既有审计路径（tool_invocations），不新增审计代码</text>
 </svg>

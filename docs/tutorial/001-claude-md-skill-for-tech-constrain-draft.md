@@ -12,7 +12,7 @@
 ## 1. 全景：一个 170 行的"提示词程序"
 
 ### 1.1 它是什么，跑一次发生什么
-一份 170 行的 Markdown，凭什么算一个"程序"？先看它干什么：扫描项目已有的设计文档（需求、技术方案、README 等），提炼一份回答"这个仓库是什么、什么不能做"的 CLAUDE.md 草稿，放进 `consolidate/` 目录，等人工裁决后自行拷入。全部家当就一个 SKILL.md 文件：前 10 行是 YAML 配置（frontmatter，文件开头两横线之间的配置块——下一章细讲），后 160 行是给 AI 读的操作指令。它的性质是"提示词即程序"——自然语言指令就是源代码，章节就是模块，条款就是语句。两个前置概念，一张表带过：
+一份 170 行的 Markdown，凭什么算一个"程序"？先看它干什么：扫描项目已有的设计文档（需求、技术方案、README 等），提炼一份回答"这个仓库是什么、什么不能做"的 CLAUDE.md 草稿。草稿放进 `consolidate/` 目录，等人工裁决后自行拷入。全部家当就一个 SKILL.md 文件：前 10 行是 YAML 配置（frontmatter，文件开头两横线之间的配置块——下一章细讲），后 160 行是给 AI 读的操作指令。它的性质是"提示词即程序"——自然语言指令就是源代码，章节就是模块，条款就是语句。两个前置概念，一张表带过：
 
 | 概念 | 一句话解释 | 类比 |
 |------|-----------|------|
@@ -62,9 +62,9 @@ AI 怎么知道该在什么时候用这个技能？答案写在入口协议里�
 触发方式有两种：在 Claude Code 里输入 `/claude-md-draft-for-tech-constrain docs/design`，或直接说"帮我从这个项目的文档生成 CLAUDE.md"——`user-invocable: true` 加 `disable-model-invocation: false` 的组合，人和模型都能发起。`--no-draft` 参数可以关掉过程产物落盘（见第 6 章）。
 
 ### 2.2 description 三重职责与双轨路由
-关键在 `description`，它同时写给两类读者：写给人看，是斜杠菜单里的一句话简介；写给模型看，是自动触发的判断依据——上限 1536 字符，本文件只用了约 317 字，留足余量。它还塞进了第三样东西：分流规则，结尾一句写着"按技术栈/代码/会话复盘提炼编程规范、或按现成编程规范文档立规 → 路由 claude-md-draft-for-code-standard"。代价是描述必须写得足够精准，否则会被误触发。
+关键在 `description`，它同时写给两类读者：写给人看，是斜杠菜单里的一句话简介；写给模型看，是自动触发的判断依据。上限 1536 字符，本文件只用了约 317 字，留足余量。它还塞进了第三样东西：分流规则，结尾一句写着"按技术栈/代码/会话复盘提炼编程规范、或按现成编程规范文档立规 → 路由 claude-md-draft-for-code-standard"。代价是描述必须写得足够精准，否则会被误触发。
 
-这是"双轨"设计的一半：本技能（tech-constrain）从已有设计文档提炼**设计层共识**（架构怎么定、哪些红线不能碰），姊妹技能（claude-md-draft-for-code-standard）从代码与事故证据提炼**编程规范**（代码怎么写、坑怎么避）——把路由决策写成显式条款，不指望模型临场猜。分工见图 2：
+这是"双轨"设计的一半：本技能（tech-constrain）从已有设计文档提炼**设计层共识**（架构怎么定、哪些红线不能碰），姊妹技能（claude-md-draft-for-code-standard）从代码与事故证据提炼**编程规范**（代码怎么写、坑怎么避）。把路由决策写成显式条款，不指望模型临场猜。分工见图 2：
 ```mermaid
 flowchart TD
     U["用户的一句话需求"] --> R{"description 末尾的分流规则"}
@@ -87,7 +87,7 @@ flowchart TD
 | 检测到 AGENTS.md 等同类载体 → 询问 | 不静默双写，先问"单一权威源+指针"还是两份都维护 |
 
 ### 3.2 为什么停在草稿
-你可能会问：既然目标就是得到一份 CLAUDE.md，为什么不直接写好？因为"写规则"和"生效"是两种性质的权力：草稿一旦生效，每句话都会在之后的每次会话里被 AI 当权威执行，一条错误约定会被"代代相传"。所以机器负责提炼和起草，人负责裁决和拷入——反模式表第 12 条甚至写了"即使用户口头催促"也不把草稿写进落点文件，把 human-in-the-loop（人在环节中把关）做成了硬约束。
+既然目标就是得到一份 CLAUDE.md，为什么不直接写好？因为"写规则"和"生效"是两种性质的权力：草稿一旦生效，每句话都会在之后的每次会话里被 AI 当权威执行，一条错误约定会被"代代相传"。所以机器负责提炼和起草，人负责裁决和拷入——反模式表第 12 条甚至写了"即使用户口头催促"也不把草稿写进落点文件，把 human-in-the-loop（人在环节中把关）做成了硬约束。
 
 "不静默双写"同理：同一规则两个维护点，改一处忘一处必然漂移，所以先问清"单一权威源+指针"还是两份都维护。产物长什么样，见第 6 章。
 
@@ -140,7 +140,11 @@ flowchart TD
 第 2 步（[第 68–70 行](https://github.com/fangkun119/agent-os-poc/blob/3869e7b5d46bea5cadaddaffcafc47f9f462e30e/.claude/skills/claude-md-draft-for-tech-constrain/SKILL.md#L68-L70)）建文档地图：每份文档的章节清单、引用关系、每类信息的权威源、冲突时听谁的。后续所有"出处"标注都靠这张地图。
 
 ### 5.2 第 3 步：选材起草与位置决策
-第 3 步（[第 72–80 行](https://github.com/fangkun119/agent-os-poc/blob/3869e7b5d46bea5cadaddaffcafc47f9f462e30e/.claude/skills/claude-md-draft-for-tech-constrain/SKILL.md#L72-L80)）按不变量筛选并起草候选笔记，结构固定为"分节正文（附入选理由+逐条来源）→ 排除项表 → 体量评估 → 分层放置说明 → 需拍板项清单"。最有味道的是一条自问式判据（[第 80 行](https://github.com/fangkun119/agent-os-poc/blob/3869e7b5d46bea5cadaddaffcafc47f9f462e30e/.claude/skills/claude-md-draft-for-tech-constrain/SKILL.md#L80)）：判断一条规则放根级还是放目录级，问"能否构造一个 agent 全程不在该目录工作、但仍会违反这条规则的场景？"能，就放根级写成自含式一行；不能，就只放目录级——把容易凭感觉的布局问题转成了可执行的测试。同段还有个成本意识很强的细节：最高危红线（如宪章保护类）无论判定结果如何，都在根级保留一份自含式副本，注明约 25 token——用极小的预算给最要紧的规则上双保险，防止"目标目录没被打开时规则等于不存在"。
+**第 3 步按不变量筛选并起草候选笔记。**这一步（[第 72–80 行](https://github.com/fangkun119/agent-os-poc/blob/3869e7b5d46bea5cadaddaffcafc47f9f462e30e/.claude/skills/claude-md-draft-for-tech-constrain/SKILL.md#L72-L80)）的结构固定为"分节正文（附入选理由+逐条来源）→ 排除项表 → 体量评估 → 分层放置说明 → 需拍板项清单"。
+
+**根级还是目录级，用一道自问测出来。**最有味道的是一条自问式判据（[第 80 行](https://github.com/fangkun119/agent-os-poc/blob/3869e7b5d46bea5cadaddaffcafc47f9f462e30e/.claude/skills/claude-md-draft-for-tech-constrain/SKILL.md#L80)）：判断一条规则放根级还是放目录级，问"能否构造一个 agent 全程不在该目录工作、但仍会违反这条规则的场景？"能，就放根级写成自含式一行；不能，就只放目录级。这把容易凭感觉的布局问题转成了可执行的测试。
+
+**最高危红线在根级留一份自含式副本。**同段还有个成本意识很强的细节：最高危红线（如宪章保护类）无论判定结果如何，都在根级保留自含式副本，注明约 25 token。这是用极小的预算给最要紧的规则上双保险，防止"目标目录没被打开时规则等于不存在"。
 
 ### 5.3 第 4 步：三视角自查——给 AI 的产出也配 code review
 第 4 步（[第 82–92 行](https://github.com/fangkun119/agent-os-poc/blob/3869e7b5d46bea5cadaddaffcafc47f9f462e30e/.claude/skills/claude-md-draft-for-tech-constrain/SKILL.md#L82-L92)）是整条流水线的质检环节，用一个三列表格规定了三个审查视角：
@@ -160,7 +164,7 @@ flowchart TD
 
 ## 6. 输出契约：草稿落哪、长什么样、怎么防覆写（第 24–41、94–119、142–144 行）
 
-流水线跑完，产物到底长什么样？三件事：落哪、长什么样、怎么保证不覆盖历史——输出契约解决的是"机器碰文件系统"这件事的全部风险。
+流水线跑完，产物落到哪、长什么样、怎么保证不覆盖历史？输出契约解决的是"机器碰文件系统"这件事的全部风险。
 
 ### 6.1 路径模板与三个占位符
 产物落盘路径是一个模板（[第 29 行](https://github.com/fangkun119/agent-os-poc/blob/3869e7b5d46bea5cadaddaffcafc47f9f462e30e/.claude/skills/claude-md-draft-for-tech-constrain/SKILL.md#L29)）：
@@ -169,12 +173,20 @@ flowchart TD
 ./{OUTPUT_DIR}/consolidate/{YYYYMMDD}_claudemd_draft_{name}.md
 ```
 
-三个占位符各有规则。`{OUTPUT_DIR}` 是输出根目录，用户未指定默认 `chat`，是本技能唯一的写盘范围；`{YYYYMMDD}` 必须执行 `date +%Y%m%d` 取自系统时钟，原文写"禁止模型凭记忆写"（[第 33 行](https://github.com/fangkun119/agent-os-poc/blob/3869e7b5d46bea5cadaddaffcafc47f9f462e30e/.claude/skills/claude-md-draft-for-tech-constrain/SKILL.md#L33)）——语言模型没有可靠的"今天"，训练截止之后的时间全靠会话上下文里的提示，凭印象写日期是高频事故，把"去问时钟"写成指令，是用最便宜的代价消除一整类错误；`{name}` 是按公式生成的项目标识——"主框架-语言或形态-仓库角色"三段式，比如 `springboot-java-monolith`（Spring Boot-Java-单体应用），小写字母加连字符、不超过 32 字符，截断顺序也写死：超 32 字符先截"仓库角色"段、按连字符边界截。省掉的每一次"模型自由发挥"，都是一次不可预测的产物命名。
+三个占位符各有规则。
+
+**`{OUTPUT_DIR}` 是本技能唯一的写盘范围。**这个输出根目录在用户未指定时默认 `chat`。
+
+**`{YYYYMMDD}` 只能问系统时钟。**必须执行 `date +%Y%m%d` 取得，原文写"禁止模型凭记忆写"（[第 33 行](https://github.com/fangkun119/agent-os-poc/blob/3869e7b5d46bea5cadaddaffcafc47f9f462e30e/.claude/skills/claude-md-draft-for-tech-constrain/SKILL.md#L33)）。语言模型没有可靠的"今天"，训练截止之后的时间全靠会话上下文里的提示，凭印象写日期是高频事故——把"去问时钟"写成指令，是用最便宜的代价消除一整类错误。
+
+**`{name}` 按三段式公式生成。**它是项目标识"主框架-语言或形态-仓库角色"，比如 `springboot-java-monolith`（Spring Boot-Java-单体应用），小写字母加连字符、不超过 32 字符。截断顺序也写死：超 32 字符先截"仓库角色"段、按连字符边界截。省掉的每一次"模型自由发挥"，都是一次不可预测的产物命名。
 
 ### 6.2 只增不改：撞名与产出语义
-目标文件已经存在，为什么不直接覆盖？本技能的选择是永不覆盖：撞名检查针对完整文件名（日期+名字整体），撞了就给 `{name}` 追加序号 `-2`、`-3`，重查直到唯一（[第 35–36 行](https://github.com/fangkun119/agent-os-poc/blob/3869e7b5d46bea5cadaddaffcafc47f9f462e30e/.claude/skills/claude-md-draft-for-tech-constrain/SKILL.md#L35-L36)）；序号越界就把 `{name}` 压缩腾位；连撞 5 次才停下来问用户改名（[第 39 行](https://github.com/fangkun119/agent-os-poc/blob/3869e7b5d46bea5cadaddaffcafc47f9f462e30e/.claude/skills/claude-md-draft-for-tech-constrain/SKILL.md#L39)）。这把输出做成"只增不改"的日志式语义：每次运行都是一次独立快照，历史产物永远完好——对比"覆盖写"的世界：跑两次技能，第一次的草稿没了，想对比都无从谈起。
+目标文件已经存在，为什么不直接覆盖？本技能的选择是永不覆盖：撞名检查针对完整文件名（日期+名字整体），撞了就给 `{name}` 追加序号 `-2`、`-3`，重查直到唯一（[第 35–36 行](https://github.com/fangkun119/agent-os-poc/blob/3869e7b5d46bea5cadaddaffcafc47f9f462e30e/.claude/skills/claude-md-draft-for-tech-constrain/SKILL.md#L35-L36)）；序号越界就把 `{name}` 压缩腾位；连撞 5 次才停下来问用户改名（[第 39 行](https://github.com/fangkun119/agent-os-poc/blob/3869e7b5d46bea5cadaddaffcafc47f9f462e30e/.claude/skills/claude-md-draft-for-tech-constrain/SKILL.md#L39)）。这把输出做成"只增不改"的日志式语义：每次运行都是一次独立快照，历史产物永远完好。对比"覆盖写"的世界：跑两次技能，第一次的草稿没了，想对比都无从谈起。
 
-第 142–144 行把输出纪律单独成节，还带着一个内嵌修订日期"产出语义（2026-09-03 更新）"——文件自身演进留下的痕迹（详见附录 D6）。内容是把输出纪律说绝（[第 142–144 行](https://github.com/fangkun119/agent-os-poc/blob/3869e7b5d46bea5cadaddaffcafc47f9f462e30e/.claude/skills/claude-md-draft-for-tech-constrain/SKILL.md#L142-L144)）：每次运行全新生成，不读取、不比对、不增量补写既有草稿；"永不覆写既有文件，也不问覆盖"；新旧草稿怎么取舍由使用方裁决。它和占位符规则互为表里：那里定义"落到哪个唯一路径"，这里定义"到了路径也不许改已有东西"。这些规则保证了一个实用性质：同一天跑多少次、多少个项目并行，产物互不覆写（[第 41 行](https://github.com/fangkun119/agent-os-poc/blob/3869e7b5d46bea5cadaddaffcafc47f9f462e30e/.claude/skills/claude-md-draft-for-tech-constrain/SKILL.md#L41)）；过程产物（候选笔记）默认落在 `{OUTPUT_DIR}/draft/{YYYYMMDD}_claudemd_draft_{name}/`，`--no-draft` 可关——唯一的写盘根被限定在 `{OUTPUT_DIR}` 子树内，源文档和落点 CLAUDE.md 在文件系统层面就碰不到。
+**产出语义：每次全新生成，永不覆写。**第 142–144 行把输出纪律单独成节，还带着一个内嵌修订日期"产出语义（2026-09-03 更新）"——文件自身演进留下的痕迹（详见附录 D6）。内容是把输出纪律说绝（[第 142–144 行](https://github.com/fangkun119/agent-os-poc/blob/3869e7b5d46bea5cadaddaffcafc47f9f462e30e/.claude/skills/claude-md-draft-for-tech-constrain/SKILL.md#L142-L144)）：每次运行全新生成，不读取、不比对、不增量补写既有草稿；"永不覆写既有文件，也不问覆盖"；新旧草稿怎么取舍由使用方裁决。它和占位符规则互为表里：那里定义"落到哪个唯一路径"，这里定义"到了路径也不许改已有东西"。
+
+**同一天跑多少次、多少个项目并行，产物互不覆写。**这些规则保证了一个实用性质（[第 41 行](https://github.com/fangkun119/agent-os-poc/blob/3869e7b5d46bea5cadaddaffcafc47f9f462e30e/.claude/skills/claude-md-draft-for-tech-constrain/SKILL.md#L41)）。过程产物（候选笔记）默认落在 `{OUTPUT_DIR}/draft/{YYYYMMDD}_claudemd_draft_{name}/`，`--no-draft` 可关——唯一的写盘根被限定在 `{OUTPUT_DIR}` 子树内，源文档和落点 CLAUDE.md 在文件系统层面就碰不到。
 
 ### 6.3 草稿形态：声明头、标记区与固定骨架
 草稿文件首行是 blockquote（Markdown 引用块，行首大于号）草稿声明，写明生成日期、来源文档集、"是否拷入由用户裁决"；生成内容包在 `<!-- generated START -->` 与 `<!-- generated END -->` 标记区里（[第 97–98 行](https://github.com/fangkun119/agent-os-poc/blob/3869e7b5d46bea5cadaddaffcafc47f9f462e30e/.claude/skills/claude-md-draft-for-tech-constrain/SKILL.md#L97-L98)）——标示哪些是机器写的，方便人合并时区分，也保护既有文件里的手写段落不被静默吞掉。
@@ -183,10 +195,10 @@ flowchart TD
 
 ## 7. 护栏与总纲：必问清单、反模式表、五条运行原则（第 132–170 行）
 
-规则讲完了，怎么防止 AI 在执行时滑向捷径？靠三样东西兜底：一张必问清单、一张 12 条的负面清单、五条运行原则。
+怎么防止 AI 在执行时滑向捷径？靠三样东西兜底：一张必问清单、一张 12 条的负面清单、五条运行原则。
 
 ### 7.1 必问清单
-固定 5 项，"不自行增减"（[第 134–138 行](https://github.com/fangkun119/agent-os-poc/blob/3869e7b5d46bea5cadaddaffcafc47f9f462e30e/.claude/skills/claude-md-draft-for-tech-constrain/SKILL.md#L134-L138)）：无出处的新约定是否写入；根/目录归属拿不准的条目；与既有 CLAUDE.md 冲突条目的处置；撞名 5 次仍无可用名时请用户改名；同类载体（AGENTS.md 等）单源还是双写。紧接着一行（[第 140 行](https://github.com/fangkun119/agent-os-poc/blob/3869e7b5d46bea5cadaddaffcafc47f9f462e30e/.claude/skills/claude-md-draft-for-tech-constrain/SKILL.md#L140)）把剩余决策全部划给 AI："其余（选材、压缩、措辞）自行决定，汇报中说明理由。"这张清单的筛选逻辑值得学：列入的都是**后果不可逆或涉及用户意图**的事（动用户的文件、替项目发明规则），划出的是**可逆且可解释**的事（措辞、取舍）；配套的提问上限（见 5.3）压住了打扰成本。
+固定 5 项，"不自行增减"（[第 134–138 行](https://github.com/fangkun119/agent-os-poc/blob/3869e7b5d46bea5cadaddaffcafc47f9f462e30e/.claude/skills/claude-md-draft-for-tech-constrain/SKILL.md#L134-L138)）：无出处的新约定是否写入；根/目录归属拿不准的条目；与既有 CLAUDE.md 冲突条目的处置；撞名 5 次仍无可用名时请用户改名；同类载体（AGENTS.md 等）单源还是双写。紧接着一行（[第 140 行](https://github.com/fangkun119/agent-os-poc/blob/3869e7b5d46bea5cadaddaffcafc47f9f462e30e/.claude/skills/claude-md-draft-for-tech-constrain/SKILL.md#L140)）把剩余决策全部划给 AI："其余（选材、压缩、措辞）自行决定，汇报中说明理由。"这张清单的筛选逻辑值得学：列入的都是**后果不可逆或涉及用户意图**的事（动用户的文件、替项目发明规则），划出的是**可逆且可解释**的事（措辞、取舍）。配套的提问上限（见 5.3）压住了打扰成本。
 
 ### 7.2 反模式表
 第 146–162 行是一张 12 行的反模式表（[SKILL.md](https://github.com/fangkun119/agent-os-poc/blob/3869e7b5d46bea5cadaddaffcafc47f9f462e30e/.claude/skills/claude-md-draft-for-tech-constrain/SKILL.md#L146-L162)），每行"反模式+原因"。挑五条看其锋利程度：
@@ -206,7 +218,7 @@ flowchart TD
 
 ## 8. 带走什么：五条可迁移经验
 
-回头看，这份 170 行的文件示范了五件可迁移的事：
+这份 170 行的文件示范了五件可迁移的事：
 
 1. **提示词当程序写**：配置（frontmatter）与逻辑（正文）分离，章节即模块，判据写成可执行的条件，不写成感觉性的形容词。
 2. **把人的裁决点做成硬约束**：产物是草稿、拷入归用户、"口头催促也不写落点"——涉及不可逆后果的权力不交给自动化。

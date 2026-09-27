@@ -33,7 +33,7 @@ class M5LoopClosedTest {
 
     private static final Logger log = LoggerFactory.getLogger(M5LoopClosedTest.class);
 
-    /** Bean 按名取用（TS 3.2 红线的执行姿势；Bean 名为 007 E8 实证的 openAiChatModel） */
+    /** Bean 按名取用（TechnicalSolution.md - 3.2 Provider 名到 ChatModel 的显式映射 的红线的执行姿势；Bean 名为 007 E8 实证的 openAiChatModel） */
     @Autowired
     @Qualifier("openAiChatModel")
     private ChatModel chatModel;

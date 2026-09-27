@@ -54,7 +54,7 @@
 
 | 数字 | 内容 | 出处 |
 | --- | --- | --- |
-| 9 | Maven 模块（core/provider/memory/tool/channel-cli/web/storage/cli/boot） | TS 10 |
+| 9 | Maven 模块（core/provider/memory/tool/channel-cli/web/storage/cli/agentos-boot） | TS 10 |
 | 9 | 内置 Tool，5 组：FileTools×3（read_file/write_file/list_dir）、ShellTools×1（shell）、HttpTools×2（http_get/http_post）、MemoryTools×2（save_memory/recall_memory）、NotifyTools×1（notify） | TS 6.2 / DA 5.6 |
 | 18 | REST 端点 = 基础 10（sessions×4、agents/{name}/invoke×1、profiles/memory/tools 查询×3、health/info×2）+ 收尾 8（notify-channels CRUD×4、schedules×4） | TS 7.2 / DA 5.8 |
 | 12 | CLI 子命令：init/status/chat/serve/gateway/profile list\|create\|show\|delete/provider list/tool list/session list | TS 8.7 / DA 5.11 |
@@ -294,11 +294,11 @@ website/
 ### Phase 5 收尾
 
 - [x] 5.1 回填本清单勾选状态与变更记录
-- [x] 5.2 向用户汇报：截图 + 文件清单 + 遗留开放问题（开放项移交 chat/temp/website-todo.md）
+- [x] 5.2 向用户汇报：截图 + 文件清单 + 遗留开放问题（开放项集中登记于本文第 7 章 开放问题，随本文归档）
 
 ---
 
-## 7. 开放问题（不阻塞实施，移交 chat/temp/website-todo.md 统一处理）
+## 7. 开放问题（不阻塞实施，集中登记于本章，随本文归档）
 
 | 问题 | 当前处理 |
 | --- | --- |
@@ -328,5 +328,5 @@ website/
   误创建目录一并丢失；现按会话内完整编辑历史在 website/docs/plan.md 重建为最终状态，
   §2.5 / §5 / §6 中已失效的「website/docs 快照」描述同步更新为解耦后现状。
 - 2026-08-31：视觉刷新立项并实施完成（v3「机房 LED」色板——初选琥珀荧光同日改选——+
-  工作台结构 + 自托管字体 + 唯一编排时刻），独立文档见 chat/consolidate/20260830-website-visual-refresh-{spec,plan,
-  claudemd-change}.md；本计划的事实基线（§2）继续作为内容红线有效。
+  工作台结构 + 自托管字体 + 唯一编排时刻）；该次视觉刷新的独立设计文档属会话过程稿，随过程稿归档、不再保留目录指针；
+  本计划的事实基线（§2）继续作为内容红线有效。

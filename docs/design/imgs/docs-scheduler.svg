@@ -16,7 +16,7 @@
   <line x1="410" y1="96" x2="410" y2="118" stroke="#94a3b8" stroke-width="2" marker-end="url(#tst1)"/>
   <rect x="270" y="120" width="280" height="52" rx="10" fill="#e0e7ff" stroke="#6366f1" stroke-width="2"/>
   <text x="410" y="145" fill="#4338ca" font-size="15" font-weight="bold" text-anchor="middle">AgentService</text>
-  <text x="410" y="163" fill="#6366f1" font-size="12" text-anchor="middle">统一入口，不管消息从哪来</text>
+  <text x="410" y="163" fill="#4338ca" font-size="12" text-anchor="middle">统一入口，不管消息从哪来</text>
   <line x1="410" y1="172" x2="410" y2="198" stroke="#94a3b8" stroke-width="2" marker-end="url(#tst1)"/>
   <rect x="310" y="200" width="200" height="50" rx="10" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
   <text x="410" y="225" fill="#15803d" font-size="15" font-weight="bold" text-anchor="middle">ReActLoop</text>

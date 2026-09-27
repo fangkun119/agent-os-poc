@@ -13,7 +13,7 @@
 
   <artifactId>agentos-channel-cli</artifactId>
   <name>agentos-channel-cli</name>
-  <description>CLI Channel（TS 10）：CliChannel、agentos chat 命令实现。核心阶段与 AgentScheduler 同进程直调 AgentService（不经 Web API，TS 10）。</description>
+  <description>CLI Channel（TechnicalSolution.md - 10 项目工程结构）：CliChannel、agentos chat 命令实现。核心阶段与 AgentScheduler 同进程直调 AgentService（不经 Web API，TechnicalSolution.md - 10 项目工程结构）。</description>
 
   <dependencies>
     <dependency>
