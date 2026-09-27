@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: jdbc:sqlite:target/spike-data/d2.db?journal_mode=WAL&busy_timeout=5000&synchronous=FULL
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    open-in-view: false

@@ -1,7 +1,7 @@
 package spike.mcp.tool;
 
 /**
- * AgentOS 内部统一工具抽象的最小副本（TS 6.1；002 §3.4）。
+ * AgentOS 内部统一工具抽象的最小副本（TechnicalSolution.md - 6.1 AgentOSTool 抽象；002 §3.4）。
  * 正式实现归 agentos-core；spike 只验证 MCP 工具能否包装成该接口。
  */
 public interface AgentOSTool {

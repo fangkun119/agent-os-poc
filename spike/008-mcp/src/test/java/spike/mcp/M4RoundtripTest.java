@@ -86,7 +86,7 @@ class M4RoundtripTest {
 
     /**
      * M7 强证据：get-env 回显子进程环境变量（占位符 → ServerParameters.env → 子进程 → 协议返回）。
-     * 安全纪律（TS 8.8）：get-env 会回显子进程全量环境变量，可能含宿主凭证——打印一律脱敏，
+     * 安全纪律（TechnicalSolution.md - 8.8 配置与密钥加载）：get-env 会回显子进程全量环境变量，可能含宿主凭证——打印一律脱敏，
      * 只输出"是否含探测值"的布尔结论，不输出回显原文。
      */
     @Test

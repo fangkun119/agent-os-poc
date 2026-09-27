@@ -16,7 +16,7 @@
 2. **统一对外渠道接入**。IM（企业微信、飞书、钉钉、Slack、Telegram、Discord 等）、邮件等消息渠道，所有 Agent 共用一套渠道层（HTTP API / Web 接入归 Web Service 层，不算渠道）。
 3. **统一对内系统接入**。LLM Provider、工具（MCP 或插件）、企业 IT 系统、知识库，所有 Agent 共享一套接入层。
 4. **统一记忆**。跨 Session 的长期记忆、可复用的 Skill 模板、跨 Agent 的知识沉淀。
-5. **Tool 调用和沙箱执行**。Agent 通过 LLM Function Calling 调用 Tool，Tool 调用经安全校验（核心阶段是应用层白名单校验，容器级沙箱隔离属扩展阶段）保证安全边界。
+5. **Tool 调用和沙箱执行**。Agent 通过 LLM Function Calling 调用 Tool，凡申报涉外动作的内置 Tool 调用经安全校验（核心阶段是应用层白名单校验——九个内置 Tool 中七个申报动作受检、记忆组申报空清单无可拦动作，MCP 工具与 @Tool Bean 工具不经过此校验、由管理员配置信任边界，详见 TechnicalSolution.md - `6.7 Sandbox 检查`；容器级沙箱隔离属扩展阶段）保证安全边界。
 
 这里要把一个容易混的词辨清楚：**Agent OS** 跟 **agent runtime**（Agent 运行时）不是一回事。
 
@@ -151,7 +151,7 @@ Java/Spring 生态在企业后端是极其完整的，从 Web 框架（**Spring 
 这个缺位之所以现在值得、也能够被补上，有几个具体的技术支点：
 
 1. **Spring Boot 是企业后端的事实标准。** 一个 Java Agent OS 就是一个 Spring Boot 应用，运维体系无缝对接，IT 部门不需要学新东西，装上就能纳入现有体系。
-2. **Spring AI Alibaba 提供了现成的主流 LLM connector。** 十余个 LLM 的接入不需要重新造轮子，直接复用 Spring AI 的 `ChatModel`/`ChatClient` 抽象，让 Java Agent OS 的 LLM Provider 层站在巨人肩膀上。
+2. **Spring AI 官方 starter 已覆盖主流 LLM 接入。** 十余个 LLM 的接入不需要重新造轮子，直接复用 Spring AI 的 `ChatModel`/`ChatClient` 抽象，让 Java Agent OS 的 LLM Provider 层站在巨人肩膀上；Spring AI Alibaba 只以 BOM 参与版本对齐、不用其 connector（接入口径见 `5.7 AgentOS 跟业界其他项目的关系` 与 DemandAnalysis.md - `1.1 AgentOS 是什么`）。
 3. **JVM 成熟的运维工具链能直接复用。** Nacos、Sentinel、SkyWalking、Arthas、JFR、Prometheus + Grafana，跟 Java Agent OS 是无缝的，企业现有运维体系不需要为它单独搭一套。
 4. **跟企业现有 Java 系统对接成本最低。** Tool 直接调企业现有 Java 服务，不需要写跨语言的胶水代码。
 5. **严监管行业的私有部署要求让 Java 成为确定性选择。** 这些行业的核心系统大量是 Java，私有部署、完全审计、合规过审是硬要求，用 Java 实现可以走企业现有的 Java 审计流程，不需要为新组件单独搭一套合规通道。
@@ -216,7 +216,7 @@ Dify 的产物是一条 workflow，你用拖拽的方式，把 Prompt 节点、H
 
 框架的产物是代码，它给开发者一组库和 SDK，让你用代码把一个 Agent 写出来，写完之后部署、运维、扩展、保活都是你自己的事，框架不管运行环境。AgentOS 的产物是一个装好就跑的服务，基础设施一应俱全，业务方不写 Agent 后端代码，只配置 Agent、写 Tool。
 
-> 一句话区别：框架是"给你材料让你自己盖房子"，AgentOS 是"盖好的房子，你拎包入住"。两者是复用关系而非竞争关系，AgentOS 内部的 LLM 调用层，正是直接复用 Spring AI / Spring AI Alibaba 这类框架来实现的。
+> 一句话区别：框架是"给你材料让你自己盖房子"，AgentOS 是"盖好的房子，你拎包入住"。两者是复用关系而非竞争关系，AgentOS 内部的 LLM 调用层，正是基于 Spring AI 官方 starter 直接复用这类框架来实现的（Spring AI Alibaba 只以 BOM 参与版本对齐、不用其 connector）。
 
 把三者收成一句话：框架给你代码、要你自己搭运行环境；编排平台给你流程、跑在运行时之上；AgentOS 给你运行时本身，一个让 Agent 能常驻、可治理、可审计地跑起来的底座。
 
@@ -227,11 +227,13 @@ AgentOS 既复用了框架（拿它当 LLM 调用的底层组件），又托住�
 OpenClaw 的安全问题（CVE、恶意 skill、凭证收割、第三方 skill 供应链风险）不是偶然的 bug，是结构性的。AgentOS 既然定位严监管企业，安全就必须是 **day one** 的设计，而不是事后打补丁。具体在几件事上跟 OpenClaw 走相反的路：
 
 1. **Skill 和 Tool 来源受控，不做无约束的公开市场。** 企业内的 Skill 和 Tool 要经过注册、审核、签名、版本管理，来源可追溯。
-2. **最小权限，而不是默认全开。** 每个 Agent、每个 Tool 拿到的权限是显式授予的最小集合，文件系统、网络、shell 的访问范围默认收紧，按需放开。
-3. **安全校验是强制的，不是可选的。** 核心阶段每个 Tool 调用都强制经过应用层白名单校验（SandboxChecker：文件路径、Shell 命令、HTTP 域名白名单、通知渠道域名（notify.allowed_domains，独立于 HTTP 白名单））；容器级沙箱隔离、资源和能力边界、多租户完全隔离属扩展阶段，按信号驱动升级。
-4. **凭证不落地，走企业密钥体系。** API key、token、企业系统的凭证不硬编码、不明文存储，对接企业现有的密钥管理（KMS、Vault 等），凭证的使用全程可审计。核心阶段先做环境变量注入 + `${ENV_VAR}` 占位（落地规则已定稿：密钥只放仓库外脚本 `~/.agent-os-poc/script/agent-os-env.sh`，必须 source 加载、权限 600；仓库内任何文件只写 `${ENV_VAR}` 占位符；日志与命令行最多输出前 5 位前缀，详见 docs/design/detail-supplement/001-model-config-export.md），完整加密存储与密钥轮转放扩展阶段。
-5. **prompt injection 和数据外泄要主动防御。** 借鉴 Hermes 的做法，记忆写入和工具输入要经过安全扫描，检测注入和外泄模式（检测能力放扩展阶段；核心阶段先靠 Sandbox 白名单与审计兜底）。
-6. **全链路审计是底座能力，不是事后补。** 谁、在什么时候、让哪个 Agent、调了什么 Tool、访问了什么数据、产生了什么结果，全程结构化留痕（核心阶段即落 `tool_invocations`、`llm_calls` 审计表），可接入企业现有审计和 SIEM 系统的能力放扩展阶段。
+2. **最小权限，而不是默认全开。** 每个 Agent、每个 Tool 拿到的权限是显式授予的最小集合，文件系统、网络、shell 的访问范围默认收紧，按需放开。HTTP GET 档是例外：GET 无附加运行时校验（不看域名白名单、不做 IP 与请求头检查），依赖受控网段与网络策略，见第 3 点；这是已接受的取舍。
+3. **安全校验是强制的，不是可选的。** 核心阶段凡申报涉外动作的内置 Tool——九个中的七个，记忆组申报空清单（见 TechnicalSolution.md - `6.7 Sandbox 检查`）——调用都强制经过应用层白名单校验（SandboxChecker：文件路径、Shell 命令、HTTP 域名白名单、通知渠道域名（agentos.sandbox.notify.allowed-domains，独立于 HTTP 白名单）；核心阶段出站请求的强制校验只剩动作形状与域名白名单（文件路径与 Shell 命令白名单不变）——HTTP 非 GET 与通知仅在目标为域名形式（`target.kind == NAMED`，即 URL 解析后 host 为域名而非 IP 字面量）时查白名单，GET 免白名单，IP 级与请求头检查在核心阶段不做、扩展阶段按信号回归（设计评审 P21 决议 2026-11-02：核心阶段 HTTP 校验只保留动作形状与域名白名单；设计评审 P22 决议 2026-11-02：核心阶段通知校验只保留动作形状与通知域名白名单），这是已接受的取舍；覆盖边界见 TechnicalSolution.md - `6.7 Sandbox 检查`——MCP 工具与 @Tool Bean 工具不经过此校验，由管理员配置与 Profile 工具子集治理）；容器级沙箱隔离、资源和能力边界、多租户完全隔离属扩展阶段，按信号驱动升级。
+4. **凭证不落地，走企业密钥体系。** API key、token、企业系统的凭证不硬编码、不明文存储，对接企业现有的密钥管理（KMS、Vault 等），凭证的使用全程可审计。核心阶段先做环境变量注入 + `${ENV_VAR}` 占位（落地规则已定稿：密钥只放仓库外脚本 `~/.agent-os-poc/script/agent-os-env.sh`，必须 source 加载、权限 600；仓库内任何文件只写 `${ENV_VAR}` 占位符；日志与命令行最多输出前 5 位前缀，详见 docs/design/detail/model-config.md），完整加密存储与密钥轮转放扩展阶段。
+5. **prompt injection 和数据外泄要主动防御。** 借鉴 Hermes 的做法，记忆写入和工具输入要经过安全扫描，检测注入和外泄模式（检测能力放扩展阶段；核心阶段先靠非 GET 的域名白名单与审计兜底——白名单对记忆路径无动作可拦，记忆组工具申报空清单；审计不是外带检测的完整兜底：HTTP 请求 URL 的查询串按 `agentos.audit.url-redaction` 抹掉后审计不可见，补充不可逆指纹的建议另行落地，见 TechnicalSolution.md - `6.7 Sandbox 检查`）。
+6. **全链路审计是底座能力，不是事后补。** 谁、在什么时候、让哪个 Agent、调了什么 Tool、访问了什么数据、产生了什么结果，全程结构化留痕（核心阶段即落 `tool_invocations`、`llm_calls` 审计表），可接入企业现有审计和 SIEM 系统的能力放扩展阶段。（2026-11-11 复核：维持第 6 条“全程结构化留痕”原措辞；本节的实施口径以 TechnicalSolution.md - `6.7 Sandbox 检查`、TechnicalSolution.md - ``6.8 通知推送（`NotifyTools`）`` 与 api.md - `§3 端点契约`、api.md - `§4 失败路径契约（errorCode 权威归属表）` 为准；审计写入失败可能缺行，见 TechnicalSolution.md - `4.3 关键设计点` 的 (5)。）
+
+本节各条的安全叙事是背景出处；实施口径以 TechnicalSolution.md - `6.7 Sandbox 检查`、TechnicalSolution.md - ``6.8 通知推送（`NotifyTools`）`` 与 api.md - `§3 端点契约`、api.md - `§4 失败路径契约（errorCode 权威归属表）` 为准。部署前提（核心阶段假设 AgentOS 部署在受控网段，内网访问控制由企业网络策略/防火墙负责，AgentOS 核心阶段不做 IP 级校验）与已接受风险清单见 TechnicalSolution.md - `6.7 Sandbox 检查` 与 DemandAnalysis.md - `8.5 安全`。
 
 AgentOS 既然是 Java/Spring 实现、跑在企业自己基础设施上，它就能纳入企业现有的代码审计、安全扫描、合规过审流程。安全不是额外加的一层壳，是从架构里长出来的。
 
@@ -241,7 +243,7 @@ AgentOS 借鉴了开源 Agent OS 领域已经被验证的设计哲学。Agent �
 
 - **AgentOS 跟 OpenClaw、Hermes 的关系**是同类不同定位。三者都是 Agent OS，OpenClaw 偏个人、Hermes 偏个人到小团队，AgentOS 直接定位严监管企业场景。三者都采用 markdown + frontmatter 的目录形态，社区的优质 Skill 经过企业审查后理论上可以导入 AgentOS 的全局 Skill 库（`.agentos/skills/`）。
 - **AgentOS 跟 Dify、Coze 这类编排平台的关系**是互补。两者甚至可以组合（Dify 作应用层，AgentOS 作基础设施层）。
-- **AgentOS 跟 Spring AI、Spring AI Alibaba、LangChain4j 这些 Java AI 框架的关系**是复用。AgentOS 的 LLM Provider 抽象直接基于 Spring AI Alibaba 的主流 LLM connector，不重复造轮子。
+- **AgentOS 跟 Spring AI、Spring AI Alibaba、LangChain4j 这些 Java AI 框架的关系**是复用。AgentOS 的 LLM Provider 抽象基于 Spring AI 官方 starter（MiniMax 走原生 starter），Spring AI Alibaba 只以 BOM 参与版本对齐、不用其 connector，不重复造轮子。
 
 ---
 

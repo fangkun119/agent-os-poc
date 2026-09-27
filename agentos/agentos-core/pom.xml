@@ -13,10 +13,10 @@
 
   <artifactId>agentos-core</artifactId>
   <name>agentos-core</name>
-  <description>核心抽象和接口（TS 10）：AgentOSTool、Session、Profile、ContextLoader、AgentLoader、ReActLoop、PromptBuilder、ToolExecutor、AgentService、AgentScheduler、ScheduledTaskStore 契约、AgentLifecycleService（扩展阶段）</description>
+  <description>核心抽象和接口（TechnicalSolution.md - 10 项目工程结构）：AgentOSTool、Session、Profile、ContextLoader、AgentLoader、ReActLoop、PromptBuilder、ToolExecutor、AgentService、AgentScheduler、ScheduledTaskStore 契约、AgentLifecycleService（扩展阶段）</description>
 
   <dependencies>
-    <!-- SnakeYAML：AGENT.md frontmatter 的 YAML 解析（TS 1.2） -->
+    <!-- SnakeYAML：AGENT.md frontmatter 的 YAML 解析（TechnicalSolution.md - 1.2 整体技术栈） -->
     <dependency>
       <groupId>org.yaml</groupId>
       <artifactId>snakeyaml</artifactId>
