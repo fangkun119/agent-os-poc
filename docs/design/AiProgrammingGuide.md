@@ -2,7 +2,7 @@
 
 > 本文档定义 AgentOS 的 AI 编程实施思路。主体思路是用 **Spec-Kit** 完成主体开发，把已有的需求文档和技术方案喂给 Spec-Kit，按五大核心能力拆成 5 个 user story 逐步实施；后续增量阶段切换到手动提示词配合 Claude Code。前置阅读《项目篇 AgentOS 业界调研》《AgentOS 需求文档》《AgentOS 技术方案》。本文档讲思路和拆解方法，不绑定具体时间安排，也不展开提示词细节。
 
-> 本文档以最新技术方案为准：核心阶段交付的是 AgentOS 的运行时内核，Maven 模块为 9 个（技术方案第 10 章），五大核心能力（对接 LLM、ReAct、Memory、Tool、Web Service）作为 5 个 user story 的骨架。
+> 本文档以最新技术方案为准：核心阶段交付的是 AgentOS 的运行时内核，Maven 模块为 9 个（TechnicalSolution.md - 10 项目工程结构），五大核心能力（对接 LLM、ReAct、Memory、Tool、Web Service）作为 5 个 user story 的骨架。
 
 ---
 
@@ -29,12 +29,12 @@ AgentOS 的 AI 编程实施分两个阶段，两个阶段用不同的协作工�
 |--------------|---------|------|
 | `/speckit.specify` 输入 | 需求文档 | Spec-Kit 把需求文档转成 5 个 user story 的 spec |
 | `/speckit.plan` 输入 | 技术方案 | Spec-Kit 把技术方案转成模块化的实施 plan |
-| `constitution.md` | 需求文档第 3 章设计目标 + 技术方案第 1.1 节关键技术决策 | 非协商原则 |
-| acceptance criteria | 需求文档第 13 章 2 个验收 Demo | 直接复用 |
+| `constitution.md` | DemandAnalysis.md - 3 设计目标 + TechnicalSolution.md - 1.1 关键技术决策 | 非协商原则 |
+| acceptance criteria | DemandAnalysis.md - 13 验收标准 2 个验收 Demo | 直接复用 |
 
 已有文档的投入不浪费，Spec-Kit 只是把它们转换成 AI agent 能直接消费的格式。
 
-> **关键注意**：技术方案是 `/speckit.plan` 的输入，所以 plan 里的模块结构必须跟技术方案第 10 章的 9 个模块一致，喂文档时确保用的是最新版技术方案，否则生成的 plan 会按错误的模块数拆分。
+> **关键注意**：技术方案是 `/speckit.plan` 的输入，所以 plan 里的模块结构必须跟 TechnicalSolution.md - 10 项目工程结构的 9 个模块一致，喂文档时确保用的是最新版技术方案，否则生成的 plan 会按错误的模块数拆分。
 
 ---
 
@@ -55,11 +55,11 @@ AgentOS 的 AI 编程实施分两个阶段，两个阶段用不同的协作工�
 **推进顺序**：US-1 → US-2 → （US-3 ∥ US-4）→ US-5
 
 - US-1 是基础，没有 LLM 调用所有 Agent 能力都跑不起来
-- US-2 依赖 US-1，ReAct 循环每轮都要调 LLM
+- US-2 依赖 US-1，ReAct 循环每迭代都要调 LLM
 - US-3 + US-4 并行依赖 US-2（Memory 注入 ReAct 的 prompt，Tool 被 ReAct 调用）
 - US-5 依赖前 4 个，对外暴露所有能力
 
-> 具体推进的时间投入由项目方根据团队情况决定。本文档按依赖顺序拆，不规定时长。需求文档和技术方案定的核心阶段节奏是 4 周每周 3 小时，5 个 user story 跟这个节奏的对应关系见技术方案第 13 章，本文档不重复。
+> 具体推进的时间投入由项目方根据团队情况决定。本文档按依赖顺序拆，不规定时长。需求文档和技术方案定的核心阶段节奏是 4 周每周 3 小时，5 个 user story 跟这个节奏的对应关系见 TechnicalSolution.md - 13 实施节奏，本文档不重复。
 
 这套 user story 拆法跟 Spec-Kit 的机制天然契合。Spec-Kit 的 `/speckit.tasks` 命令本身就是按 user story 组织任务的，每个 user story 成为一个独立的实施 phase，任务之间按依赖排序、可并行的标记出来。
 
@@ -123,11 +123,11 @@ Claude Code 是主推的 AI agent，Spec-Kit 官方支持 Claude Code。具体�
 
 ### 3.2 `/speckit.constitution`：写 AgentOS 项目宪章
 
-`constitution.md` 是项目的 **non-negotiable principles**，所有后续 spec、plan、tasks、implement 都要遵守。AgentOS 的 constitution 从需求文档第 3 章设计目标 + 技术方案第 1.1 节关键技术决策提炼：
+`constitution.md` 是项目的 **non-negotiable principles**，所有后续 spec、plan、tasks、implement 都要遵守。AgentOS 的 constitution 从 DemandAnalysis.md - 3 设计目标 + TechnicalSolution.md - 1.1 关键技术决策提炼：
 
 | # | 原则 | 说明 |
 |---|------|------|
-| 1 | JDK 21 + Spring Boot 3.x 单体应用 | Maven 多模块单体，单二进制部署（模块数由 plan.md 对照技术方案第 10 章维护） |
+| 1 | JDK 21 + Spring Boot 3.x 单体应用 | Maven 多模块单体，单二进制部署（模块数由 plan.md 对照 TechnicalSolution.md - 10 项目工程结构维护） |
 | 2 | 五大核心能力优先 | 核心阶段交付运行时内核，企业级治理层放扩展阶段 |
 | 3 | 自实现 ReAct 循环 | 不直接用 Spring AI 的 Agent 抽象 |
 | 4 | **Spring AI 只用一半** | 只用 Provider 抽象、协议转换、@Tool schema 生成；**禁用自动 tool 执行**；tool 调度完全由 `ReActLoop` + `ToolExecutor` 控制。**最容易被写错的一条** |
@@ -145,7 +145,7 @@ Claude Code 是主推的 AI agent，Spec-Kit 官方支持 Claude Code。具体�
 
 5 个 user story 按依赖关系排推进顺序，而不是按重要性。这里要特别说明：US-5 Web Service 排在最后实施，是因为它依赖前四个能力都就绪，**不是因为它不重要**。恰恰相反，Web Service 是 AgentOS 区别于个人助手项目的关键能力，重要性很高。本文档不用 P1/P2/P3 这种优先级标记，避免被误读成"靠后的可以不做"，只讲依赖顺序。
 
-每个 user story 的 acceptance criteria 直接复用需求文档第 13 章的 2 个验收 Demo（每日天气、每日科技日报），各 user story 分别覆盖 Demo 的不同能力面：
+每个 user story 的 acceptance criteria 直接复用 DemandAnalysis.md - 13 验收标准的 2 个验收 Demo（每日天气、每日科技日报），各 user story 分别覆盖 Demo 的不同能力面：
 
 | User Story | 对应 Demo | 覆盖的能力面 |
 |-----------|---------|------|
@@ -162,8 +162,8 @@ Claude Code 是主推的 AI agent，Spec-Kit 官方支持 Claude Code。具体�
 
 `/speckit.plan` 命令的输入是技术方案 + 该 feature 上一步生成的 `specs/<feature>/spec.md` + `constitution.md`，输出是该 feature 的实施 plan。Plan 包含：
 
-- 技术栈选型（JDK 21 + Spring Boot 3.x + Spring AI Alibaba + SQLite + Picocli）
-- 9 个 Maven 模块的职责（对照技术方案第 10 章）
+- 技术栈选型（JDK 21 + Spring Boot 3.x + Spring AI 官方 starter + SQLite + Picocli）
+- 9 个 Maven 模块的职责（对照 TechnicalSolution.md - 10 项目工程结构）
 - 关键技术决策的展开（自实现 ReAct、Spring AI 只用一半的边界、Plugin Tool 三档、SQLite + MEMORY.md、审计 day one 落库）
 - 数据流和模块间协作（`PromptBuilder` + `ProviderService` + `ToolExecutor` + `MemoryService` 三层门面）
 
@@ -173,7 +173,7 @@ Claude Code 是主推的 AI agent，Spec-Kit 官方支持 Claude Code。具体�
 - [ ] 有没有把 Tool 又拆成多个模块（应该是合并的 `agentos-tool` 一个模块）
 - [ ] 有没有把 `AgentLoader`/`AGENT.md` 当成 Tool（Agent 目录应该归 core 的 `ContextLoader`，正文注入 prompt）
 - [ ] 有没有启用 Spring AI 的自动 tool 执行（必须禁用）
-- [ ] 超时是否被硬编码在代码里（应为分步预算 + 配置覆盖）
+- [ ] 超时是否被硬编码在代码里（应为分步预算 + 配置覆盖；并检查是否实现了"按 Agent 覆盖 LLM 单次调用超时"——该项不存在，LLM 档仅全局，裁决见 TechnicalSolution.md - 7.4 关键设计点）
 - [ ] 有没有把长期记忆简化成无接口的单档（应为 LongTermMemoryStore 接口 + 默认 Markdown 档，预留 `memory.backend` 切换）
 
 Review 通过后 `plan.md` 锁定。
@@ -213,13 +213,13 @@ docs/
 
 ## 4. 基于 Spec-Kit 的实施拆解
 
-准备阶段产出 constitution 与首个 feature 的 spec/plan，其余 feature 轮到时各跑一轮 specify→plan→tasks；下面按 5 个 user story 拆解具体实施。每个 user story 的拆解结构一致：核心目标、涉及的 Maven 模块、Spec-Kit 任务拆分思路、关键 task 颗粒度、验收 Demo。模块名以技术方案第 10 章的 9 模块为准。
+准备阶段产出 constitution 与首个 feature 的 spec/plan，其余 feature 轮到时各跑一轮 specify→plan→tasks；下面按 5 个 user story 拆解具体实施。每个 user story 的拆解结构一致：核心目标、涉及的 Maven 模块、Spec-Kit 任务拆分思路、关键 task 颗粒度、验收 Demo。模块名以 TechnicalSolution.md - 10 项目工程结构的 9 模块为准。
 
 ---
 
 ### 4.1 US-1：对接 LLM（核心能力一）
 
-**核心目标**：让 AgentOS 能调任意主流 LLM，Agent 不感知具体调的是哪家。LLM 调用的复杂度都被 Spring AI Alibaba 吸收，AgentOS 只在它之上做一层薄包装。
+**核心目标**：让 AgentOS 能调任意主流 LLM，Agent 不感知具体调的是哪家。LLM 调用的复杂度都被 Spring AI 官方 starter 吸收（MiniMax 走原生 starter，spike/007-react-loop/README.md 第二组 D5），AgentOS 只在它之上做一层薄包装。
 
 **涉及的 Maven 模块**：
 - `agentos-core`（`AgentOSTool` 接口、`Session`、`Profile`、`ContextLoader` 等核心抽象）
@@ -230,23 +230,13 @@ docs/
 
 | Task 类别 | 主要内容 |
 |----------|---------|
-| 环境搭建类 | Maven 多模块骨架 9 个模块、Spring Boot 启动配置、Spring AI Alibaba 依赖 |
+| 环境搭建类 | Maven 多模块骨架 9 个模块、Spring Boot 启动配置、Spring AI 官方 starter 依赖（含 MiniMax 原生 starter） |
 | 核心抽象类 | `AgentOSTool` 接口、`Profile` 数据结构、`Message` 数据结构 |
 | Provider 实现类 | `ProviderService` 实现、provider name 到 `ChatModel` 的显式映射、Function Calling 适配 |
-| 配置类 | `application.yaml` 配置至少跑通一个 Provider（当前密钥仅 MiniMax：OpenAI 兼容腿 MiniMax-M2.7 / Anthropic 兼容腿 MiniMax-M3；DeepSeek / Kimi 待账号到位后按新增 Provider 流程扩展），API key 经 `${环境变量名}` 占位注入（`ConfigLoader` 统一加载在 US-5 交付，本阶段用 Spring 环境变量解析；变量经 `source ~/.agent-os-poc/script/agent-os-env.sh` 加载，Provider 命名与密钥红线详见 docs/design/detail-supplement/001-model-config-export.md；依赖坐标与接线已实测，结论（D2/D4）见 spike/007-react-loop/README.md） |
+| 配置类 | `application.yaml` 配置至少跑通一个 Provider（当前密钥以 MiniMax 为主：MiniMax 原生腿主用——`spring.ai.minimax.*`、缺省 MiniMax-M2.7、base-url 写纯主机（spike/007 第二组 D5），OpenAI 兼容腿 MiniMax-M2.7 / Anthropic 兼容腿 MiniMax-M3 保留；ZHIPU 已转正、接线用官方 starter `spring-ai-starter-model-zhipuai`（属性族 W1 核验）；DeepSeek / Kimi 待账号到位后按新增 Provider 流程扩展），API key 经 `${环境变量名}` 占位注入（`ConfigLoader` 统一加载在 US-5 交付，本阶段用 Spring 环境变量解析；变量经 `source ~/.agent-os-poc/script/agent-os-env.sh` 加载，Provider 命名与密钥红线详见 docs/design/detail/model-config.md；依赖坐标与接线已实测，结论（D2/D4/D5）见 spike/007-react-loop/README.md） |
 | 测试类 | 该能力面的单元测试 + 端到端 Demo 用例（每个 task 的完成标准含测试通过） |
 
-> **关键注意**：`ProviderService` 不能靠"扫描容器里所有 `ChatModel`"来区分 Provider，多 Provider 并存时 Bean 类型相同会有歧义，必须维护 provider name 到 `ChatModel` 的显式映射（技术方案 3.2）。AI agent 很容易写成类型扫描，要在 task 里点明。另：US-1 第一个 task 前安排 30 分钟 Spike，验证当前锁定版本中多 `ChatModel` Bean 注入与按 name 选择的推荐写法，结论回写技术方案 3.2。
-
-**Spike 执行清单**（30 分钟时间盒，超时停在当前发现、未决问题记 task，不恋战）：
-
-1. **锁版本**（5 min）：确定 Spring AI Alibaba 稳定版与配套 Spring AI 版本，写入 spike 工程 pom——结论同时作为 US-1 依赖清单输入（版本锁定原则见 7.1）
-2. **搭最小工程**（10 min）：独立单模块 Maven 工程（如 `spike/chatmodel-mapping/`，不进 9 模块主干），配两个 Provider——当前密钥仅 MiniMax：用 `MINIMAX_*` 与 `OPENAI_*` 两组 Provider 配置各起一个 OpenAI 兼容连接，两个 Bean 同型不同名，不影响第 3 步「不能类型扫描」的实证；变量经 `source ~/.agent-os-poc/script/agent-os-env.sh` 加载（密钥红线与 Provider 命名详见 docs/design/detail-supplement/001-model-config-export.md）。**在单独的 spike 分支上进行**（如 `spike/chatmodel-mapping`），避免污染开发分支
-3. **启动观察**（3 min）：启动时打印容器内全部 `ChatModel` Bean 的 name 与类型——实证"为何不能类型扫描"
-4. **按名调用**（10 min）：按 name 取 Bean，经 `ChatClientBuilderConfigurer` 构建 client（官方警告避免裸 `ChatClient.builder(chatModel)`，会绕过 observability 与 customizer），发一次真实调用（最便宜模型）；API key 不可得时本步降级为"待 key 就绪补验"，步骤 3 不受影响
-5. **记录结论**（2 min）：回答三问——多 Bean 如何注册（Bean name/类型）、按 name 取用的推荐写法（`@Qualifier` / 自建映射表 / `ObjectProvider`）、`ChatClient` 正确构建方式
-
-**产出与回填**：结论一句话 + 最小示例代码回填技术方案 3.2（替换"映射的具体实现方式在研发阶段定"的留白）；US-1 "Provider 实现类" task 直接引用该写法；spike 工程用完即删。**若结论与技术方案 3.2 假设冲突**（如该版本无法给 Bean 显式命名、或存在自带的多人模型路由机制），升级为决策项与项目方讨论，不得静默改架构文档。
+> **关键注意**：`ProviderService` 不能靠"扫描容器里所有 `ChatModel`"来区分 Provider，多 Provider 并存时 Bean 类型相同会有歧义，必须维护 provider name 到 `ChatModel` 的显式映射（TechnicalSolution.md - 3.2 Provider 名到 ChatModel 的显式映射）。AI agent 很容易写成类型扫描，要在 task 里点明。装配写法已由 `spike/007-react-loop` 两组实测定案（Bean 名确认、按 name 取用写法、依赖坐标），结论与样例代码见 TechnicalSolution.md - 3.2 Provider 名到 ChatModel 的显式映射 与该 spike README，无需另设 spike。
 
 US-1 实施完成后不立刻有 demo，因为它没有用户可见的入口，下一步 US-2 完成后跟 US-1 一起跑 Demo 一。
 
@@ -268,16 +258,16 @@ US-1 实施完成后不立刻有 demo，因为它没有用户可见的入口，�
 
 | Task 类别 | 主要内容 |
 |----------|---------|
-| ReAct 循环类 | `ReActLoop` 主循环、`PromptBuilder`、`ToolExecutor`、`MAX_ITERATIONS` 控制、分步超时预算（llm/tool/total 三档，application.yaml 默认 + Profile settings.timeout 覆盖，不硬编码，见技术方案 7.4） |
-| CLI Channel 类 | `CliChannel`、`agentos chat` 命令、`agentos init` 工作区初始化 |
+| ReAct 循环类 | `ReActLoop` 主循环、`PromptBuilder`、`ToolExecutor`（含执行入口第一道入参 schema 校验，三路全覆盖，见 TechnicalSolution.md - 4.2 模块组成 / 6.7 Sandbox 检查）、`MAX_ITERATIONS` 控制、分步超时预算（llm/tool/total 三档默认值在 application.yaml；Profile settings.timeout 仅 tool/total 两档按 Agent 覆盖、LLM 档仅全局，裁决见 TechnicalSolution.md - 7.4 关键设计点，不硬编码） |
+| CLI Channel 类 | `CliChannel`、`agentos chat` 命令（启动即创建 Session，session_id 保存在 CLI 进程内，进程退出即失联、下次启动是新会话）、`agentos init` 工作区初始化 |
 | 基础 Tool 类 | HTTP Tool、`SandboxChecker` 简化版（只校验 URL 白名单） |
 | AGENT.md frontmatter 解析类 | SnakeYAML、Profile 校验 |
-| Session 类 | `Session` 数据结构、`SessionManager` 内存版（持久化放 US-5） |
+| Session 类 | `Session` 数据结构、`SessionManager` 内存版（职责口径：按 id 读取/创建/追加消息/落盘，与 TechnicalSolution.md - 5.1 模块组成的 SessionManager 职责句同口径；session_id 四元组 `<channel>-<user>-<profile>-<uuid>` 在会话创建时生成、对调用方为不透明串；持久化放 US-5） |
 | 测试类 | 该能力面的单元测试 + 端到端 Demo 用例（每个 task 的完成标准含测试通过） |
 
 **关键 task 颗粒度**：US-2 是 Spec-Kit 拆分的重点。几个需要拆细的复杂 task：
 - `ReActLoop` 主循环（核心循环逻辑精简约数十行 Java，但工程化部分如错误处理、日志、消息累积、迭代次数控制建议拆 2~3 个子 task）
-- `PromptBuilder` 组装（五部分内容即 system prompt + Bootstrap + Memory + 对话历史 + Tool 列表（system prompt 含已绑定 Skill 元数据，见技术方案 4.2；Skill 绑定本身在 US-4 落地），建议拆成几个子 task 逐步加入）
+- `PromptBuilder` 组装（五部分内容即 system prompt + Bootstrap + Memory + 对话历史 + Tool 列表（system prompt 含已绑定 Skill 元数据，见 TechnicalSolution.md - 4.2 模块组成；Skill 绑定本身在 US-4 落地），建议拆成几个子 task 逐步加入）
 
 > **再次强调 constitution 原则四**：调用 Spring AI 时只用它的协议转换和 schema 生成，**禁用它的自动 tool 执行**，tool 的实际调度由 `ToolExecutor` 控制。AI agent 实现 `ReActLoop` 时很容易顺手启用 Spring AI 的自动执行，导致 tool 被调两次，task 里要明确禁用。
 
@@ -285,13 +275,13 @@ US-1 + US-2 的 tasks 生成后跑 `/speckit.analyze` 检查 spec/plan/tasks 跨
 
 **验收 Demo 一**：每日天气（US-1 + US-2 阶段先以"人推"验证同一链路）
 
-对应需求文档 Demo 一。US-2 完成时通过 `agentos chat` 输入"查一下北京天气并告诉我穿什么"，Agent 通过 ReAct 循环调用 HTTP Tool 拉天气 JSON，根据数据回复穿搭建议，完整对话日志正确累积到 Session，至少跑通一个 Provider（当前密钥仅 MiniMax 可用：OpenAI 兼容腿跑 MiniMax-M2.7、Anthropic 兼容腿跑 MiniMax-M3；DeepSeek / Kimi 待账号到位后按新增 Provider 流程扩展，详见 docs/design/detail-supplement/001-model-config-export.md）。定时触发（`AgentScheduler`）和 `notify` 推送在 US-5 收尾阶段补齐后，以"钟推"完整跑通需求文档 Demo 一的验收标准（到点自动跑完整 ReAct 循环、推送、Session 可查）。
+对应需求文档 Demo 一。US-2 完成时通过 `agentos chat` 输入"查一下北京天气并告诉我穿什么"，Agent 通过 ReAct 循环调用 HTTP Tool 拉天气 JSON，根据数据回复穿搭建议，完整对话日志正确累积到 Session，至少跑通一个 Provider（当前密钥以 MiniMax 为主：MiniMax 原生腿主用（spike/007 第二组 D5）、OpenAI/Anthropic 兼容腿保留；DeepSeek / Kimi 待账号到位后按新增 Provider 流程扩展，详见 docs/design/detail/model-config.md）。定时触发（`AgentScheduler`）和 `notify` 推送在 US-5（第四周）收尾补齐后，以"钟推"完整跑通需求文档 Demo 一的验收标准（到点自动跑完整 ReAct 循环、推送、Session 可查）。
 
 ---
 
 ### 4.3 US-3：Memory 三层记忆（核心能力三）
 
-**核心目标**：让 Agent 跨对话保留状态。核心阶段做会话 + 长期两层记忆，长期记忆经 `LongTermMemoryStore` 接口交付 Markdown 默认档（接口预留三档切换，SQLite/Mem0 档随后补齐），`MEMORY.md` 为默认档，配两个内置 Tool 让 Agent 主动写入和读取。
+**核心目标**：让 Agent 跨对话保留状态。核心阶段做会话 + 长期两层记忆，长期记忆经 `LongTermMemoryStore` 接口交付 Markdown 默认档（接口预留三档切换，SQLite/Mem0 档随后补齐），`MEMORY.md` 为默认档（按 `<agent>/<user>/` 分档），配两个内置 Tool 让 Agent 主动写入和读取。
 
 **涉及的 Maven 模块**：
 - `agentos-memory`（核心能力三，含 `MemoryService` 三层门面、`LongTermMemoryStore` 接口及默认 Markdown 后端、`MemoryTools`）
@@ -303,16 +293,16 @@ US-1 + US-2 的 tasks 生成后跑 `/speckit.analyze` 检查 spec/plan/tasks 跨
 |----------|---------|
 | `MemoryService` 门面类 | 三层统一门面，内部把会话记忆委托给 `SessionManager`、长期记忆委托给 `LongTermMemoryStore` 后端 |
 | `LongTermMemoryStore` 接口类 | `append`、`load`、`recallByKeyword`、`truncateIfNeeded` 四个方法，接口预留 `recall(mode)` 向量检索升级空间；核心阶段交付接口 + Markdown 默认档（接口预留 `memory.backend` 切换，SQLite/Mem0 档随后补齐） |
-| `MemoryTools` 类 | `save_memory` + `recall_memory` 两个内置 Tool，用 `@Tool` 注解 |
-| `PromptBuilder` 集成类 | 在 `PromptBuilder` 里通过 `MemoryService` 注入长期记忆（会话历史由对话历史段独立注入，见技术方案 4.2），确保不破坏 US-2 跑通的 ReAct 循环 |
-| `MEMORY.md` 文件管理类 | 文件位置、格式约定、超长截断策略 |
+| `MemoryTools` 类 | `save_memory` + `recall_memory` 两个内置 Tool，走 `AgentOSTool` 五方法接口（schema 手写，同其他内置 Tool，见 TechnicalSolution.md - 6.1 AgentOSTool 抽象）；sandboxActions 申报空清单（见 TechnicalSolution.md - 6.7 Sandbox 检查） |
+| `PromptBuilder` 集成类 | 在 `PromptBuilder` 里通过 `MemoryService` 注入长期记忆（会话历史由对话历史段独立注入，见 TechnicalSolution.md - 4.2 模块组成），确保不破坏 US-2 跑通的 ReAct 循环 |
+| `MEMORY.md` 文件管理类 | 分档路径布局（`<agent>/<user>/`）、格式约定、超长截断策略 |
 | 测试类 | 该能力面的单元测试 + 端到端 Demo 用例（每个 task 的完成标准含测试通过） |
 
 US-3 的 tasks 生成后跑 `/speckit.analyze`。
 
 **验收 Demo 二**：每日科技日报——Memory 部分（US-3 验收）
 
-对应需求文档 Demo 二的记忆能力面。第一次对话告诉 Agent"更关注 AI 和芯片方向"，Agent 主动调 `save_memory` 写入 `MEMORY.md`；重启 AgentOS 或新开会话；后续对话中 Agent 在响应里引用之前记的偏好给出建议。US-4 完成后该偏好会在日报组稿中体现，凑齐 Demo 二的记忆与零代码+MCP 能力面（定时触发与 notify 推送在 US-5 收尾补齐后，以钟推完整跑通 DA 第 13 章验收标准）。
+对应需求文档 Demo 二的记忆能力面。第一次对话告诉 Agent"更关注 AI 和芯片方向"，Agent 主动调 `save_memory` 写入当前 `<agent, user>` 档；重启 AgentOS 或新开会话；后续对话中 Agent 在响应里引用之前记的偏好给出建议。US-4 完成后该偏好会在日报组稿中体现，凑齐 Demo 二的记忆与零代码+MCP 能力面（定时触发与 notify 推送在 US-5（第四周）收尾补齐后，以钟推完整跑通 DemandAnalysis.md - 13 验收标准）。
 
 ---
 
@@ -333,25 +323,24 @@ US-3 的 tasks 生成后跑 `/speckit.analyze`。
 
 | Task 类别 | 主要内容 |
 |----------|---------|
-| 内置 Tool 补齐类 | `read_file`、`write_file`、`list_dir`，Shell Tool 带白名单，`SandboxChecker` 完整实现（notify 域名校验除外：`checkNotifyUrl` 与 ActionType NOTIFY case 随 US-5 NotifyTools 收尾补齐；Sandbox 为纯校验接口（动作允不允许），受控执行（execute_code Runner）是扩展阶段另立项，本阶段只做白名单校验） |
+| 内置 Tool 补齐类 | `read_file`、`write_file`、`list_dir`，Shell Tool 带白名单，`SandboxChecker` 完整实现（notify 域名校验除外：`checkNotifyUrl` 与 ActionType NOTIFY case 随 US-5（第四周）NotifyTools 收尾补齐；Sandbox 为纯校验接口（动作允不允许），受控执行（execute_code Runner）是扩展阶段另立项，本阶段只做白名单校验） |
 | MCP Client 类 | `mcp_servers.yaml` 解析、`McpClientService` 启动时连接、`tools/list` 拉工具、`McpToolAdapter` 包装成 `AgentOSTool` |
 | `AGENT.md` 类 | `ContextLoader` 加载 `.agentos/agents/` 下每个 Agent 的 `AGENT.md` 正文拼接到 system prompt，这部分归 core 不归 tool |
 | Agent 定义类 | `AgentLoader.deriveProfile` 从 `AGENT.md` frontmatter 派生 `Profile`（含 `tools` / `mcp_servers` 等字段） |
-| Plugin Tool 方式三类 | 一个 `@Tool` 注解 Java Bean 示例跑通（进程内注册、不走 MCP，见技术方案 6.5）——DA 13 功能验收硬项，勿漏 |
+| Plugin Tool 方式三类 | 一个 `@Tool` 注解 Java Bean 示例跑通（进程内注册、不走 MCP，见 TechnicalSolution.md - 6.5 Plugin Tool 方式三）——DemandAnalysis.md - 13 验收标准 功能验收硬项，勿漏 |
 | 测试类 | 该能力面的单元测试 + 端到端 Demo 用例（每个 task 的完成标准含测试通过） |
 
 **关键 task 颗粒度**：US-4 的 task 数量较多，几个需要重点拆解的复杂 task：
 
-- **MCP Client 集成**（MCP 协议是 JSON-RPC over stdio 或 SSE，Java 生态成熟度不如 Python）：
-  - 建议先实现 stdio transport（最常用），SSE 放扩展
-  - stdio MCP Client 建议拆几个子 task：连接管理、`tools/list`、`tool/call`、错误恢复
+- **MCP Client 集成**（MCP 协议走 JSON-RPC over stdio——传输层已定案 stdio-only，`spike/008-mcp` README 的 D2 决议；SSE 传输放扩展阶段。连通性与适配已由 spike/008 实测覆盖，见其 README D1-D9 与根 CLAUDE.md 的 W2 指针）：
+  - stdio MCP Client 建议拆几个子 task：连接管理（启动时连接 + 失败跳过，D7）、`tools/list`、`tool/call`、错误恢复（无自动重连、失败返回可重试标识）
 - **`SandboxChecker` 完整版**（从 US-2 的简化版扩展到完整版：文件路径白名单 + Shell 命令白名单 + HTTP 域名白名单，建议拆 3 个子 task）
 
 US-4 的 tasks 生成后跑 `/speckit.analyze`。
 
 **验收（Demo 二的零代码 + MCP 能力面）**：每日科技日报
 
-业务方写一个 Agent 目录 `.agentos/agents/daily-tech-digest/`（`AGENT.md` 正文描述任务，`skills/` 软连接绑定公共组稿 Skill），在 `mcp_servers.yaml` 配置新闻聚合 MCP server，Agent 启动后能读 `AGENT.md` 正文、prompt 只出现 Skill 元数据、按需 `read_file` 读 Skill 正文、调 MCP 拉新闻、组稿时体现 Memory 里的用户偏好，整个过程业务方零代码只写了一个目录 + 配置——凑齐 Demo 二的记忆与零代码+MCP 能力面（定时触发与 notify 推送在 US-5 收尾补齐后，以钟推完整跑通 DA 第 13 章验收标准）。
+业务方写一个 Agent 目录 `.agentos/agents/daily-tech-digest/`（`AGENT.md` 正文描述任务，`skills/` 软连接绑定公共组稿 Skill），在 `mcp_servers.yaml` 配置新闻聚合 MCP server，Agent 启动后能读 `AGENT.md` 正文、prompt 只出现 Skill 元数据、按需 `read_file` 读 Skill 正文、调 MCP 拉新闻、组稿时体现 Memory 里的用户偏好，整个过程业务方零代码只写了一个目录 + 配置——凑齐 Demo 二的记忆与零代码+MCP 能力面（定时触发与 notify 推送在 US-5（第四周）收尾补齐后，以钟推完整跑通 DemandAnalysis.md - 13 验收标准）。
 
 ---
 
@@ -362,7 +351,7 @@ US-4 的 tasks 生成后跑 `/speckit.analyze`。
 **涉及的 Maven 模块**：
 - `agentos-web`（核心能力五）
 - `agentos-storage`（SQLite 持久化层，Session 持久化从内存版升级，并落 `tool_invocations` 和 `llm_calls` 审计表）
-- `agentos-cli`（Picocli 12 个命令补全与 `ConfigLoader`——按技术方案第 10 章 ConfigLoader 归 cli）
+- `agentos-cli`（Picocli 13 个命令补全与 `ConfigLoader`——按 TechnicalSolution.md - 10 项目工程结构，ConfigLoader 归 cli）
 - `agentos-core`（`ContextLoader` 的 Bootstrap 加载补全、`AgentScheduler`）
 - `agentos-tool`（定时任务与通知类 task 中 `NotifyTools`、`NotifyChannelAdapter` + `WebhookNotifyAdapter` 的落点模块）
 
@@ -370,30 +359,30 @@ US-4 的 tasks 生成后跑 `/speckit.analyze`。
 
 | Task 类别 | 主要内容 |
 |----------|---------|
-| Web Service 基础类 | `WebServer` 启动 + virtual thread 配置、`GlobalExceptionHandler`、OpenAPI 文档 |
-| 8 个 ApiController 类 | Session + Agent + Profile + Memory + Tool + System + NotifyChannel + Schedule（后两个随收尾补齐），每个 Controller 一组端点，**可并行实现** |
-| 基础 10 个 REST 端点 + 收尾追加 8 个 | 基础：会话管理 4 个、Agent 调用 1 个、Profile/Memory/Tool 列表 3 个、health/info 2 个；收尾追加 8 个（notify-channels CRUD 4 个、schedules 管理 4 个） |
-| 持久化升级类 | Session 从内存版升级到 SQLite，`SessionRepository`，跨重启恢复，以及 **`tool_invocations` 和 `llm_calls` 审计表的写入** |
-| 配置与上下文类 | `ConfigLoader` 配置密钥加载（密钥只从环境变量读取、yaml 只写 `${环境变量名}` 占位符、日志与命令行最多输出前 5 位前缀，详见 docs/design/detail-supplement/001-model-config-export.md），`ContextLoader` 的 Bootstrap 文件加载补全并跟 `PromptBuilder` 集成 |
-| CLI 完整版 | Picocli 12 个命令全部实现 |
+| Web Service 基础类 | `WebServer` 启动 + virtual thread 配置、`GlobalExceptionHandler`、OpenAPI 文档。实现须对照 docs/design/detail/api.md（请求/响应体、错误码全集、统一失败形状），并随实现交付 api.md - 附录 A 的 T1-T3 三条契约测试 |
+| 8 个 ApiController 类 | Session + Agent + Profile + Memory + Tool + System + NotifyChannel + Schedule（后两个随第四周收尾补齐），每个 Controller 一组端点，**可并行实现** |
+| 基础 10 个 REST 端点 + 第四周收尾追加 8 个 | 基础：会话管理 4 个、Agent 调用 1 个、Profile/Memory/Tool 列表 3 个、health/info 2 个；第四周收尾追加 8 个（notify-channels CRUD 4 个、schedules 管理 4 个） |
+| 持久化升级类 | Session 从内存版升级到 SQLite，`SessionRepository`，会话数据跨重启保留、可查（Web 凭 session_id 续聊），以及 **`tool_invocations` 和 `llm_calls` 审计表的写入** |
+| 配置与上下文类 | `ConfigLoader` 配置密钥加载（密钥只从环境变量读取、yaml 只写 `${环境变量名}` 占位符、日志与命令行最多输出前 5 位前缀，详见 docs/design/detail/model-config.md），`ContextLoader` 的 Bootstrap 文件加载补全并跟 `PromptBuilder` 集成 |
+| CLI 完整版 | Picocli 13 个命令全部实现（新增 `session show --session-id=<SID>` 单查命令，2026-09-21 Session 重构裁决 S4） |
 | 工程化类 | Logback + SLF4J 结构化日志 + 错误处理 |
-| 定时任务与通知类（收尾补齐） | `AgentScheduler` 第三触发源（Profile `schedules` 字段驱动）、`NotifyTools` 的 `notify` 内置 Tool、`NotifyChannelAdapter` 接口 + `WebhookNotifyAdapter` 实现与 `notify_channels` 注册；`SandboxChecker` 补 `checkNotifyUrl`（NOTIFY，独立 `notify.allowed_domains`）；`scheduled_tasks`/`task_executions` 落库 + `ScheduledTaskStore` 契约（core）/JPA 实现（storage），见技术方案 8.5/9.2；另含 scripts/ 最小链路手工演示（`AGENT.md + scripts/` 形态验证，见技术方案 12.3） |
+| 定时任务与通知类（第四周收尾补齐） | `AgentScheduler` 第三触发源（Profile `schedules` 字段驱动）、`NotifyTools` 的 `notify` 内置 Tool、`NotifyChannelAdapter` 接口 + `WebhookNotifyAdapter` 实现与 `notify_channels` 注册；`SandboxChecker` 补 `checkNotifyUrl`（NOTIFY，独立 `notify.allowed_domains`）；`scheduled_tasks`/`task_executions` 落库 + `ScheduledTaskStore` 契约（core）/JPA 实现（storage），见 TechnicalSolution.md - 8.5 定时任务 / 9.2 SQLite 关系型数据；另含 scripts/ 最小链路手工演示（`AGENT.md + scripts/` 形态验证，见 TechnicalSolution.md - 12.3 关于 scripts/ 脚本的说明） |
 | 测试类 | 该能力面的单元测试 + 端到端 Demo 用例（每个 task 的完成标准含测试通过） |
 
 > **注意审计表的写入**（constitution 原则六）：`tool_invocations` 和 `llm_calls` 核心阶段就落库，不是只放日志，这样可审计的数据地基 day one 就立起来。这一点 AI agent 容易漏掉（觉得日志够了），task 里要明确。
 
 **关键 task 颗粒度**：US-5 工程量最大。
-- 8 个 `ApiController` 可以并行实现（互不依赖；NotifyChannel、Schedule 两个随收尾补齐），每个 Controller 1~4 个端点
-- Session SQLite 升级主要是 `SessionRepository` + `messages_json` 序列化，要小心 Session 状态的迁移
+- 8 个 `ApiController` 可以并行实现（互不依赖；NotifyChannel、Schedule 两个随第四周收尾补齐），每个 Controller 1~4 个端点
+- Session SQLite 升级为 `SessionRepository` + `SessionMessageRepository`（消息按轮原子提交入库，见 TechnicalSolution.md - 9.2 SQLite 关系型数据 提交纪律），要小心 Session 状态的迁移
 - Bootstrap 加载（`ContextLoader`）跟 `PromptBuilder` 集成时确保不破坏之前跑通的 ReAct 循环
 
-US-5 的 tasks 生成后跑最后一次 `/speckit.analyze`，整个主体开发完成。性能验收按需求文档第 13 章在核心阶段结束时执行（100 并发 Session 冒烟 + P99 采样），完整压测放扩展阶段。
+US-5 的 tasks 生成后跑最后一次 `/speckit.analyze`，整个主体开发完成。性能验收按 DemandAnalysis.md - 13 验收标准在核心阶段结束时执行（100 并发 Session 冒烟 + P99 采样），完整压测放扩展阶段。
 
 **验收（两个 Demo 的 API 验证面）**：Web Service 完整链路
 
-- 外部系统 `POST /api/v1/sessions` 创建 Session、`POST /api/v1/sessions/{id}/messages` 发消息、`GET` 查历史、`DELETE` 归档，完整链路跑通
-- `GET /api/v1/health` 健康检查、`GET /api/v1/info` 查运行信息与 Provider 配置列表（静态清单，非 Provider 状态——状态属扩展阶段，见 DA 5.8 注）、`GET /api/v1/profiles` 列可用 Agent、`GET /api/v1/tools` 查可用 Tool、`POST /api/v1/agents/{name}/invoke` 无状态调用 Agent、`GET /api/v1/memory` 查长期记忆，多端点协同完成一次业务流程
-- 补齐 `AgentScheduler` 后，两个 Demo 以"钟推"自动运行，需求文档 Demo 一的验收标准"`GET /api/v1/sessions/{id}` 能查到自动触发的最近对话记录"在此验证；同一 Agent 也能通过 `POST /agents/{name}/invoke` 手动补跑，验证"人推"和"钟推"复用同一条 `AgentService` 链路
+- 外部系统 `POST /api/v1/sessions` 创建 Session（session_id 随响应返回）、`POST /api/v1/sessions/{id}/messages` 发消息、`GET /api/v1/sessions/{id}` 单查（7 项元数据 + messages 全量）、`GET /api/v1/sessions?cnt=<N>` 列表，完整链路跑通；`DELETE /api/v1/sessions/{id}` 归档端点移扩展阶段，核心阶段无删除 API
+- `GET /api/v1/health` 健康检查、`GET /api/v1/info` 查运行信息与 Provider 配置列表（静态清单，非 Provider 状态——状态属扩展阶段，见 DemandAnalysis.md - 1.2 AgentOS 能干什么 注）、`GET /api/v1/profiles` 列可用 Agent、`GET /api/v1/tools` 查可用 Tool、`POST /api/v1/agents/{name}/invoke` 无状态调用 Agent（响应含最终回复与 sessionId）、`GET /api/v1/memory?agent=<name>` 查长期记忆（agent 必选，user 经 `X-User-Id` 头传入、缺省 `default`，与 TechnicalSolution.md - 7.2 核心阶段端点 同口径），多端点协同完成一次业务流程
+- 补齐 `AgentScheduler` 后，两个 Demo 以"钟推"自动运行，需求文档 Demo 一的验收标准"`GET /api/v1/sessions/{id}` 能查到自动触发的最近对话记录"在此验证；同一 Agent 也能通过 `POST /agents/{name}/invoke` 手动补跑，验证"人推"和"钟推"复用同一条 `AgentService` 链路（复用的是处理链路、不是 Session——钟推与 invoke 每次触发各自新建会话）
 
 ---
 
@@ -418,7 +407,7 @@ US-5 的 tasks 生成后跑最后一次 `/speckit.analyze`，整个主体开发�
 | Provider 用类型扫描 | 必须用显式 provider name 映射 |
 | `AgentLoader`/`AGENT.md` 当成 Tool | Agent 目录应该归 `ContextLoader`，在 core 模块里 |
 | 审计表没落库 | `tool_invocations` 和 `llm_calls` day one 写入 |
-| 没写测试或测试不跑通就标 task 完成 | 每个 task 验收含测试通过；需求文档第 13 章要求每模块端到端测试 |
+| 没写测试或测试不跑通就标 task 完成 | 每个 task 验收含测试通过；DemandAnalysis.md - 13 验收标准要求每模块端到端测试 |
 
 **跨 task 上下文丢失时回到 spec**
 
@@ -434,15 +423,15 @@ Spec-Kit 把代码拆成多个 task 后，AI agent 实施每个 task 时可能�
 
 主体开发完成后 AgentOS 1.0 是一个可演示的最小完整 AgentOS 运行时内核，五大核心能力全部跑通。除了核心代码本身，还有几个交付物：
 
-### 项目主页
+### 5.1 项目主页
 
 AgentOS 作为开源项目需要一个独立的主页作为对外门面，技术栈用 VitePress 或类似静态站点工具，内容讲清楚 AgentOS 是什么、五大核心能力是什么、怎么快速开始。
 
-### Spec-Kit Artifacts 保留
+### 5.2 Spec-Kit Artifacts 保留
 
 `.specify/` 目录下的 constitution 以及 `specs/` 各 feature 目录下的 spec、plan 在主体开发结束后仍然保留在仓库里，作为社区接力的长期参考。
 
-### 社区文档
+### 5.3 社区文档
 
 API 参考文档、部署运维手册、贡献者指南这些剩余文档作为社区共建项目，由社区贡献者通过 PR 完成。最小部署文档（满足 DA 可运维性验收的 30 分钟单节点部署）随核心阶段交付，完整运维手册归社区。
 
@@ -511,11 +500,11 @@ Spec-Kit 还在快速迭代，工具本身变化频繁，使用时几个注意�
 | **AI agent 跑偏 constitution** | 每次跑完 implement 后人工检查，发现偏离立刻让 AI agent 重读 constitution 修正 |
 | **跨 user story 的上下文断裂** | 每个 user story 开始前让 AI agent 重读当前 feature 的 `spec.md` + `plan.md` + 最近代码 |
 | **`/speckit.analyze` 被跳过** | 把 analyze 作为每 feature tasks 生成后的硬性环节，不能省 |
-| **MCP server 集成踩坑** | US-4 实施 MCP 前先用一个最简的 MCP server 测试连通性（stdio transport 可能遇到 process 启动失败、编码问题） |
+| **MCP server 集成踩坑** | 连通性与失败模式已由 spike/008 实测覆盖（27 工具注册、坏命令跳过、超时双档，结论 D1-D9）；US-4 实施按其 README 接线即可，遇新坑照该 spike 的留档格式记录 |
 | **Java 工程基础是前提** | 实施前确保团队成员对 Spring Boot + Maven + JPA 有基本掌握 |
 | **测试被省略** | 每个 task 验收含测试通过，user story 结束跑端到端 Demo 用例 |
 | **调试期 LLM 调用成本失控** | 开发期固定用最便宜的 Provider；批量验证用录制回放（stub ChatModel） |
-| **US-5 工程量超预算** | 明确降级顺序：OpenAPI 文档完整度等非验收项可后置；CLI 12 命令是 DA 验收硬项、不降级（若需降级须同步调整验收口径），plan review 时锁定 MVP 边界 |
+| **US-5 工程量超预算** | 明确降级顺序：OpenAPI 文档完整度等非验收项可后置；CLI 13 命令是 DA 验收硬项、不降级（若需降级须同步调整验收口径），plan review 时锁定 MVP 边界 |
 
 ---
 
@@ -523,7 +512,7 @@ Spec-Kit 还在快速迭代，工具本身变化频繁，使用时几个注意�
 
 AgentOS 的 AI 编程实施分两个阶段：
 
-### 主体开发阶段（Spec-Kit）
+### 8.1 主体开发阶段（Spec-Kit）
 
 已有的需求文档 + 技术方案喂给 Spec-Kit，转成 constitution + `specs/` 各 feature 目录下的 spec、plan + tasks 等 artifacts。准备阶段先备好 constitution，各 feature 的 spec/plan 随实施逐个补齐（每个 user story 轮到时各跑一轮 specify→plan→tasks），然后按 5 个 user story 的依赖关系顺序实施：
 
@@ -532,9 +521,9 @@ US-1 → US-2 → ┌─ US-3 ─┐ → US-5
                └─ US-4 ─┘
 ```
 
-每个 user story 完成后有可验证成果（相邻 user story 可合并演示），整体对应需求文档第 13 章的 2 个验收 Demo（每日天气、每日科技日报）。
+每个 user story 完成后有可验证成果（相邻 user story 可合并演示），整体对应 DemandAnalysis.md - 13 验收标准的 2 个验收 Demo（每日天气、每日科技日报）。
 
-### 增量阶段（手动提示词 + Claude Code）
+### 8.2 增量阶段（手动提示词 + Claude Code）
 
 小颗粒度增量不适合 Spec-Kit 完整流程，社区贡献者用 Claude Code 直接在已有代码上做改动，主体阶段产出的 constitution + spec 作为长期参考保留。
 

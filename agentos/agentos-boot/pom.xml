@@ -13,7 +13,7 @@
 
   <artifactId>agentos-boot</artifactId>
   <name>agentos-boot</name>
-  <description>Spring Boot 启动模块（TS 10）：主类、自动配置、依赖聚合。打包 fat JAR，java -jar 启动；扩展阶段经 GraalVM Native Image 编译原生二进制。</description>
+  <description>Spring Boot 启动模块（TechnicalSolution.md - 10 项目工程结构）：主类、自动配置、依赖聚合。打包 fat JAR，java -jar 启动；扩展阶段经 GraalVM Native Image 编译原生二进制。</description>
 
   <dependencies>
     <dependency>

@@ -4,7 +4,7 @@
 > 执行日期：2026-09-14 · 状态：已评审采纳（2026-09-14 用户裁决：D5 定候选二、安全发现最小 env 方案同意、docs 联动与根 CLAUDE.md 指针已执行）
 > 规格三件套：`spec/001-req.md`、`spec/001-spec.md`、`spec/001-plan.md`
 > 引用方式：结论请实名引用为"spike/008-mcp/README.md 的 D1 决议"这类形式
-> 术语与编号体系：沿用 001-req 术语表与 001-spec §0.1；TS=docs/design/TechnicalSolution.md、DA=docs/design/DemandAnalysis.md（全文"TS 6.4"式引用均指这两个文件的对应章节）；"001"单独出现时指 001-req.md；"候选一 / 候选二"定义见 001-spec §3.6；M 编号=验证项（001-req 第三章）、T 编号=任务（001-plan §3）、D 编号=决议（本文第二节）；MCP=Model Context Protocol（模型连接外部工具服务器的开放协议，工具跑在独立进程"server"里，客户端经协议发现并调用）
+> 术语与编号体系：沿用 001-req 术语表与 001-spec §0.1；章节引用一律用全名形（如"TechnicalSolution.md - 6.4 Plugin Tool 方式二"这种"文件名 - 编号 标题"写法，指 docs/design/ 下对应文件的对应章节）；"001"单独出现时指 001-req.md；"候选一 / 候选二"定义见 001-spec §3.6；M 编号=验证项（001-req 第三章）、T 编号=任务（001-plan §3）、D 编号=决议（本文第二节）；MCP=Model Context Protocol（模型连接外部工具服务器的开放协议，工具跑在独立进程"server"里，客户端经协议发现并调用）
 > 主线组合：Boot 3.5.16 + JDK 21（openjdk 21.0.10）+ Spring AI 1.1.2（spring-ai-bom）+ SAA BOM 1.1.2.0（Spring AI Alibaba 的版本清单，仅管版本）+ mcp SDK 0.17.0（经 spring-ai-mcp 传递引入）+ node v25.9.0（npx 拉起 2 个 MCP 官方测试 server，npm 包版本 2026.8.31）+ 模型 MiniMax-M2.7（走 OpenAI 协议的一条模型连接线，当前指向 MiniMax 的 OpenAI 兼容端点）
 
 **总体结论：MCP Java SDK（MCP 协议的官方 Java 开发包）路径成立，采纳组合 A（随框架走；"组合"= 四种 MCP 依赖引入方式的实验编号——A 随框架 / B 直引升级 / C 纯 SDK / D starter，定义见 001-spec §1.2）。** M1-M7（八个验证项的前七项，编号与名称对照见下节表）全部有实测结论（M8 降级路径未触发）。证据留档于 `logs/`（依赖树与各测试输出，文件名清单见 001-plan §5）。
@@ -27,29 +27,29 @@
 | # | 决议 | 依据 |
 |---|---|---|
 | D1 | **组合 A（随框架走）：spring-ai-mcp 1.1.2（版本由 spring-ai-bom 管理），mcp SDK 0.17.0 传递引入**。版本一律以 Maven Central 为准，SDK 官方文档站快照（0.17.2）不可用作坐标；Spring AI 全程锁 1.1.x，2.0 线禁入（T7/T8 未触发，组合 B/C 未启用）。注：D5 定候选二后，候选二代码不 import spring-ai-mcp 的任何类（SyncMcpToolCallback 属候选一），spring-ai-mcp 构件仅作 mcp SDK 的版本载体；亦可直接引 `io.modelcontextprotocol.sdk:mcp:0.17.0`（组合 C 路径，未实测，如需切换另行验证） | M2 |
-| D2 | **传输层结论：stdio-only 成立**。TS 6.4 收窄措辞建议："核心阶段仅 stdio，SSE 传输放扩展阶段" | M1 |
+| D2 | **传输层结论：stdio-only 成立**。TechnicalSolution.md - 6.4 Plugin Tool 方式二 的收窄措辞建议："核心阶段仅 stdio，SSE 传输放扩展阶段" | M1 |
 | D3 | **工具发现直映射成立**：tools/list → AgentOSTool 四方法直取 + schema JSON 直传 + ToolRegistry 批量注册 + subset 过滤，27 工具零适配障碍 | M3 |
 | D4 | **ToolResult 映射定案**：成功 → success=true 拼接全部 text 段；server 业务错（isError）→ retryable=false；超时 → retryable=true；不存在工具 / 坏参数 → retryable=false。多段 content 拼接策略够用（M4 实测样本均为单段） | M4 |
-| D5 | **M5 接线两候选均可行，定候选二**（2026-09-14 用户裁决；McpToolAdapter 包装 AgentOSTool + 自适配 ToolCallback）：与 TS 6.1 统一抽象同源（AgentOSTool=AgentOS 的统一工具接口，内置工具与 MCP 工具都包装成它）、审计口径不特殊化；候选一（SyncMcpToolCallback）可行但两参构造在 1.1.2 已 deprecated（builder 路径可用） | M5 |
+| D5 | **M5 接线两候选均可行，定候选二**（2026-09-14 用户裁决；McpToolAdapter 包装 AgentOSTool + 自适配 ToolCallback）：与 TechnicalSolution.md - 6.1 AgentOSTool 抽象 的统一抽象同源（AgentOSTool=AgentOS 的统一工具接口，内置工具与 MCP 工具都包装成它）、审计口径不特殊化；候选一（SyncMcpToolCallback）可行但两参构造在 1.1.2 已 deprecated（builder 路径可用） | M5 |
 | D5 附 | 双执行排除证据：执行计数 == 模型发起工具调用轮数（007 E3 计数法），`internalToolExecutionEnabled(false)` 生效 | M5 |
 | D6 | **starter 不引入**（spring-ai-starter-mcp-client）：读自身属性体系（spring.ai.mcp.client.*）不读 mcp_servers.yaml，与自持（AgentOS 自己解析 yaml、自己管理连接）是"谁拥有连接"的二选一；双连接冲突实证（同一 server 子进程数=2）；默认不激活、未配置时不拉进程 | M2 附带 |
-| D7 | **失联 / 超时最小行为**：①坏命令连接失败 → 记日志跳过、不阻断（对齐 TS 8.2）；②server 被杀后调用悬挂至 requestTimeout 超时，SDK 无自动重连——核心阶段建议不做自动重连，失败返回可重试标识、由 LLM 决定重试（对齐 TS 4.2 / DA 8.2）；③SDK 0.17.0 有两个独立超时预算 requestTimeout（默认 20s）与 initializationTimeout（默认 20s），正式实现映射到 TS 7.4 的 Tool 档（配置化不硬编码） | M6 |
+| D7 | **失联 / 超时最小行为**：①坏命令连接失败 → 记日志跳过、不阻断（对齐 TechnicalSolution.md - 8.2 Profile 配置）；②server 被杀后调用悬挂至 requestTimeout 超时，SDK 无自动重连——核心阶段建议不做自动重连，失败返回可重试标识、由 LLM 决定重试（对齐 TechnicalSolution.md - 4.2 模块组成 / DemandAnalysis.md - 8.2 可靠性）；③SDK 0.17.0 有两个独立超时预算 requestTimeout（默认 20s）与 initializationTimeout（默认 20s），正式实现映射到 TechnicalSolution.md - 7.4 关键设计点 的 Tool 档（配置化不硬编码） | M6 |
 | D7 附 | retryable 判定必须遍历 cause 链找 TimeoutException——SDK 把超时包成 ReactiveException（message 不含 timeout 字样），只查消息判不出 | M4/M6 |
-| D8 | **mcp_servers.yaml 四字段够用、语义成立**；外层 `servers:` 列表结构已定案（2026-09-14 随 docs 联动回填 TS 6.4）；env 占位符 `${VAR}` → 子进程通路实测成立。**重大安全发现见第五节** | M7 |
+| D8 | **mcp_servers.yaml 四字段够用、语义成立**；外层 `servers:` 列表结构已定案（2026-09-14 随 docs 联动回填 TechnicalSolution.md - 6.4 Plugin Tool 方式二）；env 占位符 `${VAR}` → 子进程通路实测成立。**重大安全发现见第五节** | M7 |
 | D9 | M8 降级路径未触发，手写 JSON-RPC 客户端未实现；触发前提（SDK 路径证伪）不成立 | 001 M8 |
 
 ## 三、结论 → 正式实现落点（W2=实施第二周；供该周实现 McpClientService 时借助）
 
 | 结论 | 正式实现落点 | 怎么用 |
 |---|---|---|
-| D1 | TS 1.2 第 8 项 / agentos-tool 模块 pom（第二周） | 照 D1 锁定坐标；版本锚 Maven Central |
-| D2 | TS 6.4 | 按建议收窄措辞 |
-| D3 | TS 6.4 McpToolAdapter / McpClientService 职责句 | 直映射成立，照 001-spec §3.5 映射规则实现 |
-| D4 / D7 附 | TS 6.4 / TS 6.1 | ToolResult 映射规则与 retryable cause 链判定照抄 |
-| D5 | TS 6.4（已回填，候选二定案） | 候选二经 AgentOSTool 自适配，TS 1.1 决策二枚举不动（001-req 6.2 第 7 条不触发） |
-| D6 | TS 1.2 / TS 6.4 | starter 不引入的决议与理由记录 |
-| D7 | TS 6.4 McpClientService 职责句 | 最小行为三条照抄（跳过不阻断 / 无自动重连→可重试标识 / 双档超时映射 TS 7.4） |
-| D8 | TS 6.4 | 外层 servers: 结构与四字段语义已回填；第五节安全发现已裁决同意（2026-09-14） |
+| D1 | TechnicalSolution.md - 1.2 整体技术栈 的第 8 项 / agentos-tool 模块 pom（第二周） | 照 D1 锁定坐标；版本锚 Maven Central |
+| D2 | TechnicalSolution.md - 6.4 Plugin Tool 方式二 | 按建议收窄措辞 |
+| D3 | TechnicalSolution.md - 6.4 Plugin Tool 方式二 的 McpToolAdapter / McpClientService 职责句 | 直映射成立，照 001-spec §3.5 映射规则实现 |
+| D4 / D7 附 | TechnicalSolution.md - 6.4 Plugin Tool 方式二 / TechnicalSolution.md - 6.1 AgentOSTool 抽象 | ToolResult 映射规则与 retryable cause 链判定照抄 |
+| D5 | TechnicalSolution.md - 6.4 Plugin Tool 方式二（已回填，候选二定案） | 候选二经 AgentOSTool 自适配，TechnicalSolution.md - 1.1 关键技术决策 的决策二枚举不动（001-req 6.2 第 7 条不触发） |
+| D6 | TechnicalSolution.md - 1.2 整体技术栈 / TechnicalSolution.md - 6.4 Plugin Tool 方式二 | starter 不引入的决议与理由记录 |
+| D7 | TechnicalSolution.md - 6.4 Plugin Tool 方式二 的 McpClientService 职责句 | 最小行为三条照抄（跳过不阻断 / 无自动重连→可重试标识 / 双档超时映射 TechnicalSolution.md - 7.4 关键设计点） |
+| D8 | TechnicalSolution.md - 6.4 Plugin Tool 方式二 | 外层 servers: 结构与四字段语义已回填；第五节安全发现已裁决同意（2026-09-14） |
 | D9 | 无动作 | 未触发记录 |
 
 ## 四、失败与修复记录（诚实留档）
@@ -75,21 +75,21 @@ tool_invocations（工具调用审计表）→ 密钥进上下文与审计表。
 
 **正式实现建议（随 D8 提交评审；2026-09-14 用户已裁决同意）**：McpClientService 构造子进程时使用最小 env——仅
 mcp_servers.yaml 声明的 entry.env + 运行必需项（PATH 等），不用进程全量 env。落点候选：
-TS 6.4 McpClientService 职责句 + TS 8.8 密钥红线延伸。执行纪律（本 spike 已执行）：回显类
+TechnicalSolution.md - 6.4 Plugin Tool 方式二 的 McpClientService 职责句 + TechnicalSolution.md - 8.8 配置与密钥加载 的密钥红线延伸。执行纪律（本 spike 已执行）：回显类
 输出打印脱敏、logs/ 目录 git 忽略、含疑似凭证的日志文件重定向覆盖清理。
 
 ## 六、001 §6.2 联动清单命中情况
 
 | 行号 | 001-req 6.2 条目 | 命中与执行情况（2026-09-14 已执行） |
 |---|---|---|
-| 1 | TS 1.2 第 8 项替换 | **命中，已执行**（D1：spring-ai-mcp → mcp 0.17.0，组合 A） |
-| 2 | TS 6.4 收窄措辞 | **命中，已执行**（D2：stdio 收窄句随 McpToolAdapter 段落回填） |
-| 3 | TS 13 第二周条目精化 | **命中，已执行**（D1 坐标 / D6 不引 starter / D7、D8 最小行为与最小 env 索引） |
+| 1 | TechnicalSolution.md - 1.2 整体技术栈 的第 8 项替换 | **命中，已执行**（D1：spring-ai-mcp → mcp 0.17.0，组合 A） |
+| 2 | TechnicalSolution.md - 6.4 Plugin Tool 方式二 的收窄措辞 | **命中，已执行**（D2：stdio 收窄句随 McpToolAdapter 段落回填） |
+| 3 | TechnicalSolution.md - 13 实施节奏 的第二周条目精化 | **命中，已执行**（D1 坐标 / D6 不引 starter / D7、D8 最小行为与最小 env 索引） |
 | 4 | spike/CLAUDE.md 目录名 | 不适用（2026-09-14 已闭档） |
-| 5 | TS 6.4 模块职责句回填 | **命中，已执行**（D3/D4/D5/D7/D8：候选二定案、stdio 收窄、ToolResult 映射、最小行为、最小 env） |
-| 7 | TS 1.1 决策二枚举增列 | **不触发**（2026-09-14 用户裁决定候选二，枚举增列无必要） |
+| 5 | TechnicalSolution.md - 6.4 Plugin Tool 方式二 的模块职责句回填 | **命中，已执行**（D3/D4/D5/D7/D8：候选二定案、stdio 收窄、ToolResult 映射、最小行为、最小 env） |
+| 7 | TechnicalSolution.md - 1.1 关键技术决策 的决策二枚举增列 | **不触发**（2026-09-14 用户裁决定候选二，枚举增列无必要） |
 | 6 | 根 CLAUDE.md 指针行 | **已执行**（用户裁决加指针；「仓库地图」Spike 结论指针增 W2 行） |
-| 新增 8 | 安全发现落 docs（本 spike 执行中新发现，经用户同意） | **已执行**：TS 6.4 McpClientService 职责句 + TS 8.8 红线延伸（子进程最小 env） |
+| 新增 8 | 安全发现落 docs（本 spike 执行中新发现，经用户同意） | **已执行**：TechnicalSolution.md - 6.4 Plugin Tool 方式二 的 McpClientService 职责句 + TechnicalSolution.md - 8.8 配置与密钥加载 的红线延伸（子进程最小 env） |
 
 ## 七、001 §6.1 八条不变项自查
 
@@ -101,12 +101,12 @@ TS 6.4 McpClientService 职责句 + TS 8.8 密钥红线延伸。执行纪律（�
 | 4 | 禁自动 tool 执行 | ✅ internalToolExecutionEnabled(false) 全程生效，计数=轮数 |
 | 5 | 密钥红线 | ✅（含一次事件整改，见第四节第 6 条） |
 | 6 | 基线不动（parent / BOM） | ✅ T0 依赖树零冲突 |
-| 7 | DA 13 验收不降 | ✅ M8 未触发，无降级 |
+| 7 | DemandAnalysis.md - 13 验收标准 的验收不降 | ✅ M8 未触发，无降级 |
 | 8 | 线程红线（只用 sync 客户端） | ✅ 循环用 sync 客户端 + 阻塞 call；SDK 内部 IO 线程仅做读写 |
 
 ## 八、遗留与偏差
 
-- **连接时机策略（2026-09-14 发现，2026-09-15 已裁决闭环）**：本 README D7 沿 TS 6.4 原文实测"启动时连接 + 失败跳过不阻断"；agentos/CLAUDE.md 编码规范另有一条"C-86：MCP server 连接懒加载（要用时才连接/列取），禁 @PostConstruct 全量初始化"（@PostConstruct=Spring Bean 初始化时自动执行的钩子注解）——两者对"不可达 server 不拖挂启动"给出了相反策略（启动连接+跳过 vs 干脆不启动连）。spike 未做连接时机的对照实验，D7 忠实记录的是 TS 现文方向。**已裁决（2026-09-15）**：核心阶段维持"启动全量连接 + 失败跳过"——TS 6.4 现文即结论、不改动；agentos/CLAUDE.md C-86 已改写为意图表述，懒加载降为扩展阶段优化项并附升级信号（server 多到启动明显变慢 / 引入远程 SSE server 时重议懒加载/混合）。本条闭环；
+- **连接时机策略（2026-09-14 发现，2026-09-15 已裁决闭环）**：本 README D7 沿 TechnicalSolution.md - 6.4 Plugin Tool 方式二 原文实测"启动时连接 + 失败跳过不阻断"；agentos/CLAUDE.md 编码规范另有一条"C-86：MCP server 连接懒加载（要用时才连接/列取），禁 @PostConstruct 全量初始化"（@PostConstruct=Spring Bean 初始化时自动执行的钩子注解）——两者对"不可达 server 不拖挂启动"给出了相反策略（启动连接+跳过 vs 干脆不启动连）。spike 未做连接时机的对照实验，D7 忠实记录的是 TechnicalSolution.md 现文方向。**已裁决（2026-09-15）**：核心阶段维持"启动全量连接 + 失败跳过"——TechnicalSolution.md - 6.4 Plugin Tool 方式二 现文即结论、不改动；agentos/CLAUDE.md C-86 已改写为意图表述，懒加载降为扩展阶段优化项并附升级信号（server 多到启动明显变慢 / 引入远程 SSE server 时重议懒加载/混合）。本条闭环；
 - 编排偏差仅 T6-4 一处（独立类 StarterProbeTest），001-plan 已同步；
 - logs/ 已 git 忽略；含 token 的旧日志文件已被重定向覆盖，复查 0 残留；
 - MiniMax-M2.7 的 `<think>` 剥离（ThinkStripper）有效，M5 两候选 finalText 剥后干净；

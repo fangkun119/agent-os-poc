@@ -155,9 +155,9 @@ T4 完成判定：002 §4 M5 行全过，且至少一个候选闭环成功。证
 | T5-1 | 写 `M6FailureModesTest` 并跑：`mvn test -Dtest=M6FailureModesTest > logs/m6-failure.txt` |
 | T5-2 | ①坏命令（command 指向不存在程序）→ 连接阶段异常形态落盘，其余 server 不受影响（002 §3.3） |
 | T5-3 | ②运行中 kill server 子进程 → 调用异常形态 + SDK 重连行为（有无自动重连）落盘 |
-| T5-4 | ③requestTimeout 调短 → 超时表现与 SDK 默认值记录（开放项 8；正式实现超时对齐 TS 7.4 的说明一并写入） |
+| T5-4 | ③requestTimeout 调短 → 超时表现与 SDK 默认值记录（开放项 8；正式实现超时对齐 TechnicalSolution.md - 7.4 关键设计点 的说明一并写入） |
 
-T5 完成判定：002 §4 M6 行三点齐备，核心阶段最小行为定义有成文素材（对齐 TS 8.2 / TS 4.2 / TS 7.4 的参照已在 001 M6）。证据：`logs/m6-failure.txt`。
+T5 完成判定：002 §4 M6 行三点齐备，核心阶段最小行为定义有成文素材（对齐 TechnicalSolution.md - 8.2 Profile 配置 / TechnicalSolution.md - 4.2 模块组成 / TechnicalSolution.md - 7.4 关键设计点 的参照已在 001 M6）。证据：`logs/m6-failure.txt`。
 
 ### T6 starter 相容性（M2 附带项，组合 D）
 
@@ -181,7 +181,7 @@ T6 完成判定：002 §4 M2 附带项——starter 的 enabled 默认值、自�
 
 | 触发 | 任务 |
 |---|---|
-| SDK 路径全被证伪（A/B/C 均无法支撑 M3-M5） | 写 `M8FallbackProbeTest`：对 everything server 手写最小 stdio JSON-RPC 客户端（initialize 握手 + tools/list + tools/call 三步，001 M8）；实现量（代码行数）落盘 `logs/m8-jsonrpc.txt`；跑通即按 001 M8 记技术债素材——DA 13 验收标准一字不动 |
+| SDK 路径全被证伪（A/B/C 均无法支撑 M3-M5） | 写 `M8FallbackProbeTest`：对 everything server 手写最小 stdio JSON-RPC 客户端（initialize 握手 + tools/list + tools/call 三步，001 M8）；实现量（代码行数）落盘 `logs/m8-jsonrpc.txt`；跑通即按 001 M8 记技术债素材——DemandAnalysis.md - 13 验收标准 一字不动 |
 
 ### T9 结论落盘（README.md + 联动清单对账）
 
@@ -189,7 +189,7 @@ T6 完成判定：002 §4 M2 附带项——starter 的 enabled 默认值、自�
 |---|---|
 | T9-1 | 写 `spike/008-mcp/README.md`（格式照 007 README：D 决议编号**本文档内从 D1 起**，实名引用如"spike/008-mcp/README.md 的 D1 决议"，不与 007 的 D1-D4 混淆） |
 | T9-2 | 按结论编号回填 001 §5 九条必须记录的结论（逐条对号：M2→结论 1、M1→结论 2、M3→3、M4→4、M5→5、M6→6、M7→7、M8→8、失败修复记录→9） |
-| T9-3 | 附"结论 → 正式实现落点"映射表（正式落点候选：TS 1.2 第 8 项 / TS 6.4 / TS 13 第二周条目，见 001 §6.2） |
+| T9-3 | 附"结论 → 正式实现落点"映射表（正式落点候选：TechnicalSolution.md - 1.2 整体技术栈 的第 8 项 / TechnicalSolution.md - 6.4 Plugin Tool 方式二 / TechnicalSolution.md - 13 实施节奏 的第二周条目，见 001 §6.2） |
 | T9-4 | 001 §6.2 联动清单命中情况逐条列明（哪条被触发、哪条不触发及原因）；**本 spike 不执行任何 docs 修改**——联动修改是结论经评审确认后的独立动作（001 §6.3） |
 | T9-5 | 001 §6.1 八条不变项逐条自查，结果写入 README 尾节 |
 
@@ -213,7 +213,7 @@ mvn dependency:tree -Dverbose > logs/m2-tree-a.txt    # 依赖树留档（按组
 
 ## 6. 不可违背约束（违反即停）
 
-> 盘点来源：根 CLAUDE.md（非协商原则 / 模型接入环境变量 / 工具使用指南）、TS 1.1 / 1.2 / 3.2 / 4.2 / 6.7 / 7.4 / 8.2 / 8.8、DA 13、定稿（docs/design/detail-supplement/001-model-config-export.md）、007 README D1-D4、001-req §6、002 §5。本节是执行期速查，仲裁以各出处原文为准。
+> 盘点来源：根 CLAUDE.md（非协商原则 / 模型接入环境变量 / 工具使用指南）、TechnicalSolution.md - 1.1 关键技术决策 / TechnicalSolution.md - 1.2 整体技术栈 / TechnicalSolution.md - 3.2 Provider 名到 ChatModel 的显式映射 / TechnicalSolution.md - 4.2 模块组成 / TechnicalSolution.md - 6.7 Sandbox 检查 / TechnicalSolution.md - 7.4 关键设计点 / TechnicalSolution.md - 8.2 Profile 配置 / TechnicalSolution.md - 8.8 配置与密钥加载、DemandAnalysis.md - 13 验收标准、model-config.md（模型接入环境变量定稿）、007 README D1-D4、001-req §6、002 §5。本节是执行期速查，仲裁以各出处原文为准。
 
 ### 6.1 类库与技术选型（锁死项）
 
@@ -221,24 +221,24 @@ mvn dependency:tree -Dverbose > logs/m2-tree-a.txt    # 依赖树留档（按组
 |---|---|---|---|---|
 | 1 | parent / JDK | `spring-boot-starter-parent:3.5.16` + Java 21 | 禁改 parent、禁升 Boot 4.x / 降 3.4.x | 007 README D1；根 CLAUDE.md 原则 1 |
 | 2 | Spring AI 版本线 | 1.1.x（spring-ai-bom 1.1.2 import），全程不动 | **Spring AI 2.0 线禁入**——`internalToolExecutionEnabled` 是 Spring AI 框架"自动执行工具"的开关（本项目的红线是关掉它、由自研循环自己执行工具，见 6.2 第 1 条）；Spring AI 2.0 删除了该开关，`.internalToolExecutionEnabled(false)` 这行代码在 2.0 下直接编译不过。T7 升降级只允许动 MCP SDK 版本，**任何情况下不动 Spring AI 版本** | 007 D2；agentos/CLAUDE.md 第 1 章（锁定 Spring AI 1.1.x） |
-| 3 | 模型连接器 | 仅 `spring-ai-starter-model-openai` 一条模型连接线（"腿"= 一条协议接入线；OPENAI 腿 = 经 OpenAI 协议接入，当前指向 MiniMax 的 OpenAI 兼容端点，缺省模型 MiniMax-M2.7；只引这一条已经 2026-09-14 用户裁决） | 禁再引第二条腿（anthropic 腿 = Anthropic 协议接入线）、禁引 SAA 自家 connector、禁引 `spring-ai-starter-model-minimax`（MiniMax 接入路径重验是 spike/007 第二组 002-req 的 V0-V8 另案，与本 spike 无关） | 002 §1.2 / §2.3；定稿 §2.1；007 002-req §3.2 |
+| 3 | 模型连接器 | 仅 `spring-ai-starter-model-openai` 一条模型连接线（"腿"= 一条协议接入线；OPENAI 腿 = 经 OpenAI 协议接入，当前指向 MiniMax 的 OpenAI 兼容端点，缺省模型 MiniMax-M2.7；只引这一条已经 2026-09-14 用户裁决） | 禁再引第二条腿（anthropic 腿 = Anthropic 协议接入线）、禁引 SAA 自家 connector、禁引 `spring-ai-starter-model-minimax`（MiniMax 接入路径重验是 spike/007 第二组 002-req 的 V0-V8 另案，与本 spike 无关） | 002 §1.2 / §2.3；model-config.md - 2.1 Provider 清单与当前取值；007 002-req §3.2 |
 | 4 | SAA 参与方式 | 仅 `spring-ai-alibaba-bom:1.1.2.0` 双 import 管版本 | 禁引 SAA 任何 connector、graph-core 等 SAA 构件（007 的 graph-core 是其 E1 探针专用，本 spike 无此需求） | 007 D2；002 §1.2 |
 | 5 | MCP Java SDK 版本 | 组合 A 默认 0.17.0；T7 档位仅限 002 §1.2 所列 0.18.4 / 1.1.4 / 2.0.1 | 版本一律以 Maven Central（repo1.maven.org）为准，禁以 MCP Java SDK 官方文档站显示的版本号当坐标——该站文档 URL 固定挂在 latest-snapshot 快照路径下，版本号滞后于 Maven Central（2026-09-14 时点：文档快照显示 0.17.2，Central 当前 release 已是 2.0.1）。另注意：MCP SDK 的 2.x **不受**"Spring AI 2.0 禁入"约束——两者是不同项目的版本线，勿混淆 | 002 §1.2；001 §1.2；2026-09-14 Context7 与 repo1 对照实查 |
-| 6 | YAML 解析 | SnakeYAML（Spring Boot 3.5 starter 传递自带，与正式技术栈同库） | 禁新引 Jackson YAML / snakeyaml-engine / 自写解析器 | TS 1.2 第 6 项（正式栈明文 SnakeYAML） |
+| 6 | YAML 解析 | SnakeYAML（Spring Boot 3.5 starter 传递自带，与正式技术栈同库） | 禁新引 Jackson YAML / snakeyaml-engine / 自写解析器 | TechnicalSolution.md - 1.2 整体技术栈 的第 6 项（正式栈明文 SnakeYAML） |
 | 7 | JSON 序列化 | 组合 A 用依赖树现成 Jackson 2（com.fasterxml.jackson，Boot 3.5 官方线）；若 T0-4 检查 3 发现树中无 Jackson 2，补引 `jackson-databind`（版本由 spring-ai-bom / Boot BOM 管理） | 禁自引 Gson / Jackson 3（tools.jackson）/ 手写字符串拼 JSON；T7 切组合 B/C 后依赖树若换 Jackson 线，JSON 库随选定组合走并如实记录（联动 002 开放项 3） | Boot 3.5 / Spring AI 1.1.x 依赖树实况；002 §1.2 注意事项 |
-| 8 | 日志 | SLF4J + Logback（starter 自带） | 禁自引其他日志门面 / 实现 | TS 1.2 第 9 项 |
-| 9 | 模型端点 | base-url 明文写 `https://api.minimax.cn`，**不带 /v1** | 禁把 `OPENAI_BASE_URL`（SDK 惯例带 /v1）直接映射给 `spring.ai.openai.base-url`——会 `/v1/v1` 双写 404 | 定稿 §4.4 / §5.3；007 实测坑 |
-| 10 | Provider 映射 | 按 provider 名显式取用（本 spike 单模型，天然满足） | 禁类型扫描容器 Bean——T4 构造 ChatModel 时守住 | TS 3.2 |
+| 8 | 日志 | SLF4J + Logback（starter 自带） | 禁自引其他日志门面 / 实现 | TechnicalSolution.md - 1.2 整体技术栈 的第 9 项 |
+| 9 | 模型端点 | base-url 明文写 `https://api.minimax.cn`，**不带 /v1** | 禁把 `OPENAI_BASE_URL`（SDK 惯例带 /v1）直接映射给 `spring.ai.openai.base-url`——会 `/v1/v1` 双写 404 | model-config.md - 4.4 常见错误 / 5.3 MiniMax 两份文档是同一个端点；007 实测坑 |
+| 10 | Provider 映射 | 按 provider 名显式取用（本 spike 单模型，天然满足） | 禁类型扫描容器 Bean——T4 构造 ChatModel 时守住 | TechnicalSolution.md - 3.2 Provider 名到 ChatModel 的显式映射 |
 
 ### 6.2 行为红线（执行禁令）
 
 | # | 禁令 | 出处 |
 |---|---|---|
-| 1 | 禁自动 tool 执行：`internalToolExecutionEnabled(false)`，任何组合不得为跑通而放开 | 根 CLAUDE.md 原则 4；TS 1.1 决策二；002 §5 红线 4。M5 若定候选一（SyncMcpToolCallback，定义见 002 §0.1 / §3.6），涉及 TS 1.1 决策二与根 CLAUDE.md 原则 4 的 Spring AI 使用边界枚举增列——已按 001 §6.2 第 7 条预登记，属结论后的文档联动，不构成执行违规 |
-| 2 | 线程红线：全链路只用同步 API（`McpClient.sync` + 阻塞 `chatModel.call`）；禁 `@Async`、禁跨线程 `CompletableFuture`、禁把 SDK 异步客户端引入循环——SDK 内部做输入输出读写的线程不执行循环步骤；ProfileContext（正式实现中存放"当前是哪个 Agent"的 ThreadLocal 变量，见 TS 4.2）要求循环全程不换线程 | TS 4.2；002 §5 红线 8 |
-| 3 | 密钥红线：密钥只从环境变量读；仓库内任何文件只写 `${环境变量名}` 占位符；日志与命令行最多前 5 位前缀；`MCP_SPIKE_PROBE` 探测值非密钥、不受限 | TS 8.8；根 CLAUDE.md「模型接入环境变量」；002 §5 红线 5 |
-| 4 | MCP 工具不挂 SandboxChecker 校验（spike 不写任何 Sandbox 代码）；审计走 002 §3.9 统一口径日志行、不自建第二套留痕 | TS 6.6 / 6.7；001 §6.1 第 1/3 条 |
-| 5 | 超时参数纪律：spike 里 requestTimeout 的各取值都是**实验参数**（测默认值、调短测超时），不是预算定案——正式实现必须走 TS 7.4 三档分步预算（application.yaml 默认 + Profile 覆盖），README 记录时写明这层区别 | TS 7.4；AG 3.4 |
+| 1 | 禁自动 tool 执行：`internalToolExecutionEnabled(false)`，任何组合不得为跑通而放开 | 根 CLAUDE.md 原则 4；TechnicalSolution.md - 1.1 关键技术决策 的决策二；002 §5 红线 4。M5 若定候选一（SyncMcpToolCallback，定义见 002 §0.1 / §3.6），涉及 TechnicalSolution.md - 1.1 关键技术决策 的决策二与根 CLAUDE.md 原则 4 的 Spring AI 使用边界枚举增列——已按 001 §6.2 第 7 条预登记，属结论后的文档联动，不构成执行违规 |
+| 2 | 线程红线：全链路只用同步 API（`McpClient.sync` + 阻塞 `chatModel.call`）；禁 `@Async`、禁跨线程 `CompletableFuture`、禁把 SDK 异步客户端引入循环——SDK 内部做输入输出读写的线程不执行循环步骤；ProfileContext（正式实现中存放"当前是哪个 Agent"的 ThreadLocal 变量，见 TechnicalSolution.md - 4.2 模块组成）要求循环全程不换线程 | TechnicalSolution.md - 4.2 模块组成；002 §5 红线 8 |
+| 3 | 密钥红线：密钥只从环境变量读；仓库内任何文件只写 `${环境变量名}` 占位符；日志与命令行最多前 5 位前缀；`MCP_SPIKE_PROBE` 探测值非密钥、不受限 | TechnicalSolution.md - 8.8 配置与密钥加载；根 CLAUDE.md「模型接入环境变量」；002 §5 红线 5 |
+| 4 | MCP 工具不挂 SandboxChecker 校验（spike 不写任何 Sandbox 代码）；审计走 002 §3.9 统一口径日志行、不自建第二套留痕 | TechnicalSolution.md - 6.6 ToolRegistry / TechnicalSolution.md - 6.7 Sandbox 检查；001 §6.1 第 1/3 条 |
+| 5 | 超时参数纪律：spike 里 requestTimeout 的各取值都是**实验参数**（测默认值、调短测超时），不是预算定案——正式实现必须走 TechnicalSolution.md - 7.4 关键设计点 的三档分步预算（application.yaml 默认 + Profile 覆盖），README 记录时写明这层区别 | TechnicalSolution.md - 7.4 关键设计点；AiProgrammingGuide.md - 3.4 `/speckit.plan` |
 | 6 | spike 执行期间不改 docs/design/ 与根 CLAUDE.md（001 §6.3 冻结令）；README 里的"措辞建议"是建议，不是修改动作 | 001 §6.3 |
 | 7 | T7 升降级命中后，剩余任务在新组合下跑完再下结论，不半途混档 | 007 plan 第 5 节同构 |
 | 8 | pom 永不进根 `<modules>`；构建只在 spike/008-mcp/ 目录内执行；007 的 src 与 logs 封存不改不拷 | spike/CLAUDE.md；002 §5 红线 9 |

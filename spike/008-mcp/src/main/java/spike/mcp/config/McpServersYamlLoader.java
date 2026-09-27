@@ -14,10 +14,10 @@ import java.util.Map;
  * mcp_servers.yaml 加载器（002 §3.2）。
  *
  * <p>职责：解析四字段（name/transport/command/env）→ name 唯一校验 → 非 stdio transport
- * 跳过并记录（对齐 TS 8.2"校验失败不阻断启动但记录错误日志"）→ env 值中的 ${环境变量名}
+ * 跳过并记录（对齐 TechnicalSolution.md - 8.2 Profile 配置 的"校验失败不阻断启动但记录错误日志"）→ env 值中的 ${环境变量名}
  * 从注入的环境变量解析，缺失给清晰报错。
  *
- * <p>密钥纪律（TS 8.8）：本类日志中 env 值最多输出前 5 位前缀。
+ * <p>密钥纪律（TechnicalSolution.md - 8.8 配置与密钥加载）：本类日志中 env 值最多输出前 5 位前缀。
  * 解析库用 SnakeYAML（Spring Boot 自带；001-plan §6.1 第 6 条，与正式技术栈同库）。
  */
 public class McpServersYamlLoader {
@@ -95,7 +95,7 @@ public class McpServersYamlLoader {
         return resolved;
     }
 
-    /** env 值的日志脱敏：最多前 5 位前缀（TS 8.8；M7 判定项） */
+    /** env 值的日志脱敏：最多前 5 位前缀（TechnicalSolution.md - 8.8 配置与密钥加载；M7 判定项） */
     public static String mask(String value) {
         if (value == null || value.length() <= 5) {
             return "***";

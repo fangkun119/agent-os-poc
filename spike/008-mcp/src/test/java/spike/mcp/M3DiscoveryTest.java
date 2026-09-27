@@ -81,7 +81,7 @@ class M3DiscoveryTest {
             }
             log.info("[M3] 全部 {} 个工具四方法非空、schema 可解析", listed);
 
-            // 5. subset 白名单过滤（模拟 Profile tools 字段，TS 6.6）
+            // 5. subset 白名单过滤（模拟 Profile tools 字段，TechnicalSolution.md - 6.6 ToolRegistry）
             var first = registry.list().get(0).getName();
             var subset = registry.subset(List.of(first, "no-such-tool"));
             assertThat(subset).hasSize(1);

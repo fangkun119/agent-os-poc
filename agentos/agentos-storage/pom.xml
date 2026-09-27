@@ -13,8 +13,8 @@
 
   <artifactId>agentos-storage</artifactId>
   <name>agentos-storage</name>
-  <description>持久化层（TS 10）：SQLite、SessionRepository、ToolInvocationRepository、LlmCallRepository、JpaScheduledTaskStore、NotifyChannelRepository、MemoryEntryRepository（扩展阶段建表）。
-    工程口径（TS 9.2）：首建走 ddl-auto=update；SQLite 无官方方言，须显式引入 hibernate-community-dialects；WAL/busy_timeout 在 JDBC 连接串透传。</description>
+  <description>持久化层（TechnicalSolution.md - 10 项目工程结构）：SQLite、SessionRepository、ToolInvocationRepository、LlmCallRepository、JpaScheduledTaskStore、NotifyChannelRepository、MemoryEntryRepository（扩展阶段建表）。
+    工程口径（TechnicalSolution.md - 9.2 SQLite 关系型数据）：首建走 ddl-auto=update；SQLite 无官方方言，须显式引入 hibernate-community-dialects；WAL/busy_timeout 在 JDBC 连接串透传。</description>
 
   <dependencies>
     <dependency>
@@ -31,7 +31,7 @@
       <groupId>org.xerial</groupId>
       <artifactId>sqlite-jdbc</artifactId>
     </dependency>
-    <!-- Spring Boot 3 + Hibernate 6 对 SQLite 无官方方言，显式引入社区方言（TS 9.2），版本与 BOM 的 hibernate.version 对齐 -->
+    <!-- Spring Boot 3 + Hibernate 6 对 SQLite 无官方方言，显式引入社区方言（TechnicalSolution.md - 9.2 SQLite 关系型数据），版本与 BOM 的 hibernate.version 对齐 -->
     <dependency>
       <groupId>org.hibernate.orm</groupId>
       <artifactId>hibernate-community-dialects</artifactId>

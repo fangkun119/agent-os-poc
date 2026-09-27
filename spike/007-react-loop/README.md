@@ -32,7 +32,7 @@
 | V0-V9 | 第二组验证项编号（定义见 `spec/002-req.md` 3.1 节）；E1-E9 为第一组验证项编号 |
 | D1-D4 / D5-D8 | 决议编号：D1-D4 = 第一组（第一节存档）；D5-D8 = 第二组（第二节，D8 为 2026-09-15 ZHIPU 转正裁决） |
 | req / spec / plan | 本 spike 的三份规格文档：`spec/002-req.md`（需求与验证项）/ `spec/002-spec.md`（代码规格）/ `spec/002-plan.md`（任务计划） |
-| 定稿 | `docs/design/detail-supplement/001-model-config-export.md`（模型接入环境变量定稿） |
+| model-config.md | `docs/design/detail/model-config.md`（模型接入环境变量定稿；2026-10-03 起"定稿"别名停用） |
 | 根 CLAUDE.md | 仓库根 `/CLAUDE.md` |
 | agentos/CLAUDE.md | `agentos/CLAUDE.md`（Java 编码规范，spike 代码同样遵守，见 spike/CLAUDE.md「编码规范」节） |
 | `llm_calls` | AgentOS 设计中的 SQLite 审计表：记录每次大模型调用（供应商、模型、token 数、耗时）；V6 验证的就是"能不能取到这些数" |
@@ -129,16 +129,16 @@
 
 | req 5.2 条目 | 命中 | 状态 |
 |---|---|---|
-| 1 定稿 §2.3 MINIMAX 行（加 `spring.ai.minimax.*` 映射、删"无自动映射"句） | ✅ | 已执行（2026-09-15：§0 增第 5 条结论、§2.3 MINIMAX 拆四行、§4.2 yaml 增 minimax 块） |
+| 1 model-config.md - 2.3 导出的环境变量 → Spring AI 属性对照 MINIMAX 行（加 `spring.ai.minimax.*` 映射、删"无自动映射"句） | ✅ | 已执行（2026-09-15：§0 增第 5 条结论、§2.3 MINIMAX 拆四行、§4.2 yaml 增 minimax 块） |
 | 2 根 CLAUDE.md（MINIMAX 腿接线 + 是否结构性修订由用户裁决） | ✅ | 已执行（2026-09-15 用户裁决"改"：增 MiniMax 原生腿行、ANTHROPIC 行注记清除、Provider 行更新） |
 | 3 007 README D2 注记 | ✅ | 本 README 已全新创建、两节结构，注记即本节 |
-| 4/5 Q7 共 12 处表述（docs 四篇"基于 SAA 做调用"改为"MiniMax 原生 starter"口径） | ✅ | 已执行（2026-09-15：TS 1 / 1.2 / 3.1 / 3.2 / 13 / 15、DA 1.1 / 5.3 / 11 / 13、AG §3.4 / §4.1；IndustryResearch 按范围口径不纳入） |
-| 6 AG §4.1 / §4.2 接线指引 | ✅ | 已执行（2026-09-15：配置类行、Spike 执行清单步骤 1/2、§4.2 验收行按新接线改写） |
-| 7 定稿 §2.1 + 根 CLAUDE.md 四元组语义 | ✅ | 已执行（2026-09-15：OPENAI/ANTHROPIC 回归"真协议腿、待原生账号"） |
-| 8 DA 13 Provider 条目 | ✅ | 已执行（2026-09-15：改为"经 MiniMax 原生 starter 接入"） |
+| 4/5 Q7 共 12 处表述（docs 四篇"基于 SAA 做调用"改为"MiniMax 原生 starter"口径） | ✅ | 已执行（2026-09-15：TechnicalSolution.md - 1 方案概述 / TechnicalSolution.md - 1.2 整体技术栈 / TechnicalSolution.md - 3.1 模块组成 / TechnicalSolution.md - 3.2 Provider 名到 ChatModel 的显式映射 / TechnicalSolution.md - 13 实施节奏 / TechnicalSolution.md - 15 总结、DemandAnalysis.md - 1.1 AgentOS 是什么 / DemandAnalysis.md - 5.3 Provider 抽象 / DemandAnalysis.md - 11 里程碑规划 / DemandAnalysis.md - 13 验收标准、AiProgrammingGuide.md - 3.4 `/speckit.plan` / AiProgrammingGuide.md - 4.1 US-1；IndustryResearch 按范围口径不纳入） |
+| 6 AiProgrammingGuide.md - 4.1 US-1 / AiProgrammingGuide.md - 4.2 US-2 接线指引 | ✅ | 已执行（2026-09-15：配置类行、Spike 执行清单步骤 1/2、AiProgrammingGuide.md - 4.2 US-2 验收行按新接线改写） |
+| 7 model-config.md - 2.1 Provider 清单与当前取值 + 根 CLAUDE.md 四元组语义 | ✅ | 已执行（2026-09-15：OPENAI/ANTHROPIC 回归"真协议腿、待原生账号"） |
+| 8 DemandAnalysis.md - 13 验收标准 的 Provider 条目 | ✅ | 已执行（2026-09-15：改为"经 MiniMax 原生 starter 接入"） |
 | 9 架构图 SVG 字样 | ✅ | 无需改（2026-09-15 核验：docs-provider.svg 内无 SAA / Spring AI Alibaba 字样） |
-| 追加：V6 已实证国内站 /anthropic 可达 → spec §7.2 ⑥"待 V6 实测"解除 | ✅ | 已执行（2026-09-15：定稿 §1 / §2.3 与根 CLAUDE.md 的"待 V6 实测"注记全部清除） |
-| 追加：ZHIPU 转正（D8）与接入优先级 | ✅ | 已执行（2026-09-15：定稿 §0/§2.1/§2.3、根 CLAUDE.md、TS 3.1 落"官方 starter 优先、无 starter 才兜底"原则） |
+| 追加：V6 已实证国内站 /anthropic 可达 → spec §7.2 ⑥"待 V6 实测"解除 | ✅ | 已执行（2026-09-15：model-config.md - 1 背景与密钥红线 / 2.3 导出的环境变量 → Spring AI 属性对照 与根 CLAUDE.md 的"待 V6 实测"注记全部清除） |
+| 追加：ZHIPU 转正（D8）与接入优先级 | ✅ | 已执行（2026-09-15：model-config.md - 0 先看结论/2.1 Provider 清单与当前取值/2.3 导出的环境变量 → Spring AI 属性对照、根 CLAUDE.md、TechnicalSolution.md - 3.1 模块组成 落"官方 starter 优先、无 starter 才兜底"原则） |
 
 ### 执行记录
 

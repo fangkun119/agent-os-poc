@@ -98,7 +98,7 @@ class M7ConfigTest {
         assertThat(output.getAll()).contains("sse-one").contains("sse").contains("跳过");
     }
 
-    /** 用例 5：env 值日志脱敏——最多前 5 位前缀（TS 8.8 红线判定项） */
+    /** 用例 5：env 值日志脱敏——最多前 5 位前缀（TechnicalSolution.md - 8.8 配置与密钥加载 的红线判定项） */
     @Test
     void envValueMaskedToFiveCharPrefix() {
         assertThat(McpServersYamlLoader.mask("probe-value-2026")).isEqualTo("probe***");

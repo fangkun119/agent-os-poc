@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.5.16</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.agentos.spike</groupId>
+  <artifactId>sqlite-spike</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>sqlite-spike</name>
+  <description>AgentOS spike: SQLite persistence mechanism verification (spec: see spec/)</description>
+
+  <properties>
+    <java.version>21</java.version>
+  </properties>
+
+  <dependencies>
+    <!-- JPA 全链：Hibernate + HikariCP + 事务管理（生产同款入口） -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    <!-- SQLite JDBC 驱动。不写版本号：能否被 Boot BOM 仲裁出 3.49.1.0 正是 D6 的核验点 -->
+    <dependency>
+      <groupId>org.xerial</groupId>
+      <artifactId>sqlite-jdbc</artifactId>
+    </dependency>
+    <!-- SQLite 无官方方言，显式引入社区方言（agentos/CLAUDE.md - 3 存储与事务（SQLite/JPA）方言成套条款）。
+         版本用 ${hibernate.version}（Boot BOM 属性），与 agentos-storage 模块 pom 同写法；
+         本 pom 禁自定义该属性（禁定义与父链同名 property） -->
+    <dependency>
+      <groupId>org.hibernate.orm</groupId>
+      <artifactId>hibernate-community-dialects</artifactId>
+      <version>${hibernate.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <!-- spike 超时兜底（spike/CLAUDE.md - 编码规范（2026-09-15 起：spike 的 Java 代码同样遵守）） -->
+          <forkedProcessTimeoutInSeconds>180</forkedProcessTimeoutInSeconds>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

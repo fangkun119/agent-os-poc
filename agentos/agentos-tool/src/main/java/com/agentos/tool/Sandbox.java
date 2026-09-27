@@ -1,7 +1,7 @@
 package com.agentos.tool;
 
 /**
- * Sandbox 校验接口（TS 6.7，接口先行）。
+ * Sandbox 校验接口（TechnicalSolution.md - 6.7 Sandbox 检查，接口先行）。
  *
  * <p>纯校验接口（策略层：动作允不允许），签名不携带白名单/容器/VM 等实现特有概念——
  * 用最重的 microVM 实现去反向套这个签名也应能干净套入，这是校验接口是否中立的办法。

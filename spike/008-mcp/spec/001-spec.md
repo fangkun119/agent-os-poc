@@ -3,7 +3,7 @@
 > 位置：`spike/008-mcp/spec/001-spec.md`
 > 创建：2026-09-14 · 状态：已执行（2026-09-14，配套实验全部完成，结论见 README）
 > 上游：`001-req.md`（下称 001；M1-M8 问题清单、方法、结论记录要求、一致性清单的唯一源头）
-> 平行输入：`spike/007-react-loop/README.md`（下称 007 README；D1-D4 决议与基线坐标）、`docs/design/detail-supplement/001-model-config-export.md`（下称定稿；密钥与 yaml 接线规则）
+> 平行输入：`spike/007-react-loop/README.md`（下称 007 README；D1-D4 决议与基线坐标）、`docs/design/detail/model-config.md`（密钥与 yaml 接线规则；引用用 model-config.md - 编号 标题主干 全名形，2026-10-03 起"定稿"别名停用）
 > 下游：`001-plan.md`（待生成的实施计划，命名沿 007 先例）
 > 读者：零背景读者——没有 2026-09-13 设计评审会话记录、只读本文件的人。术语沿用 001 术语表，本文新增术语见 0.1 节
 
@@ -39,10 +39,10 @@ spike/008-mcp/
 │   ├── config/McpServerEntry.java         # mcp_servers.yaml 单条配置（四字段）
 │   ├── config/McpServersYamlLoader.java   # 读 yaml + ${环境变量名} 占位符解析（M7）
 │   ├── client/SpikeMcpClients.java        # 连接维护（M3/M6；正式实现 McpClientService 的 spike 形态）
-│   ├── tool/AgentOSTool.java              # 四方法接口最小副本（TS 6.1）
-│   ├── tool/ToolResult.java               # 四要素载体（TS 6.1）
-│   ├── tool/ToolRegistry.java             # 内存注册表（TS 6.6 的 spike 形态）
-│   ├── tool/McpToolAdapter.java           # MCP 工具 → AgentOSTool 适配（M3/M4；对应 TS 6.4 McpToolAdapter）
+│   ├── tool/AgentOSTool.java              # 四方法接口最小副本（TechnicalSolution.md - 6.1 AgentOSTool 抽象）
+│   ├── tool/ToolResult.java               # 四要素载体（TechnicalSolution.md - 6.1 AgentOSTool 抽象 的四要素）
+│   ├── tool/ToolRegistry.java             # 内存注册表（TechnicalSolution.md - 6.6 ToolRegistry 的 spike 形态）
+│   ├── tool/McpToolAdapter.java           # MCP 工具 → AgentOSTool 适配（M3/M4；对应 TechnicalSolution.md - 6.4 Plugin Tool 方式二 的 McpToolAdapter）
 │   ├── tool/McpToolCallbacks.java         # M5 候选一：spring-ai-mcp 现成 ToolCallback 适配
 │   ├── loop/ManualLoop.java               # 手动 ReAct 循环（按 007 README D3 重写，不拷代码）
 │   ├── loop/LoopResult.java               # 循环结果载体
@@ -103,13 +103,13 @@ spring:
   ai:
     openai:
       api-key: ${OPENAI_API_KEY:placeholder}        # 密钥：环境变量；离线项可用占位默认值
-      base-url: https://api.minimax.cn              # 非敏感：明文 yaml，不带 /v1（定稿 5.3）
+      base-url: https://api.minimax.cn              # 非敏感：明文 yaml，不带 /v1（model-config.md - 5.3 MiniMax 两份文档是同一个端点）
       chat:
         options:
           model: ${OPENAI_DEFAULT_MODEL:MiniMax-M2.7}
 ```
 
-- 变量语义按定稿第 2 节（`OPENAI_*` 四元组）。
+- 变量语义按 model-config.md - 2 环境变量命名规则（`OPENAI_*` 四元组）。
 - 默认**不写** `spring.ai.mcp.*`：自持路线（组合 A / B / C）不依赖 starter 属性。组合 D 验证时用独立测试配置（`src/test/resources/application-starter.yaml`）开启，避免污染主线。
 - M2-M4、M7 的离线部分不起模型调用，占位默认值即可；M5 前先 `source ~/.agent-os-poc/script/agent-os-env.sh`。
 
@@ -130,9 +130,9 @@ servers:
 
 说明：
 
-- 四字段 `name` / `transport` / `command` / `env` 的语义按 TS 6.4 与 001-req M7。顶层用 `servers:` 列表是本 spike 的自定（docs 只定了字段、没定外层结构）——M7 结论回填 TS 6.4 时一并定案（001 的 6.2 节第 5 条）。
-- `command` 是一条启动命令字符串；加载时拆成"可执行文件 + 参数数组"传给 SDK 的进程构造，不经 Shell 解释（与 TS 6.7 的 argv 直传同一哲学）。
-- `env` 的值只允许 `${环境变量名}` 占位符或非敏感值（TS 8.8 密钥红线延伸，001 的 6.1 节第 5 条）。`MCP_SPIKE_PROBE` 的值不是凭证，用于验证"占位符解析 → 子进程环境变量 → server 侧可见"这条通路。
+- 四字段 `name` / `transport` / `command` / `env` 的语义按 TechnicalSolution.md - 6.4 Plugin Tool 方式二 与 001-req M7。顶层用 `servers:` 列表是本 spike 的自定（docs 只定了字段、没定外层结构）——M7 结论回填 TechnicalSolution.md - 6.4 Plugin Tool 方式二 时一并定案（001 的 6.2 节第 5 条）。
+- `command` 是一条启动命令字符串；加载时拆成"可执行文件 + 参数数组"传给 SDK 的进程构造，不经 Shell 解释（与 TechnicalSolution.md - 6.7 Sandbox 检查 的 argv 直传同一哲学）。
+- `env` 的值只允许 `${环境变量名}` 占位符或非敏感值（TechnicalSolution.md - 8.8 配置与密钥加载 的密钥红线延伸，001 的 6.1 节第 5 条）。`MCP_SPIKE_PROBE` 的值不是凭证，用于验证"占位符解析 → 子进程环境变量 → server 侧可见"这条通路。
 - filesystem server 允许访问的目录以命令参数给定（`./sandbox-dir`，spike 目录内自建，预置一个可读文本文件）；两个 server 的具体命令形态以 spike 执行时官方仓库 modelcontextprotocol/servers 的当前形态为准（001 四章方法 1 同款口径）。
 
 ### 2.3 模型组合
@@ -150,31 +150,33 @@ servers:
 ### 3.2 McpServerEntry + McpServersYamlLoader（M7）
 
 - `McpServerEntry`：四字段 record（name / transport / command / env）。
-- Loader 职责：读 `mcp-servers.yaml` → 逐条校验（`name` 唯一；`transport` 当前只认 `stdio`，其他值记录后跳过并给清晰报错，不抛异常终止整个加载——参照 TS 8.2"校验失败不阻断启动但记录错误日志"）→ `env` 值中的 `${环境变量名}` 从环境变量解析，缺失时给清晰报错。
+- Loader 职责：读 `mcp-servers.yaml` → 逐条校验（`name` 唯一；`transport` 当前只认 `stdio`，其他值记录后跳过并给清晰报错，不抛异常终止整个加载——参照 TechnicalSolution.md - 8.2 Profile 配置 的"校验失败不阻断启动但记录错误日志"）→ `env` 值中的 `${环境变量名}` 从环境变量解析，缺失时给清晰报错。
 - 占位符解析的注入式设计：Loader 收一个 `Map<String, String> env` 参数（生产传 `System.getenv()`，测试注入构造值）——避免测试里改 JVM 环境变量的麻烦，也让"缺失报错 / 存在解析"两个用例可控。
 - command 拆分：空格切分为 argv。spike 规模够用；引号等复杂 shell 语法不支持，如实记录为限制。
 - 日志纪律：env 值打印最多 5 位前缀（红线，001 的 6.1 节第 5 条）。
 
 ### 3.3 SpikeMcpClients（M3 / M6；正式实现 McpClientService 的 spike 形态）
 
-- 按每条配置建立**同步**客户端（TS 4.2 线程约束：ReAct 循环全程禁切换执行线程，异步客户端不引入——001 的 6.1 节第 8 条）。链路：进程参数构造（可执行文件 + args + env）→ stdio 传输 → `McpClient.sync(transport).requestTimeout(...).build()` → `initialize()` → `listTools()`。
+- 按每条配置建立**同步**客户端（TechnicalSolution.md - 4.2 模块组成 的线程约束：ReAct 循环全程禁切换执行线程，异步客户端不引入——001 的 6.1 节第 8 条）。链路：进程参数构造（可执行文件 + args + env）→ stdio 传输 → `McpClient.sync(transport).requestTimeout(...).build()` → `initialize()` → `listTools()`。
 - 具体构造 API 以 M2 选定组合的 SDK 版本为准（0.17 与 2.x 的 API 面不同，正是 M2 要实测的内容）；最新文档形态见 SDK 官方 quickstart / client 页（2026-09-14 Context7 核验：`ServerParameters.builder(...).args(...)` + `StdioClientTransport` + `McpClient.sync(...)` 三件套）。
 - 单个 server 连接失败：记录异常、跳过该 server、不阻断其余 server 与整体启动（M6①素材）。
-- `requestTimeout` 的设定值与 SDK 默认值实测记录（M6③）。正式实现的超时对齐 TS 7.4 的 Tool 档预算（默认 30s、配置化不硬编码），不自造新的超时机制——实测结论写进 README 供 TS 6.4 回填（001 M6 设计参照）。
+- `requestTimeout` 的设定值与 SDK 默认值实测记录（M6③）。正式实现的超时对齐 TechnicalSolution.md - 7.4 关键设计点 的 Tool 档预算（默认 30s、配置化不硬编码），不自造新的超时机制——实测结论写进 README 供 TechnicalSolution.md - 6.4 Plugin Tool 方式二 回填（001 M6 设计参照）。
 - `closeGracefully()` 收尾；server 子进程句柄清理验证（防进程残留）。
 
-### 3.4 AgentOSTool / ToolResult / ToolRegistry（TS 6.1 / 6.6 的最小副本）
+### 3.4 AgentOSTool / ToolResult / ToolRegistry
+
+本节为 TechnicalSolution.md - 6.1 AgentOSTool 抽象 / 6.6 ToolRegistry 的最小副本。
 
 - `AgentOSTool` 四方法：`getName` / `getDescription` / `getInputSchema`（JSON Schema 字符串直传）/ `execute(jsonInput) → ToolResult`。
 - `ToolResult` 四要素：成功标识、结果内容、错误信息、是否可重试。
-- `ToolRegistry`：内存 Map；`register` / `lookup` / `list`；`subset(List<String> names)` 模拟 Profile `tools` 字段的白名单过滤（M3 对照 TS 6.6）。
+- `ToolRegistry`：内存 Map；`register` / `lookup` / `list`；`subset(List<String> names)` 模拟 Profile `tools` 字段的白名单过滤（M3 对照 TechnicalSolution.md - 6.6 ToolRegistry）。
 
 ### 3.5 McpToolAdapter（M3 / M4 核心）
 
 - 映射：`tools/list` 返回的每个工具 → `AgentOSTool`。`name` / `description` 直取；`inputSchema` 为 JSON Schema、直传（MCP 工具 schema 与 Spring AI `@Tool` 生成的 schema 同为 JSON Schema——直映射是否成立由 M3 实证，001 M3 对照点）；`execute` → `callTool(name, args)`。
 - 一个 server 的多个工具批量注册（M3）。
-- 结果映射（M4）：返回的 `content` 可能多段（文本 / 资源等），默认拼接全部 text 段为结果内容；实测到的结果形态如实落盘。裁剪策略属 DA 12 未决挂账，本 spike 不展开（001 M4 边界说明）。
-- 出错映射（M4 / M6）：协议错误、server 报错（`isError`）、超时 → `ToolResult(success=false, error=..., retryable=...)`。`retryable` 的默认判定在 spike 定初值（建议：连接 / 超时类 true，参数 / 不存在类 false），结论回填 TS 6.4（001 的 6.2 节第 5 条）。
+- 结果映射（M4）：返回的 `content` 可能多段（文本 / 资源等），默认拼接全部 text 段为结果内容；实测到的结果形态如实落盘。裁剪策略属 DemandAnalysis.md - 12 风险与未决事项 的未决挂账，本 spike 不展开（001 M4 边界说明）。
+- 出错映射（M4 / M6）：协议错误、server 报错（`isError`）、超时 → `ToolResult(success=false, error=..., retryable=...)`。`retryable` 的默认判定在 spike 定初值（建议：连接 / 超时类 true，参数 / 不存在类 false），结论回填 TechnicalSolution.md - 6.4 Plugin Tool 方式二（001 的 6.2 节第 5 条）。
 
 ### 3.6 McpToolCallbacks（M5 候选一）
 
@@ -196,13 +198,13 @@ servers:
 ### 3.9 审计口径模拟（001 的 6.1 节第 3 条）
 
 - spike 不建 SQLite。每次工具执行按 `tool_invocations` 的字段口径打一行结构化日志：tool_name / input_json / success / error_message / duration_ms。
-- 目的：验证 MCP 工具与其他工具走同一条执行路径、留痕口径不特殊化（TS 4.2 ToolExecutor 统一写入，审计不自建）。README 记录正式实现里这行日志的落点（ToolExecutor）。
+- 目的：验证 MCP 工具与其他工具走同一条执行路径、留痕口径不特殊化（TechnicalSolution.md - 4.2 模块组成 的 ToolExecutor 统一写入，审计不自建）。README 记录正式实现里这行日志的落点（ToolExecutor）。
 
 ## 4. 验证项与验收标准（M1-M8 → 测试类与判定）
 
 | 编号 | 测试类 | live | 判定（通过标准） | 追溯 |
 |---|---|---|---|---|
-| M1 | 无独立测试类：传输层结论由 M2-M7 全程 stdio 实测汇总；Loader 对非 stdio transport 的跳过记录作辅助证据 | — | README 传输层结论节成立：stdio-only 是否覆盖核心阶段全部场景；若成立，附 TS 6.4 收窄措辞建议（001 的 6.2 节第 2 条） | 001 M1 |
+| M1 | 无独立测试类：传输层结论由 M2-M7 全程 stdio 实测汇总；Loader 对非 stdio transport 的跳过记录作辅助证据 | — | README 传输层结论节成立：stdio-only 是否覆盖核心阶段全部场景；若成立，附 TechnicalSolution.md - 6.4 Plugin Tool 方式二 的收窄措辞建议（001 的 6.2 节第 2 条） | 001 M1 |
 | M2 | `M2DependencyMatrixTest`（离线）+ 组合切换复跑 M3-M5 | 否 | `mvn dependency:tree -Dverbose` 按组合留档：无 "omitted for conflict" 意外项；mcp SDK 解析版本 = 组合预期；选定组合下 M3-M5 全绿 | 001 M2 |
 | M3 | `M3DiscoveryTest` | 是 | `tools/list` 返回的工具逐个映射成 AgentOSTool（四方法取值非空、schema 可解析）；一个 server 多工具批量注册数 = listTools 返回数；`subset(...)` 白名单过滤正确 | 001 M3 |
 | M4 | `M4RoundtripTest` | 是 | 成功调用：`ToolResult.success=true`、内容含预期要素；失败调用（错误参数 / 不存在的工具）：`success=false` 且 error 非空；成功 / 失败 / 超时三种映射形态落盘 | 001 M4 |
@@ -217,21 +219,21 @@ servers:
 
 | # | 约束 | 出处 |
 |---|---|---|
-| 1 | MCP 工具不经 SandboxChecker 校验；spike 实验不给 MCP 工具挂 Sandbox 校验 | 001 的 6.1 节第 1 条（TS 6.6 / 6.7、评审 Q5③） |
-| 2 | MCP 工具包装成 AgentOSTool 进 ToolRegistry，白名单过滤模拟 Profile `tools` 字段 | 001 的 6.1 节第 2 条（TS 6.6） |
-| 3 | 审计统一路径：MCP 工具执行与其他工具同一条留痕口径（3.9 节），不自建 | 001 的 6.1 节第 3 条（TS 4.2 / 6.1 / 9.2） |
-| 4 | 禁自动 tool 执行：`internalToolExecutionEnabled(false)`，M5 接线必须走手动循环 | 001 的 6.1 节第 4 条（根 CLAUDE.md 非协商原则 4、TS 1.1 决策二） |
-| 5 | 密钥红线：env 只写 `${环境变量名}` 占位符，不明文写配置；日志 / 命令行最多 5 位前缀 | 001 的 6.1 节第 5 条（TS 8.8） |
+| 1 | MCP 工具不经 SandboxChecker 校验；spike 实验不给 MCP 工具挂 Sandbox 校验 | 001 的 6.1 节第 1 条（TechnicalSolution.md - 6.6 ToolRegistry / TechnicalSolution.md - 6.7 Sandbox 检查、评审 Q5③） |
+| 2 | MCP 工具包装成 AgentOSTool 进 ToolRegistry，白名单过滤模拟 Profile `tools` 字段 | 001 的 6.1 节第 2 条（TechnicalSolution.md - 6.6 ToolRegistry） |
+| 3 | 审计统一路径：MCP 工具执行与其他工具同一条留痕口径（3.9 节），不自建 | 001 的 6.1 节第 3 条（TechnicalSolution.md - 4.2 模块组成 / TechnicalSolution.md - 6.1 AgentOSTool 抽象 / TechnicalSolution.md - 9.2 SQLite 关系型数据） |
+| 4 | 禁自动 tool 执行：`internalToolExecutionEnabled(false)`，M5 接线必须走手动循环 | 001 的 6.1 节第 4 条（根 CLAUDE.md 非协商原则 4、TechnicalSolution.md - 1.1 关键技术决策 的决策二） |
+| 5 | 密钥红线：env 只写 `${环境变量名}` 占位符，不明文写配置；日志 / 命令行最多 5 位前缀 | 001 的 6.1 节第 5 条（TechnicalSolution.md - 8.8 配置与密钥加载） |
 | 6 | 基线不动：parent 3.5.16 + JDK 21 + 双 BOM（SAA 1.1.2.0 + spring-ai-bom 1.1.2） | 001 的 6.1 节第 6 条（007 README D1/D2） |
-| 7 | DA 13 验收不降：M8 降级路径也不降验收标准 | 001 的 6.1 节第 7 条（DA 13） |
-| 8 | 线程红线：只用同步（sync）客户端或经阻塞封装使用；不引入与 ThreadLocal ProfileContext 相抵的接线 | 001 的 6.1 节第 8 条（TS 4.2、根 CLAUDE.md「架构关键事实」） |
+| 7 | DemandAnalysis.md - 13 验收标准 的验收不降：M8 降级路径也不降验收标准 | 001 的 6.1 节第 7 条（DemandAnalysis.md - 13 验收标准） |
+| 8 | 线程红线：只用同步（sync）客户端或经阻塞封装使用；不引入与 ThreadLocal ProfileContext 相抵的接线 | 001 的 6.1 节第 8 条（TechnicalSolution.md - 4.2 模块组成、根 CLAUDE.md「架构关键事实」） |
 | 9（工程纪律） | 构建与测试只在 `spike/008-mcp/` 目录内执行；pom 永不进根 `<modules>`；007 的 src 与 logs 视为封存证据，不改不拷 | spike/CLAUDE.md；007 的 spec/002-req.md 4.2 节 |
 
 ## 6. 开放项（实验落定，不阻塞 001-plan）
 
 | # | 开放项 | 落定时机 |
 |---|---|---|
-| 1 | mcp_servers.yaml 外层结构（`servers:` 列表 vs 其他）——docs 只定四字段、未定外层 | M7；随结论回填 TS 6.4 |
+| 1 | mcp_servers.yaml 外层结构（`servers:` 列表 vs 其他）——docs 只定四字段、未定外层 | M7；随结论回填 TechnicalSolution.md - 6.4 Plugin Tool 方式二 |
 | 2 | 组合 B / C 各 SDK 档（0.18.4 / 1.1.4 / 2.0.1）与 Spring AI 1.1.2 的兼容边界 | M2 |
 | 3 | Jackson 线冲突是否出现；`mcp-json-jackson2` 兼容模块是否需要 | M2 依赖树 |
 | 4 | starter（组合 D）自动装配与自持 yaml / 连接管理的相容性 | M2 附带 |

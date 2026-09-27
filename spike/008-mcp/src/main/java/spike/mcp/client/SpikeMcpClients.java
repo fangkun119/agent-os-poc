@@ -15,9 +15,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * MCP server 连接维护（TS 6.4 McpClientService 的 spike 形态；002 §3.3）。
+ * MCP server 连接维护（TechnicalSolution.md - 6.4 Plugin Tool 方式二 的 McpClientService 的 spike 形态；002 §3.3）。
  *
- * <p>对每条配置建立同步客户端（红线：只用 sync 客户端，TS 4.2 线程约束——001-plan §6.2 第 2 条）。
+ * <p>对每条配置建立同步客户端（红线：只用 sync 客户端，TechnicalSolution.md - 4.2 模块组成 的线程约束——001-plan §6.2 第 2 条）。
  * 链路：command 拆 argv → ServerParameters → StdioClientTransport → McpClient.sync(...)
  * → initialize → listTools。
  * 单个 server 连接失败：记录异常并跳过，不阻断其余 server（002 §3.3）。

@@ -13,7 +13,7 @@
 
   <artifactId>agentos-memory</artifactId>
   <name>agentos-memory</name>
-  <description>核心能力三（TS 10）：MemoryService 统一门面、LongTermMemoryStore 后端接口（Markdown 默认档核心阶段交付，SQLite/Mem0 档扩展阶段补齐）、save_memory / recall_memory 内置 Tool</description>
+  <description>核心能力三（TechnicalSolution.md - 10 项目工程结构）：MemoryService 统一门面、LongTermMemoryStore 后端接口（Markdown 默认档核心阶段交付，SQLite/Mem0 档扩展阶段补齐）、save_memory / recall_memory 内置 Tool</description>
 
   <dependencies>
     <dependency>

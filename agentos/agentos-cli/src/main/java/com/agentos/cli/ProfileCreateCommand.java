@@ -4,20 +4,20 @@ import java.util.concurrent.Callable;
 import picocli.CommandLine.Command;
 
 /**
- * {@code agentos profile create}：在 .agentos/agents/ 下新建 Agent 目录（TS 8.7）。
+ * {@code agentos profile create}：在 .agentos/agents/ 下新建 Agent 目录（TechnicalSolution.md - 8.7 命令行工具）。
  *
- * <p>生成最小 AGENT.md 模板（frontmatter = 配置，正文 = 指令，TS 8.2）。
- * 纯文件操作，不需要 Spring 上下文（TS 8.7）。
+ * <p>生成最小 AGENT.md 模板（frontmatter = 配置，正文 = 指令，TechnicalSolution.md - 8.2 Profile 配置）。
+ * 纯文件操作，不需要 Spring 上下文（TechnicalSolution.md - 8.7 命令行工具）。
  */
 @Command(
         name = "create",
         mixinStandardHelpOptions = true,
-        description = "新建 Agent 目录并生成最小 AGENT.md 模板（TS 8.7）")
+        description = "新建 Agent 目录并生成最小 AGENT.md 模板（TechnicalSolution.md - 8.7 命令行工具）")
 public class ProfileCreateCommand implements Callable<Integer> {
 
     @Override
     public Integer call() {
-        System.out.println("尚未实现：骨架（TS 8.7）");
+        System.out.println("尚未实现：骨架（TechnicalSolution.md - 8.7 命令行工具）");
         return 0;
     }
 }

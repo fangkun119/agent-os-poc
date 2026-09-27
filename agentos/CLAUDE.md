@@ -5,7 +5,7 @@
 
 ## 适用范围与依据
 
-- 适用：agentos/ 九模块 Java 源码（Java 21 + Spring Boot 3.5.16 + Spring AI 1.1.x 只用 Provider 层 + SQLite + Picocli CLI；模块清单见 TS 第 10 章）。骨架仓、实现期尚未开始——条款重心是「实现期不踩坑、不破坏已立契约」。
+- 适用：agentos/ 九模块 Java 源码（Java 21 + Spring Boot 3.5.16 + Spring AI 1.1.x 只用一半（Provider 抽象 + 协议转换 + @Tool schema 生成）+ SQLite + Picocli CLI；模块清单见 TechnicalSolution.md - 10 项目工程结构）。骨架已建立（84 个 Java 文件、主类已就位），多数方法仍为 UnsupportedOperationException 占位——实施期写码须逐条对照本文件，条款重心是「实现期不踩坑、不破坏已立契约」。
 - 强度约定：禁/必须为强制；应为项目级收口；宜为源判例建议级、不升格；例外一律显式以「例外：」前缀标出。
 - 条件式条款以「引入 X 时」或章题括注为生效前提。
 
@@ -13,27 +13,27 @@
 
 - 全仓现状零 Lombok、零日志框架：禁惯性写 @Slf4j/@Data 等注解（依赖不存在，编译失败）、禁各文件分叉自加依赖；首个引入者一次性完成选型并把决定落回本文件。[源:stack:C-23]
 - CLI 命令面 System.out 直出是骨架期功能输出（豁免）；应用/运行时代码日志待日志门面引入后走门面，禁混入 CLI 命令面。[源:stack:C-23]
-- 五条红线以仓库既有 CLAUDE.md 为准，此处只列开关级陷阱。① tool 只准由自研 ReAct 循环 + ToolExecutor 执行：`internalToolExecutionEnabled` 必须显式 false（官方默认 true、官方示例不关，照抄即框架内双执行、审计取不到数）。② Provider 按 name 显式映射 ChatModel，禁注入 List / `Map<ChatModel>` 按类型扫描。③ 会话历史唯一入口 PromptBuilder，禁 ChatMemory 族。④ llm/tool/total 三档超时只落 application.yaml 默认 + Profile settings 覆盖（键名 llm-call，见 P-01），代码禁硬编码。⑤ 凭证只走 `${ENV_VAR}` 占位，日志与命令行最多打印前 5 位前缀。[源:stack:C-01,C-22,C-40,C-20,C-02; alibaba:C-13,C-19]
+- 五条红线以仓库既有 CLAUDE.md 为准，此处只列开关级陷阱。① tool 只准由自研 ReAct 循环 + ToolExecutor 执行：`internalToolExecutionEnabled` 必须显式 false（官方默认 true、官方示例不关，照抄即框架内双执行、审计取不到数）。结构化强制：只经唯一工厂方法构造 `ToolCallingChatOptions`、false 硬编码于工厂内、配「tool 永不被 Spring AI 自动执行」防回归测试——设计评审 Q2 决议 2026-09-14，落位见各阶段实施计划。② Provider 按 name 显式映射 ChatModel，禁注入 List / `Map<ChatModel>` 按类型扫描。③ 会话历史唯一入口 PromptBuilder，禁 ChatMemory 族。④ llm/tool/total 三档超时只落 application.yaml 默认（键名 llm-call，见 P-01），Profile settings 覆盖仅 tool/total 两档、LLM 单次调用超时仅全局（Spring AI 客户端构建时定死，设计评审 Q5 裁决 2026-09-17），代码禁硬编码。⑤ 凭证只走 `${ENV_VAR}` 占位，日志与命令行最多打印前 5 位前缀。[源:stack:C-01,C-22,C-40,C-20,C-02; alibaba:C-13,C-19]
 
 ## 1 Spring AI 引入期（模型接入与 ReAct 循环；引入 Spring AI 时生效）
 
 - 锁定 Spring AI 1.1.x 口径：2.0-only 机制（AdvisorParams 自动注册、toolNames 移除等）不照抄；启停 chat 自动配置用顶层键 spring.ai.model.chat——spring.ai.openai.chat.enabled 在 1.1.x 已移除，写了不报错也不生效。[源:stack:C-34]
 - 自研循环走官方用户控制路径：call → hasToolCalls → executeToolCalls → conversationHistory() 重建 Prompt 再 call；禁从 ChatResponse 抠 tool 消息手拼历史（配对漏错即 400 或上下文静默丢失）。@Tool 不设 returnDirect=true（结果直返调用方 = 循环提前终止）。[源:stack:C-55,C-89]
 - ReAct 循环全程禁切换执行线程：禁 @Async、禁跨线程 CompletableFuture、禁把实体/EntityManager 传进异步闭包（ProfileContext 是 ThreadLocal）。例外：虚拟线程是线程形态不是切线程；并行化一律传 ID/DTO 跨线程、目标线程重查。[源:stack:C-07]
-- 若启用流式：Flux 在 Reactive 栈线程发射，必须回调用线程收口（collectList().block() / toIterable() / toStream()）再进循环。[源:stack:C-76]「站点备注 2026-09-12：这一条只适用于项目扩展阶段，在核心阶段不适用——核心阶段不启用流式（TS 决策三、DA「核心阶段不做」清单已定）；逐 token 推送场景的收口方式本条未覆盖，留待扩展阶段流式功能 spec 定义。经用户确认加入。」
+- 若启用流式：Flux 在 Reactive 栈线程发射，必须回调用线程收口（collectList().block() / toIterable() / toStream()）再进循环。[源:stack:C-76]「站点备注 2026-09-12：这一条只适用于项目扩展阶段，在核心阶段不适用——核心阶段不启用流式（TechnicalSolution.md - 1.1 关键技术决策 的决策三、DemandAnalysis.md「核心阶段不做」清单已定）；逐 token 推送场景的收口方式本条未覆盖，留待扩展阶段流式功能 spec 定义。经用户确认加入。」
 - 经 ChatClient 注入的文本默认按 StringTemplate 渲染：prompt 夹带字面 `{}`（JSON/schema/代码）会报错或被静默改写——换分隔符或用 NoOpTemplateRenderer；直用 ChatModel/Prompt 无此面。[源:stack:C-77]
-- MCP server 连接懒加载（要用时才连接/列取），禁 @PostConstruct 全量初始化——某 server 不可达会拖挂整个启动；懒加载让不可达只在用到时暴露。[源:stack:C-86]
+- MCP server 连接不得让不可达的 server 拖挂或拖慢启动（意图约束）。核心阶段达成方式（2026-09-15 裁决）：启动时连接全部已配置 server，单个失败记日志跳过、不阻断其余 server 与启动（TechnicalSolution.md - 6.4 Plugin Tool 方式二；spike/008-mcp README 的 D7——坏命令实测为跳过不阻断，连接超时走 SDK 双档预算 requestTimeout / initializationTimeout）。原「懒加载 + 禁 @PostConstruct」改为扩展阶段优化项，升级信号照 TechnicalSolution.md - 6.7 Sandbox 检查的 Sandbox 升级信号的写法：①配置的 server 多到启动明显变慢；②引入远程 SSE 传输的 server——出现任一信号时重议懒加载/混合（启动只解析配置、首次使用才连接并缓存）。[源:stack:C-86；2026-09-15 修订]
 - 思维链从 AssistantMessage metadata 的 reasoningContent 读：字段有无取决于服务端，拿不到是空串不报错，读取处必须判空（限 OpenAI 兼容腿）。[源:stack:C-74]
-- 内置 Tool 走仓定四方法接口（getName/getDescription/getInputSchema/execute，见 P-02）：schema 是手写 JSON text block（三引号多行字符串字面量），改 execute 参数必须同步改 text block，否则静默漂移；给实现标 @Tool 替代实现接口属通道错位（@Tool 只属 Plugin 方式三）。[源:stack:C-21]
+- 内置 Tool 走仓定五方法接口（getName/getDescription/getInputSchema/execute/sandboxActions，见 P-02）：sandboxActions 返回本次调用待校验的 SandboxAction 清单、由 ToolExecutor 统一校验（TechnicalSolution.md - 6.1 AgentOSTool 抽象/6.7 Sandbox 检查，设计评审 Q9 决议 2026-09-14；MCP 与 @Tool 适配实现返回空清单＝豁免；内置 MemoryTools 亦返回空清单但语义为无涉外动作可申报、非豁免——Q5 裁决 2026-09-24，见 TechnicalSolution.md - 6.7 Sandbox 检查）；schema 是手写 JSON text block（三引号多行字符串字面量），改 execute 参数必须同步改 text block，否则静默漂移；给实现标 @Tool 替代实现接口属通道错位（@Tool 只属 Plugin 方式三）。[源:stack:C-21；2026-09-16 五方法修订]
 - @Tool 方法参数/返回类型禁 Optional、Future/CompletableFuture、Mono/Flux、Function/Supplier/Consumer（不可序列化、无 schema 表示）；返回值须可序列化——失败在 schema 生成或执行期才显形。[源:stack:C-19]
 - @Tool 必写详细 description（何时该用、参数格式、允许取值）——缺省用方法名顶替，模型该用不用/乱用；参数默认全必填，业务可选参数显式 @ToolParam(required=false)，模型无法自行获值的参数不得标必填（标了模型就编一个值，官方明示的幻觉来源）。[源:stack:C-56,C-57]
-- 工具名在同一请求可用范围内唯一：三路工具（内置/@Tool/MCP 包装）汇入 ToolRegistry 后子集内不重名；MCP 与本地同名框架不代为消解，须自行改名——重名静默覆盖/派发歧义。[源:stack:C-58]
+- 工具名在同一请求可用范围内唯一：三路工具（内置/@Tool/MCP 包装）汇入 ToolRegistry 后子集内不重名，注册时唯一性断言、撞名后注册者跳过并记日志（TechnicalSolution.md - 6.4 Plugin Tool 方式二的注册期校验）。MCP 工具暴露名一律 `<server 名>__<工具名>`（Q2c 裁决 2026-09-23，TechnicalSolution.md - 6.4 Plugin Tool 方式二/6.6 ToolRegistry）——与本地裸名结构性不撞、框架代为消解（原「框架不代为消解、须自行改名」反转）；方式三 Bean 命名避开 `__` 样式，防止视觉上误认成 MCP 工具。[源:stack:C-58；2026-09-23 全名方案修订]
 - 工具出错抛 ToolExecutionException 包装原异常、禁吞异常返回 null/空串；失败包装进 ToolResult 回喂模型由其决定重试，禁向上抛中断 ReAct 循环（仅不可由模型修正的错误上抛：装配/配置缺失、鉴权失败、预算耗尽等框架级错误）——本条是工具执行面特例，优先于通用异常条款。[源:stack:C-88]
 - 禁照官方入门示例自动装配单一 ChatClient.Builder：设 spring.ai.chat.client.enabled=false（见 P-08），ChatClient/ChatModel 由 ProviderService 按显式映射构建。[源:stack:C-78]
 - 禁 defaultTools/defaultToolCallbacks/defaultToolNames 与配置侧 spring.ai.openai.chat.options.tool-names/tool-callbacks 全局工具供给（跨请求共享越权、绕开审计）；ToolExecutor 只执行当前 Profile 绑定的工具子集，禁 registry 按名直查就执行的兜底路径。[源:stack:C-29,C-31]
 - 禁 defaultSystem()/system() 另立 system prompt 路径：唯一组装入口是 PromptBuilder 五部分——两条路径并存后 prompt 静默缺段（末尾日期时间、Skill 元数据丢失）。[源:stack:C-59]
 - base-url（含自建 Provider baseUrl）禁以 /v1 结尾：Spring AI 自动追加 completions-path，手写 /v1 拼成 /v1/v1 每请求 404 且难归因（OpenAI SDK 惯例平移）；协议路径段（如 /anthropic）以各腿实测为准，不在禁列。[源:stack:C-33]
-- 必须显式配置 spring.ai.retry.*：默认 max-attempts 10、退避最长 3min，重试链会把 llm 档超时预算形同虚设——收进三档预算或显式关停。[源:stack:C-32]
+- 重试基线（核心阶段）：禁框架级 LLM 自动重试——自动配置通道在 application.yaml 显式设 spring.ai.retry.max-attempts=1（Spring AI 默认 max-attempts 10、退避最长 3min，重试链会把 llm 档超时预算撑穿，不得以「收进三档预算」兜底）。手动 new 的 ChatModel 不吃 spring.ai.retry.*（该配置只注入自动配置创建的 Bean），显式构造的实例必须显式传单尝试 RetryTemplate（无退避重试；内置默认模板同为 10 次退避 3min）——spike/007-react-loop/README.md 第二组 D6 实证（负向探针被默认退避链拖满 180s 强杀）；LLM 调用失败直接报错进 ReAct 循环、由模型决定下一步，框架级自动重试（指数退避）归扩展阶段。[源:stack:C-32；2026-09-15 增补 spike 实证；重试基线按 TechnicalSolution.md - 3.1 模块组成的定案同步]
 - 运行时按请求换模型/温度在调用处带 options 覆盖：不改 yaml、不自造「模型选择」环境变量间接层（需重启、多套配置互踩）。[源:stack:C-68]
 - 定制 Model 的 HTTP 客户端 RestClient 与 WebClient 必须同时配：只配 RestClient 则流式路径沿用默认，llm 档超时静默失配。[源:stack:C-80]
 - 兼容端点非标参数（top_k 等）走 options.extra-body.*（拍平进请求体、不校验拼写，拼错静默透传）；不对官方 OpenAI API 用（400）。[源:stack:C-82]
@@ -56,23 +56,25 @@
 - native query 禁 SELECT *、逐列写明；只读场景（列表/统计/审计查询）用 DTO 投影或标量查询只取所需列，禁整实体取出只用两三字段。[源:alibaba:C-98; stack:C-92]
 - 查询结果禁 HashMap/Hashtable 接收；超 2 个参数的查询封装禁 Map 传输，用具名类型（AI 懒建 DTO 惯性）。[源:alibaba:C-58,C-48]
 - sum() 等聚合结果接收前必须防空（IFNULL/COALESCE 或对象型判空）：空集聚合返回 NULL，直接拆箱 NPE。[源:alibaba:C-57]
-- 新表带 id、create_time、update_time；任何更新路径（含 native update 绕过 @PreUpdate）必须同步刷新 update_time。[源:alibaba:C-59,C-98]
+- 新表带 id、create_time、update_time；任何更新路径（含 native update 绕过 @PreUpdate）必须同步刷新 update_time。本仓时间列名以 TechnicalSolution.md - 9.2 SQLite 关系型数据 各表定义为准（*_at 形），本条只约束「必须有创建/更新时间列并随更新刷新」的完整性要求。[源:alibaba:C-59,C-98]
 - 新增 @ManyToOne/@OneToOne 显式 fetch=LAZY：JPA 默认 EAGER、EAGER 无法按查询覆盖、secondary select 静默 N+1（循环内逐条发查询的反模式；官方原文 recommendation，本条为项目级收口 + 评审出口）。例外：确需 EAGER 的关联评审说明理由。[源:stack:C-16]
 - 一条 JPQL 里 JOIN FETCH 至多一个集合（多集合拆查询或 Hibernate.initialize）；禁映射级 @Fetch(JOIN)（标 LAZY 也 eager 化、SELECT 自带 N+1）。[源:stack:C-90,C-91]
 - N+1 先改单查询（JOIN FETCH/DTO 投影）、@BatchSize 兜底；循环内逐条查库/写入宜批量化（源为建议级措辞）。[源:stack:C-91; alibaba:C-98]
 - 实体手写带参构造器必须同时保留无参构造器（protected 即可，JPA 规范要求）。[源:stack:C-48]
 - SQLite 主键走 IDENTITY/代码赋值、禁套 @GeneratedValue(strategy=SEQUENCE)（SQLite 无序列对象；官方双分支规则按例外取 fallback 分支，勿按官方主路径改 SEQUENCE + allocationSize）；表达外键优先子端 @ManyToOne，多对多用中间 link 实体、不用裸 @ManyToMany。[源:stack:C-93,C-94]
+- SQLite `AUTOINCREMENT`（id 永不复用语义）方言不会生成：社区方言建表只出裸 `primary key (id)`（2026-10-09 实测，spike/009-sqlite D4 坑 1）、SQLite 禁 ALTER 追加该关键字——需要「id 永不复用」的表（点名 `session_messages`：TechnicalSolution.md - 9.2 SQLite 关系型数据 既有「防 rowid 复用」口径）首建后必须手工补 `AUTOINCREMENT` DDL（按官方建表语法重建一次）；纯追加表（`tool_invocations` / `llm_calls`）不需要。[源:spike:009-D4]
+- 时间字段落库前统一 `truncatedTo(ChronoUnit.MILLIS)`：社区方言下 LocalDateTime 亚毫秒位写入即截断（2026-10-09 实测，spike/009-sqlite D4 坑 2：纳秒样本 .123456789 读回 .123、毫秒精度往返无损，截断发生在写入侧），统一毫秒截断后同栈无损；确需亚毫秒属例外，须显式评审改文本列映射。[源:spike:009-D4]
 - 实体/仓库在主类包之外时必须显式 @EntityScan/@EnableJpaRepositories（见 P-10）：auto-configuration packages 只取主类所在包（com.agentos.boot）、不受 scanBasePackages 影响；判据看 Spring Data 扫描日志与建表实况、不看启动成败（实测：零报错 + Found 0 repositories + 零建表）。[源:stack:C-26]
 - 主类固定 com.agentos.boot（见 P-10）且保留 scanBasePackages="com.agentos"，新建模块包必须落在 com.agentos 根下。例外（官方出处裁决）：官方建议主类放根包，本仓跨模块 Bean 装配依赖此显式声明，不移。[源:stack:C-03]
 - 主类只做装配起点：禁堆 @EnableXxx、禁显式 @ComponentScan。例外：@EntityScan/@EnableJpaRepositories 是上一条的官方许可出口，不属此禁；领域专项 @EnableXxx（如调度 @EnableScheduling）放独立 @Configuration 类按需 @Import，不上主类。[源:stack:C-27]
-- spring.jpa.hibernate.ddl-auto 保持 update（SQLite 首建唯一可靠路径）：不删行（落 none 则一张表不建）、禁 create-drop（重启删表）、禁自引 Flyway/Liquibase。例外（官方出处裁决）：官方「生产用增量迁移」警示与本仓 SQLite 首建豁免冲突，按例外执行。[源:stack:C-08]
+- spring.jpa.hibernate.ddl-auto 保持 update（SQLite 首建唯一放行路径；实测 update 亦能自动加列，列变更治理口径见 TechnicalSolution.md - 9.2 SQLite 关系型数据——禁依赖自动加列）：不删行（落 none 则一张表不建）、禁 create-drop（重启删表）、禁自引 Flyway/Liquibase。例外（官方出处裁决）：官方「生产用增量迁移」警示与本仓 SQLite 首建豁免冲突，按例外执行。[源:stack:C-08]
 - SQLite 社区方言须成套：pom 引 hibernate-community-dialects（版本 ${hibernate.version} 不写死）+ yaml 指 org.hibernate.community.dialect.SQLiteDialect，缺一即启动炸。例外（官方出处裁决）：Hibernate 6「显式设 dialect 已 discouraged」带第三方方言例外，本仓属例外，禁按官方字面当遗留清理。[源:stack:C-15]
 - spring.jpa.open-in-view=false 该行不得删（删行静默回退 open-in-view、改变连接占用模式且无报错）；Hibernate 原生属性只写 `spring.jpa.properties.<原生键名>`（前缀拼错静默忽略）。[源:stack:C-109,C-110]
 - SQLite journal_mode 收口 {WAL}（Write-Ahead Log，先写日志后落页的崩溃安全模式）：禁 OFF/MEMORY（MEMORY 崩溃即损坏、OFF 回滚未定义）及其余取值——本仓收口为封闭枚举，属站点例外裁决，勿据官方多模式文档放宽。[源:stack:C-04]
-- 连接参数只走 spring.datasource.url 连接串（journal_mode=WAL&busy_timeout=5000，pragma 即 SQLite 连接级配置语句、单位毫秒，见 P-11）：禁自建 DataSource Bean（自建即关自动装配）、禁第二入口——HikariCP 不透传独立 pragma，WAL 静默失效。[源:stack:C-14]
-- 连接参数 pragma 白名单 {journal_mode, busy_timeout, foreign_keys}（限连接串参数），拼错整条静默忽略；运维/检查类 PRAGMA 语句（如 wal_checkpoint、复查 journal_mode）不在白名单、但只准对照官方文档拼写；foreign_keys 默认 OFF 且按连接生效、事务内设置是 no-op。[源:stack:C-63,C-61,C-62]
+- 连接参数只走 spring.datasource.url 连接串（journal_mode=WAL&busy_timeout=5000&synchronous=FULL，pragma 即 SQLite 连接级配置语句、单位毫秒，见 P-11）：禁自建 DataSource Bean（自建即关自动装配）、禁第二入口——HikariCP 不透传独立 pragma，WAL 静默失效。[源:stack:C-14]
+- 连接参数 pragma 白名单 {journal_mode, busy_timeout, synchronous, foreign_keys}（限连接串参数），拼错整条静默忽略（无参缺省实测：busy_timeout=3000、synchronous=2——spike/009-sqlite/README.md 的 D2 决议）；运维/检查类 PRAGMA 语句（如 wal_checkpoint、复查 journal_mode）不在白名单、但只准对照官方文档拼写；foreign_keys 默认 OFF 且按连接生效、事务内设置是 no-op。[源:stack:C-63,C-61,C-62]
 - WAL 三件套（.db+-wal+-shm）：备份/迁移整体拷或走官方 backup API/VACUUM INTO 生成单文件快照；禁活跃期只拷 .db、禁手删 -wal/-shm（站点例外收口，随本簇例外裁决）。[源:stack:C-06]
-- 「读写互不阻塞」非绝对——BUSY 仍会发生（官方口径按本仓例外裁决，勿据官方文档放宽），写库路径保留报错与有限重试出口；checkpoint 走默认自动机制、禁关 wal_autocheckpoint 无替代；禁 NFS/网络同步盘（WAL 依赖同机共享内存，同一例外裁决）。[源:stack:C-101,C-103,C-65]
+- 「读写互不阻塞」非绝对——BUSY 仍会发生（官方口径按本仓例外裁决，勿据官方文档放宽），写库路径保留报错与有限重试出口（BUSY 判别 vendorErrorCode=5，spike/009-sqlite/README.md 的 D3 决议实测；实测等待会略超 busy_timeout——D3 样本约 +200 ms）；checkpoint 走默认自动机制、禁关 wal_autocheckpoint 无替代；禁 NFS/网络同步盘（WAL 依赖同机共享内存，同一例外裁决）。[源:stack:C-101,C-103,C-65]
 - 物理事务尽可能短：@Transactional 体内禁 LLM 调用、tool 执行、任何阻塞等待——SQLite 单写者 + 100 并发目标下，长写事务把其他会话顶到 busy 超时；先完成外部工作再开事务落库。[源:stack:C-05]
 - 长/流式/分页读用短事务分批：持续读事务饿死 checkpoint 使 WAL 无界增长（磁盘膨胀 + 全库读变慢）。[源:stack:C-64]
 - 一个业务动作的多次写库落同一事务边界（服务层 @Transactional），禁逐语句独立提交（session-per-operation）。[源:stack:C-72]
@@ -116,7 +118,7 @@
 ## 6 接口与远程调用
 
 - 错误响应统一非泛型 ApiResponse record（code 为 HTTP 风格字符串，见 P-07）：复用不另建 ErrorBody、禁自建错误响应类或泛型化；请求体解析现状裸 String 收包（DTO 化属实现期决策，不在禁令面）。[源:stack:C-119]
-- 代表资源的路径只能为名词（集合宜复数）、全小写禁 .json 后缀、URL 参数不带敏感信息；资源 CRUD 之外的动作用资源子路径动词表达（既有契约如 POST /schedules/{id}/run、POST /agents/{name}/invoke 照旧，TS 7.2，不属违规）；JSON key 一律小驼峰；列表接口无数据返回空集合、禁 null。[源:alibaba:C-49,C-64,C-50]
+- 代表资源的路径只能为名词（集合宜复数）、全小写禁 .json 后缀、URL 参数不带敏感信息；资源 CRUD 之外的动作用资源子路径动词表达（既有契约如 POST /schedules/{id}/run、POST /agents/{name}/invoke 照旧，TechnicalSolution.md - 7.2 核心阶段端点，不属违规）；JSON key 一律小驼峰；列表接口无数据返回空集合、禁 null。[源:alibaba:C-49,C-64,C-50]
 - 外部入参不信任：逐参验证（分页上限、排序字段白名单、输入长度），批量接口设数量上限，批量 id 禁 GET 超长 query（超 2048 字节，放 body 或改 POST）；errorMessage 不含敏感数据；接口返回敏感字段（手机号/证件号）脱敏、禁原样透出实体；对外签名与路径不直接改名删除，废弃标 @Deprecated 并注明替代。错误响应载体以 ApiResponse record 为准、不引入四要素改造。[源:alibaba:C-30,C-77,C-91,C-51,C-67,C-75; stack:C-119 载体裁决]
 - 可能超过 2^53 的整数字段（雪花 id、订单号）对外 JSON 必须声明 String 返回，禁 Long 直接序列化（JS 侧精度静默截断、无异常可捕）。[源:alibaba:C-03]
 - 禁 newFixedThreadPool / newCachedThreadPool / newSingleThreadExecutor（Executors 工厂，无界队列或无界线程数，OOM 面）与裸 new Thread 建平台线程，线程池用 ThreadPoolExecutor 显式构造写明核心参数；虚拟线程不受此限：Executors.newVirtualThreadPerTaskExecutor() 或 Thread.ofVirtual()（跨线程仍按第 1 章只传 ID/DTO）；自定义 ThreadLocal 必须 try-finally remove()（线程池复用串值；本仓 ProfileContext 即 ThreadLocal）；定时任务禁 java.util.Timer（单任务未捕获异常静默终止全部任务），用 ScheduledExecutorService。[源:alibaba:C-27,C-28,C-29]
@@ -166,11 +168,12 @@
 - 业务语义字面量（缓存 key、状态码、阈值）先具名常量再引用。例外：0/1/-1 等惯用占位。[源:alibaba:C-36]
 - 布尔字段名禁 is 前缀（写 deleted 不写 isDeleted——部分框架属性解析错位引起序列化错误；禁的是字段名，getter 写 isXxx() 是 JavaBeans 惯例不在禁列）；同一布尔属性禁 isXxx() 与 getXxx() 并存。[源:alibaba:C-25]
 - 禁子类成员变量与父类同名、同方法不同代码块局部变量同名（就近取名撞已有字段名，读代码静默取错值）。例外：访问器参数名与字段同名的惯例。[源:alibaba:C-35]
+- 名称宜表意：起名时让类/接口/方法/变量/常量不看实现就能大致判断职责，随手避开 r1/doStep2/handler1 式序号名（同族只差序号 = 没表达分工）与 tmp/flag/data 式占位名；惯例短名不算违规（i/j/k、catch 的 e、泛型参数、单表达式 lambda 短参数）。本条为写作引导，不作逐名合规检查、不进评审清单。[源:站点增条:2026-09-15]
 - 禁裸 `// TODO` 漂移格式：统一「TODO(负责人/日期): 说明」并指向去向（工单或 issue，本仓对应 chat/todo/ 工单体系）；「未来某时做某事」类 TODO 必须带具体日期或事件。[源:google:C-13; alibaba:C-108]
 - 类/属性/方法的职责说明必须写 Javadoc（/** */）、不得用 // 行注释替代（含描述总体目的的注释）；注释不用星线等字符画框包围。[源:alibaba:C-63; google:C-39,C-28]
 - 注释掉的代码应直接删除（历史查 git），确需保留待恢复的在上方写明理由（///）；不再使用的字段/方法/内部类/参数应删（源为【参考】+【推荐】强度，写「应」不写禁令）。[源:alibaba:C-88,C-89]
-- 未实现方法统一抛 UnsupportedOperationException("尚未实现：<方法>（TS x.y）")（见 P-04）：禁 return null/空方法体/打印后返回默认值等自创占位（return null 被误接线静默通过是真实后果）；存量四种并存的清理不在本稿范围、留实现期统一安排。[源:stack:C-116]
-- 类/方法 Javadoc 锚 TS 章节号（见 P-05）、错误文案全仓一致：新增文件禁英文 Javadoc 或无锚注释——本仓中文 Javadoc 即规格，按锚回查方案文档。[源:stack:C-117]
+- 未实现方法统一抛 UnsupportedOperationException("尚未实现：<方法>（<文档名> - <编号> <标题主干>，如 TechnicalSolution.md - 7.2 核心阶段端点）")（见 P-04）：禁 return null/空方法体/打印后返回默认值等自创占位（return null 被误接线静默通过是真实后果）；存量四种并存的清理不在本稿范围、留实现期统一安排。[源:stack:C-116]
+- 类/方法 Javadoc 锚设计文档章节（全名形，见 P-05）、错误文案全仓一致：新增文件禁英文 Javadoc 或无锚注释——本仓中文 Javadoc 即规格，按锚回查方案文档。[源:stack:C-117]
 - Javadoc 的 {@link} 大量指向规划中尚未实现的类（见 P-06）：读注释不能当现有 API 清单，禁按 javadoc 引用直接 import（编译失败）或把规划描述当已实现行为调用。[源:stack:C-118]
 
 ## 10 风格基线
@@ -191,9 +194,10 @@
 <!-- ====== 以下为人类专用元信息（块级 HTML 注释，注入 agent 前被剥离——Claude Code 加载器实现行为，非格式通性，跨工具消费需另议） ======
 
 【来源与终选档案】
-- 三份源稿（各带同目录 -reason 理由表）：chat/consolidate/20260909_claudemd_draft_springboot-java-monolith-google.md、…-alibaba.md、chat/consolidate/20260910_claudemd_draft_springboot-java-monolith-stack.md
-- 逐条取舍唯一依据：chat/draft/20260911_3in1_merge/final-pick.md（①选中 92 簇 / ②落选 13 条 / ③31 项冲突裁决 / 牺牲顺序）；六份域对照表在同目录 domains/d1.md~d6.md
-- 合并理由报告：chat/consolidate/20260911-claudemd-draft-3in1-reason.md（选中四组价值、落选死因六组、冲突逐条、站点增条 K-92 论证）
+- 三份源稿（各带同名 -reason 理由表）：按 Google Java 编程风格与按阿里巴巴 Java 开发手册整理的两版（均 2026-09-09 成稿）、按本仓技术栈推导的一版（2026-09-10 成稿）。
+- 逐条取舍唯一依据：2026-09-11 的 3in1 合并终选裁决（①选中 92 簇 / ②落选 13 条 / ③31 项冲突裁决），附六份域对照表（d1~d6）；取舍结果已落实到本文件正文，牺牲顺序细则与永不砍清单已内联在文末【牺牲顺序】块。
+- 合并理由报告（2026-09-11 成稿）：选中四组价值、落选死因六组、冲突逐条、站点增条 K-92 论证。
+- 以上源稿与裁决档案均为会话临时草稿，不入库存档、可能已清理；按根 CLAUDE.md「临时草稿目录禁写引用指针」规则只保留文字说明，不落路径。
 - 本文件正文条款 = 3in1 草稿全文落盘（2026-09-12），正文条款与 3in1 逐条对应；[源:…] 内 ID 为源草稿方括号 ID
 
 【alibaba 草稿↔reason ID 错位对照】（回查 alibaba-reason 时以内容名＋reason ID 为准）
@@ -221,22 +225,22 @@
 【参数清单】（本表为唯一权威，改值须同步正文）
 | # | 参数名 | 当前值 | 状态 | 影响条款 |
 |---|---|---|---|---|
-| P-01 | 超时三档键位（llm/tool/total） | application.yaml 默认 + Profile settings 覆盖；键名 llm-call | SET | 0 骨架契约 |
-| P-02 | 内置 Tool 四方法接口 | getName/getDescription/getInputSchema/execute | SET | 1 章 |
+| P-01 | 超时三档键位（llm/tool/total） | 三档默认在 application.yaml（键名 llm-call）；Profile settings.timeout 仅 tool/total 两档按 Agent 覆盖、LLM 档仅全局（Q5 裁决 2026-09-17） | SET | 0 骨架契约 |
+| P-02 | 内置 Tool 五方法接口 | getName/getDescription/getInputSchema/execute/sandboxActions | SET | 1 章 |
 | P-03 | CLI/Spring 双入口分工 | agentos-cli（Picocli 不启 Spring）/ agentos-boot（Spring） | SET | 4 章 |
-| P-04 | 未实现占位格式 | UnsupportedOperationException("尚未实现：<方法>（TS x.y）") | SET | 9 章 |
-| P-05 | Javadoc 锚格式 | TS <章>.<节> | SET | 9 章 |
-| P-06 | 前向引用规划类清单 | ProfileContext/SessionManager/ChatModel 等 TS 规划类 | SET | 9 章 |
+| P-04 | 未实现占位格式 | UnsupportedOperationException("尚未实现：<方法>（<文档名> - <编号> <标题主干>，如 TechnicalSolution.md - 7.2 核心阶段端点）") | SET | 9 章 |
+| P-05 | Javadoc 锚格式 | <文档名> - <编号> <标题主干>（如 TechnicalSolution.md - 7.2 核心阶段端点） | SET | 9 章 |
+| P-06 | 前向引用规划类清单 | ProfileContext/SessionManager/ChatModel 等 TechnicalSolution.md 规划类 | SET | 9 章 |
 | P-07 | 错误响应载体 | 非泛型 ApiResponse record（code=HTTP 风格字符串） | SET | 6 章 |
 | P-08 | ChatClient 自动装配开关 | spring.ai.chat.client.enabled=false | SET | 1 章 |
 | P-09 | 测试数据源 | @AutoConfigureTestDatabase(replace=Replace.NONE) 走真实 SQLite | SET | 5 章 |
 | P-10 | 主类与扫描基包 | com.agentos.boot；scanBasePackages="com.agentos" | SET | 3 章 |
-| P-11 | SQLite 连接参数 | journal_mode=WAL&busy_timeout=5000（spring.datasource.url 连接串） | SET | 3 章 |
+| P-11 | SQLite 连接参数 | journal_mode=WAL&busy_timeout=5000&synchronous=FULL（spring.datasource.url 连接串；FULL 保证断电不丢已提交事务——DemandAnalysis.md - 8.2 可靠性"已写入的 Session 数据保证不丢"，同会话并发裁决 2026-09-25） | SET | 3 章 |
 | P-12 | Java 符号检索后端 | jdtls 1.61.0（brew 装于 /opt/homebrew/bin；Claude Code 进程 PATH 不含该目录，经 /usr/local/bin/jdtls 软连接接入——2026-09-12 实测 LSP 全操作可用。其依赖 openjdk 26 仅作 jdtls 自身运行时，brew 提示的 sudo ln 系统注册命令不执行，否则 java_home 按最高版本解析到 26、带偏项目 JDK 21 工具链） | SET | 11 章 |
 
 无 PENDING 参数——alibaba 原 P-01「接口时间格式」因值未决未收（见勿再加清单）。
 
-【勿再加清单】（final-pick 落选 13 条 + 三稿既有否决承继；重复论证前先查此单与 final-pick.md ②节）
+【勿再加清单】（2026-09-11 3in1 合并终选裁决的落选 13 条 + 三稿既有否决承继；重复论证前先查此单，本单即全部依据）
 - google:C-08 package 必填+禁紧凑源文件：AI 几乎必带 package，且两类违规均为编译期报错、非静默失效
 - google:C-21 Javadoc 摘要片段：被「禁英文 Javadoc」连带消解，剩余价值低
 - google:C-26 重载连续成组：纯可读性、无静默后果（余量极度富余时可 1 行回收）
@@ -249,12 +253,30 @@
 - stack:C-114 @DataJpaTest 默认回滚盲区：踩一次即学会，主判据（真实 SQLite 数据源）已收 5 章
 - 「switch 必用新式（箭头）」维持否决不复活；finalize、每行一条语句、修饰符顺序、块注释星号对齐、K&R 括号、折行位置编号、水平空格白名单、成员间空行、公开方法单字符参数名、最低 Javadoc 覆盖、MySQL 专有簇、错误码体系等三稿否决项照旧不收
 
-【牺牲顺序】（超 200 行预算时按序回收，细则见 final-pick.md）
-- 1. K-91 格式化基线；2. K-87/K-66/K-65；3. 档 3 簇整行回收（K-49/K-57/K-58/K-64/K-86/K-88/K-80/K-85/K-69/K-77/K-78/K-79）；4. K-30/K-29/K-32；5. 条件式整段折叠（K-06/K-07/K-08/K-14/K-20/K-21/K-50 移入本注释区，Spring AI/日志引入后恢复）。永不砍清单见 final-pick.md
+【牺牲顺序】（超 200 行预算时按序回收；以下即全部细则，自足不依赖外部档案）
+- 1. K-91 格式化基线；2. K-87/K-66/K-65；3. 档 3 簇整行回收（K-49/K-57/K-58/K-64/K-86/K-88/K-80/K-85/K-69/K-77/K-78/K-79）；4. K-30/K-29/K-32；5. 条件式整段折叠（K-06/K-07/K-08/K-14/K-20/K-21/K-50 移入本注释区，Spring AI/日志引入后恢复）。6. 永不砍：K-01/K-02（骨架契约与红线）、K-03~K-05/K-09~K-18（循环与工具契约）、K-35~K-42（SQLite/JPA/事务静默失效防线）、K-43~K-48/K-53/K-54（构建/CLI/测试站点契约）、K-89/K-90（占位与锚）。1~5 依次执行约可回收 30 行；全部执行仍超预算时再议档 2 条款（预期不会发生）。
 
 【维护记录】
 - 2026-09-12 v1 落盘：由 3in1 草稿全文落盘（合并评审 must_fix 7 项已修复、站点增条 K-92 已含）；正文条款与 3in1 逐条对应，未做条款增删。
-- 2026-09-12 站点备注：第 1 章「若启用流式」条款行内加站点备注——只适用扩展阶段、核心阶段不适用（核心阶段不启用流式，TS 决策三 / DA「核心阶段不做」清单为据），经用户确认加入。起因：SSE 流式收口方式评审——整段收集与逐 token 推送是两种场景，本条只覆盖前者；逐 token 推送的收口方式留待扩展阶段流式功能 spec 定义。行内追加、0 行净增，未触发牺牲顺序；3in1 草稿源头已同步同款备注（chat/consolidate/20260911-claudemd-draft-3in1.md 第 23 行）。
+- 2026-09-12 站点备注：第 1 章「若启用流式」条款行内加站点备注——只适用扩展阶段、核心阶段不适用（核心阶段不启用流式，TechnicalSolution.md - 1.1 关键技术决策 的决策三 / DemandAnalysis.md「核心阶段不做」清单为据），经用户确认加入。起因：SSE 流式收口方式评审——整段收集与逐 token 推送是两种场景，本条只覆盖前者；逐 token 推送的收口方式留待扩展阶段流式功能 spec 定义。行内追加、0 行净增，未触发牺牲顺序；3in1 草稿源头已同步同款备注（该草稿为会话临时稿、不入库存档，路径不留）。
+- 2026-09-15 站点增条：第 9 章加「名称宜表意」条款（宜级写作引导，明示不作逐名合规检查、不进评审清单）——用户裁决引入；起因：AI 生成 r1()/r2() 式命名，用户裁定只引导、不作审查标准，防止条款吃掉 agent 注意力；正文 +1 行，未触发牺牲顺序。
+- 2026-09-15 裁决修订一：第 1 章 stack:C-86（MCP 连接懒加载）改写为意图表述——核心阶段用「启动连接 + 失败跳过」达成同一意图（TechnicalSolution.md - 6.4 Plugin Tool 方式二 / spike/008-mcp README D7），懒加载降为扩展阶段优化项并附升级信号（server 多到启动明显变慢 / 引入远程 SSE server 时重议懒加载/混合）；起因：spike/008-mcp README 第八节挂账的连接时机策略冲突（TechnicalSolution.md - 6.4 Plugin Tool 方式二 与本条原文方向相反），用户裁决维持 TechnicalSolution.md - 6.4 Plugin Tool 方式二。行内改写、0 行净增。
+- 2026-09-15 增补二：第 1 章 stack:C-32（spring.ai.retry.*）行内增补 spike 实证——手动 new 的 ChatModel 不吃该配置、显式构造实例必须显式传 RetryTemplate（spike/007-react-loop/README.md 第二组 D6）。行内追加、0 行净增。
+- 2026-09-15 观察约定（名称宜表意条款）：条款效果未验证，靠实施期真实编码会话顺带观察、不设专门探针，累计 2~3 个编码会话后评估。信号①过度检查：agent 未经要求对命名做逐名核查、或在总结/评审里主动列命名合规项 → 再瘦身或撤条；信号②被无视：新代码出现 r1 式无信息名 → 届时再议（接受现状靠评审把关、改写措辞或升档，均由用户届时裁决）。
+- 2026-09-16 裁决修订三：第 1 章 stack:C-21 与参数清单 P-02 由「四方法接口」改「五方法接口」（+sandboxActions(inputJson)，由 ToolExecutor 统一校验）——对齐 TechnicalSolution.md - 6.1 AgentOSTool 抽象的设计评审 Q9 决议（2026-09-14）；起因：2026-09-16 对设计文档联动改动做全量交叉核对时发现，本文件「四方法」表述与 TechnicalSolution.md - 6.1 AgentOSTool 抽象的「五方法」定义正面冲突——实现者照本文件写接口会漏掉 sandboxActions 方法，或反过来把第五方法当违规删掉；经用户裁决按核对结论直修。正文与参数表各改一处、0 行净增。核对报告本体为会话临时稿，已删除。
+- 2026-09-16 指针清理（不动条款）：按根 CLAUDE.md 新增「临时草稿目录禁写引用指针」规则，本文件注释区指向 chat/ 临时草稿的路径与档案名——【来源与终选档案】三条、2026-09-12 站点备注记录、2026-09-16 裁决修订三记录——全部改为独立成文的文字说明；【牺牲顺序】的「永不砍清单见 final-pick.md」改为把清单本体与回收估算直接内联；【勿再加清单】标题行去 final-pick 引用、声明本单即全部依据。正文条款零改动。
+
+- 2026-09-17 裁决修订五（Q5）：超时「按 Agent 覆盖」范围收窄——"LLM 超时按 Agent 覆盖"从需求层移除（DemandAnalysis.md - 5.2 定义一个 Agent 的 `settings.timeout` 只留 tool/total 两键；LLM 单次调用超时在 Spring AI 底层 HTTP 客户端构建时定死、调用 options 参数无超时字段，三档计时机制与总超时打断精确度见 TechnicalSolution.md - 7.4 关键设计点），第 0 章红线④与参数表 P-01 同步改写。起因：实施评审发现该覆盖无实现路径，且第 1 章线程条款（stack:C-07 禁循环内切线程）禁止用另起线程等待兜底；该能力无验收场景支撑，裁决不入扩展阶段、源头删除。两处行内改写、0 行净增。
+- 2026-09-22 重试基线同步：第 1 章 stack:C-32 条款由「收进三档预算或显式关停」改写为「禁框架级自动重试（max-attempts=1）、显式构造传单尝试 RetryTemplate」——对齐 TechnicalSolution.md - 3.1 模块组成的重试基线定案（「收进三档预算」路线已否决，重试链会撑穿 llm 档 60s 预算）；起因：2026-09-22 全量文档同步核查（workflow 并行查漏 + 对抗复核）发现本条款与 TechnicalSolution.md - 3.1 模块组成 正面冲突。行内改写、0 行净增。
+- 2026-09-23 裁决修订（Q2c 全名方案）：第 1 章 stack:C-58 改写——MCP 工具注册采用全名方案 `<server 名>__<工具名>`（双下划线分隔，在 LLM 协议工具名白名单内），框架结构性消解 MCP 与本地同名（原「框架不代为消解、须自行改名」反转），唯一性断言降为兜底（撞名后注册者跳过、记日志）；起因：设计评审 Q2c 裁决（2026-09-23，同批含 tools 字段缺省语义＝缺省全可见、mcp_servers 整组引入、子集每轮现算），机制定义见 TechnicalSolution.md - 6.4 Plugin Tool 方式二/6.6 ToolRegistry。行内改写、维护记录 +1 行（注释区剥离后不占可见行预算）。
+- 2026-09-24 裁决修订（Q5 记忆组空清单）：第 1 章 stack:C-21 行内增补——内置 MemoryTools 的 sandboxActions 返回空清单，语义为「无涉外动作可申报」、非豁免，与 MCP/@Tool 适配实现的「空清单＝豁免」必须可区分（将来新增记忆类 ActionType 时 MemoryTools 应转申报、MCP/@Tool 永远豁免）；起因：设计评审 Q5 裁决（2026-09-24，MemoryTools 白名单申报状态），机制定义见 TechnicalSolution.md - 6.7 Sandbox 检查。行内增补、维护记录 +1 行（注释区剥离后不占可见行预算）。
+
+- 2026-09-25 参数表变更：P-11 与 pragma 白名单增列 `synchronous=FULL`——配套同会话并发裁决（会话消息拆 `session_messages` 行表、轮边界成对提交，机制定义见 TechnicalSolution.md - 9.2 SQLite 关系型数据/4.3 关键设计点）；NORMAL 的断电丢尾口径与 DemandAnalysis.md - 8.2 可靠性「已写入的 Session 数据保证不丢」字面冲突，裁决取 FULL。行内改写三处（C-14 条款示例串、白名单、P-11），维护记录 +1 行（注释区剥离后不占可见行预算）。
+- 2026-10-03 引用格式全名化：P-04/P-05 模板由「TS x.y」简称形改为全名形「<文档名> - <编号> <标题主干>」——对齐仓库根 CLAUDE.md 引用格式规范（2026-10-02 立），用户裁决同步改造 79 处骨架消息/CLI 帮助文案字符串与全部 Javadoc 锚；适用范围「TS 第 10 章」、两处流式站点备注的简称引用一并转。正文 173/174、参数表 P-04/P-05/P-06、适用范围与备注共 8 处行内改写，0 行净增。
+- 2026-10-10 spike 联动回填：第 3 章增两坑条款（AUTOINCREMENT 方言不生成——需要「id 永不复用」的表首建后手工补 DDL，点名 session_messages；LocalDateTime 亚毫秒截断——落库前统一 truncatedTo(MILLIS)、亚毫秒例外须评审改文本列映射）+ ddl-auto 条款括注改写（「首建唯一可靠路径」→「首建唯一放行路径；实测亦能自动加列、禁依赖自动加列」）——实测依据 spike/009-sqlite D1/D4（2026-10-09），随 ch09 评审回填批次执行（联动 1/5，q4-fix-plan 分支 A + G1 文本）。正文 +2 行（可见行数 194 < 200、未触发牺牲顺序）、行内改写一处；[源:spike:…] 为新增源标签形态，回查锚 = spike/009-sqlite/README.md 决议表 D 行。
+- 2026-10-10 适用状态更新：第 0 章适用行「骨架仓、实现期尚未开始」改写为「骨架已建立（84 个 Java 文件、主类已就位），多数方法仍为 UnsupportedOperationException 占位——实施期写码须逐条对照本文件」——起因：骨架代码落地后原表述与同句「条款重心是实现期不踩坑」自相矛盾（治理文件核查发现、用户裁决采纳）；「主类已就位」不背书可启动性（2026-10-05 实测 boot 尚不可启动、未复测）。行内改写、0 行净增。
+- 2026-10-10 spike 实测锚补强（治理核查第二轮）：三条款行内增补——pragma 白名单补无参缺省实测值（busy_timeout=3000、synchronous=2，D2）；BUSY 条款补判别锚 vendorErrorCode=5 与等待略超 busy_timeout 的样本记录（D3；单样本只作记录、不作重试预算指令）；新表时间列条款补「本仓列名 *_at 形以 TechnicalSolution.md - 9.2 各表定义为准」尾注（防按本条字面建出 create_time 列与权威 schema 漂移——spike D4 已按旧字面建列实证）。三处行内增补、0 行净增。
+- 2026-10-10 治理核查第三轮：两处行内修订——红线①补「结构化强制」半句（只经唯一工厂方法构造 ToolCallingChatOptions、false 硬编码于工厂内、配防回归测试——设计评审 Q2 决议 2026-09-14；防实现者逐调用点手写 false 绕开结构约束）；适用行「只用 Provider 层」改「只用一半（Provider 抽象 + 协议转换 + @Tool schema 生成）」对齐全仓口径。行内改写两处、0 行净增。
 
 【元规范出处】行数红线、块级注释剥离、增条门槛等机制依据：.claude/skills/claude-md-draft-for-code-standard/references/meta-norms.md（原件 claude-code-memory.md、agentsmd-spec.md）
 

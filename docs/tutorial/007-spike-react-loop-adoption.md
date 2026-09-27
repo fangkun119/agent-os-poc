@@ -22,7 +22,7 @@
 | 核心 | 实验主代码 | [ManualLoop.java](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/spike/007-react-loop/src/main/java/spike/reactloop/loop/ManualLoop.java) 93 行、[ChainTools.java](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/spike/007-react-loop/src/main/java/spike/reactloop/tool/ChainTools.java) 56 行、[CountingTools.java](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/spike/007-react-loop/src/main/java/spike/reactloop/tool/CountingTools.java) 50 行、[ProviderRegistry.java](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/spike/007-react-loop/src/main/java/spike/reactloop/provider/ProviderRegistry.java) 22 行、[ThinkStripper.java](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/spike/007-react-loop/src/main/java/spike/reactloop/util/ThinkStripper.java) 18 行、[LoopResult.java](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/spike/007-react-loop/src/main/java/spike/reactloop/loop/LoopResult.java) 16 行、[application.yaml](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/spike/007-react-loop/src/main/resources/application.yaml) 16 行 | +271 | [2a01bee](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a) |
 | 核心 | 对照实验测试（7 个） | [E3AutoExecComparisonTest.java](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/spike/007-react-loop/src/test/java/spike/reactloop/E3AutoExecComparisonTest.java) 94 行、E8 57 行、E5 55 行、E6 53 行、E4 51 行、E7 50 行、E1E2 34 行 | +394 | [2a01bee](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a) |
 | 核心 | 依赖坐标（工程清单） | [pom.xml](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/spike/007-react-loop/pom.xml) | +78 | [2a01bee](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a) |
-| 核心 | 模型接入设计定稿 | [001-model-config-export.md](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/docs/design/detail-supplement/001-model-config-export.md) | +345 | [2a01bee](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a) |
+| 核心 | 模型接入设计定稿 | [model-config.md](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/docs/design/detail-supplement/001-model-config-export.md) | +345 | [2a01bee](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a) |
 | 次要 | 实验结论与规格 | [README.md](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/spike/007-react-loop/README.md) 71 行、spec/001-expirement.md 212 行、spec/002-spec.md 192 行、spec/003-plan.md 136 行 | +611 | [2a01bee](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a) |
 | 次要 | 文档联动 | [001-tech-review-based-on-requirement.md](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/docs/review/001-tech-review-based-on-requirement.md) ±65、[CLAUDE.md](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/CLAUDE.md) ±18、[spike/CLAUDE.md](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/spike/CLAUDE.md) +22、[DemandAnalysis.md](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/docs/design/DemandAnalysis.md) ±11、[AiProgrammingGuide.md](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/docs/design/AiProgrammingGuide.md) ±8、[TechnicalSolution.md](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/docs/design/TechnicalSolution.md) ±8、[IndustryResearch.md](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/docs/design/IndustryResearch.md) ±2 | ±134 | [2a01bee](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a) |
 | 次要 | 忽略规则 | [根 .gitignore](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/.gitignore) +3、spike/007-react-loop/.gitignore +4 | +7 | [2a01bee](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a) |
@@ -324,7 +324,7 @@ anthropic 腿的 base-url 还有一层特别意义：`spring.ai.anthropic.base-u
 
 ## 5. 核心变更四：模型接入环境变量设计定稿
 
-结论先行：新建的 [001-model-config-export.md](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/docs/design/detail-supplement/001-model-config-export.md)（345 行，定稿状态）把"密钥放哪、变量怎么起名、yaml 怎么写"三件事一次定死，核心是四元组命名加密钥唯一落点两条规则。
+结论先行：新建的 [model-config.md](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/docs/design/detail-supplement/001-model-config-export.md)（345 行，定稿状态）把"密钥放哪、变量怎么起名、yaml 怎么写"三件事一次定死，核心是四元组命名加密钥唯一落点两条规则。
 
 ### 5.1 为什么改
 
@@ -332,7 +332,7 @@ anthropic 腿的 base-url 还有一层特别意义：`spring.ai.anthropic.base-u
 
 ### 5.2 改动走读：四元组、唯一落点、三级模型选择
 
-**Provider 四元组**：一个 Provider 一组四个环境变量——密钥 `*_API_KEY`、端点 `*_BASE_URL`、缺省模型 `*_DEFAULT_MODEL`、可用模型清单 `*_MODEL_LIST`。现有 OPENAI、ANTHROPIC、MINIMAX 三个 Provider 并列、互不覆盖。定稿文档 3.3 节给出的注册区样例（逐字摘录，密钥以占位文本表示）：
+**Provider 四元组**：一个 Provider 一组四个环境变量——密钥 `*_API_KEY`、端点 `*_BASE_URL`、缺省模型 `*_DEFAULT_MODEL`、可用模型清单 `*_MODEL_LIST`。现有 OPENAI、ANTHROPIC、MINIMAX 三个 Provider 并列、互不覆盖（编者注：此为提交 2a01bee 时点口径；2026-09-15 起 ZHIPU 转正，现行四家 OPENAI、ANTHROPIC、MINIMAX、ZHIPU 并列，见 TechnicalSolution.md - 3.2 Provider 名到 ChatModel 的显式映射）。model-config.md - 3.3 密钥占位示例 给出的注册区样例（逐字摘录，密钥以占位文本表示）：
 
 ```bash
 OPENAI_API_KEY='<你的 API Key>'   # 当前值 = MiniMax 的 key（取值来源见 2.1 节）
@@ -360,6 +360,8 @@ flowchart LR
     R --> L["ManualLoop 循环调用"]
 ```
 
+> 编者注：图中 “MINIMAX_* 无自动映射、ProviderService 正式实现再读取” 为提交时点口径；2026-09-15 起 MiniMax 走原生 minimax starter（spring-ai-starter-model-minimax），MINIMAX_* 经 spring.ai.minimax.* 属性族自动映射（spike/007-react-loop/README.md D5 决议，2026-09-15 执行），正式实现不再手工读取。
+
 **三级模型选择**（定稿文档 5.2 节）：Provider 与 model 是两个维度，同一个模型连接可以服务多个模型。选哪只模型有三层，从静到动：
 
 | 级 | 谁决定 | 配置位置 |
@@ -382,7 +384,7 @@ flowchart LR
 
 | 文件 | 规模 | 一句话说明 |
 |---|---|---|
-| [ThinkStripper.java](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/spike/007-react-loop/src/main/java/spike/reactloop/util/ThinkStripper.java) | +18 | 剥离思考标签的 18 行工具类。MiniMax-M3 会把思考过程混在回答文本的 `<think>...</think>` 标签里（README"附带实测结论"），断言前必须先用正则 `(?s)<think>.*?</think>` 剥掉；正式实现按此参照 |
+| [ThinkStripper.java](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/spike/007-react-loop/src/main/java/spike/reactloop/util/ThinkStripper.java) | +18 | 剥离思考标签的 18 行工具类。MiniMax-M3 会把思考过程混在回答文本的 `<think>...</think>` 标签里（README"附带实测结论"），断言前必须先用正则 `(?s)<think>.*?</think>` 剥掉（仅限 spike 测试断言场景）；正式实现核心阶段对思考标签原样透传、不剥离（ProviderService 出口后处理边界，2026-09 裁决，见 docs/design/TechnicalSolution.md §3.1"响应文本后处理边界（决策记录）"），W1 实测输出形态后再决定是否引入剥离 |
 | [README.md](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/spike/007-react-loop/README.md) | +71 | 实验结论落盘：E1-E8 打勾表、D1-D4 四项决议、失败与修复记录 3 条、结论到正式实现落点的映射表 |
 | [spec/001-expirement.md](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/spike/007-react-loop/spec/001-expirement.md) | +212 | 实验流程规格：每个实验的目标、步骤、判定标准（文件名为仓库既有拼写，按实名引用） |
 | [spec/002-spec.md](https://github.com/fangkun119/agent-os-poc/commit/2a01bee7f87576b10077ab32af5571254aeb510a/spike/007-react-loop/spec/002-spec.md) | +192 | spike 代码规格：ManualLoop 五步路径、夹具设计、Provider 映射的依据出处 |
@@ -411,8 +413,9 @@ flowchart LR
 
 1. **核心四组的圈定依据**：实验主代码、对照实验测试、pom.xml、模型接入设计定稿四组承担了本提交的全部新结论（D1-D4、接线规则、密钥规则）；README、spec 三件套、评审纪要属"结论与过程记录"，作为证据来源引用、不开节深讲；SpikeApp.java 归噪音（12 行 Spring Boot 标准启动模板，零业务逻辑），仅在全貌表点名。
 2. **测试文件未逐个深读**：E1E2、E4、E5、E6、E7、E8 六个测试文件按主题合并处理，实验结论一律取自提交内文件 spike/007-react-loop/README.md 的打勾表（每行都标了日志文件出处）。深读按 8 个主题批次执行：主代码、pom 加 yaml、E3 加夹具、README、模型接入定稿、CLAUDE.md 批、四份设计文档批、评审纪要批，符合深读上限。
-3. **提交改写的事实核对**：本篇基准 2a01bee 是原 spike 闭环提交 6c20e8e 的改写版。git 实测（`git diff 6c20e8e 2a01bee`）：两提交内容仅差 2 个文件、+4/-4 行——docs/design/detail-supplement/001-model-config-export.md 的 2.3 节表格两行与 5.5 节事实表第 8 行、spike/007-react-loop/spec/001-expirement.md 的 4.2 节第 ③ 条，改动方向一致：`spring.ai.anthropic.base-url` 属性从"待实测、复核中"改为"E8 实测生效、备选方案无需启用"。6c20e8e 已不在当前分支历史（2a01bee 的父提交是 d3ea9a3）。既有教程 chat/tutorials/20260908_spike_react_loop.md 覆盖的是旧哈希 6c20e8e；本篇以 2a01bee 为基准重写，第 4.2 节的"实测生效"闭环结论即为两版差异点。
+3. **提交改写的事实核对**：本篇基准 2a01bee 是原 spike 闭环提交 6c20e8e 的改写版。git 实测（`git diff 6c20e8e 2a01bee`）：两提交内容仅差 2 个文件、+4/-4 行——docs/design/detail/model-config.md 的 2.3 节表格两行与 5.5 节事实表第 8 行、spike/007-react-loop/spec/001-expirement.md 的 4.2 节第 ③ 条，改动方向一致：`spring.ai.anthropic.base-url` 属性从"待实测、复核中"改为"E8 实测生效、备选方案无需启用"。6c20e8e 已不在当前分支历史（2a01bee 的父提交是 d3ea9a3）。既有教程 chat/tutorials/20260908_spike_react_loop.md 覆盖的是旧哈希 6c20e8e；本篇以 2a01bee 为基准重写，第 4.2 节的"实测生效"闭环结论即为两版差异点。
 4. **日期口径**：提交（commit）日期 2026-09-09 16:14:47 +0800 是本次圈定依据；作者（author）日期 2026-09-07 17:33:27 +0800 与 README 自述"执行日期 2026-09-07"一致——实验执行于 9 月 7 日，改写提交落盘于 9 月 9 日。文内"2026-09-09 的提交"均指提交日期。
 5. **代码片段政策**：全文 7 个代码块全部逐字取自提交内文件，省略处以"……省略……"注释标明；最长一块为 ManualLoop 循环本体 26 行，无超过 30 行的块。
 6. **术语口径**：SAA 首次出现声明为 Spring AI Alibaba；"兼容腿"沿用定稿文档 0.x 术语表自带的口语简称并在首次出现处解释；spec/001-expirement.md 的文件名拼写（expirement）为仓库既有状态，按实名引用、不擅自更正。
 7. **动机来源边界**：禁用自动执行的双执行机理，以提交信息（"开关闭止后无双执行"）、ManualLoop 源码注释（"第一红线：禁用框架自动执行"）、E3 测试注释与本提交新增的 CLAUDE.md 行为界；仓库根 CLAUDE.md"工具被调两次"的既有表述已注明非本提交改动。
+8. **编者注（2026-09-22，非本提交内容）**：本文 yaml 片段（4.2 节）两处随后续实测/裁决过时——① `api.minimaxi.com/anthropic` 为国际站域名，2026-09-14 已统一改用国内站 `api.minimax.cn/anthropic`；② 片段行内注释「属性名未获文档确认」已过时，`spring.ai.anthropic.base-url` 属性名经 2026-09-07 E8 实测确认生效（见 docs/design/detail/model-config.md §5.5 第 8 条）。照抄配置时以现行口径为准。
