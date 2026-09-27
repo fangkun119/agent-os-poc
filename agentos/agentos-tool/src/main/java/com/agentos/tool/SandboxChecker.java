@@ -1,7 +1,7 @@
 package com.agentos.tool;
 
 /**
- * Sandbox 核心阶段唯一实现（TS 6.7）：应用层 Path/Pattern 白名单（劝阻级防线，
+ * Sandbox 核心阶段唯一实现（TechnicalSolution.md - 6.7 Sandbox 检查）：应用层 Path/Pattern 白名单（劝阻级防线，
  * 防模型犯傻误操作，防不住蓄意绕过）。
  *
  * <p>白名单四项配置（application.yaml）：file.allowed_paths / shell.allowed_commands /
@@ -18,25 +18,25 @@ public class SandboxChecker implements Sandbox {
 
     @Override
     public void check(SandboxAction action) {
-        throw new UnsupportedOperationException("尚未实现：SandboxChecker.check（TS 6.7）");
+        throw new UnsupportedOperationException("尚未实现：SandboxChecker.check（TechnicalSolution.md - 6.7 Sandbox 检查）");
     }
 
-    /** 路径标准化后比对 file.allowed_paths 白名单，需处理 {@code ../} 路径穿越（TS 6.7）。 */
+    /** 路径标准化后比对 file.allowed_paths 白名单，需处理 {@code ../} 路径穿越（TechnicalSolution.md - 6.7 Sandbox 检查）。 */
     private void checkFilePath(String path) {
         // TODO: 路径标准化后比对白名单，处理 ../ 路径穿越
     }
 
-    /** 精确比对 shell.allowed_commands 可执行文件白名单；解释器仅在管理员显式列入时允许（TS 6.7）。 */
+    /** 精确比对 shell.allowed_commands 可执行文件白名单；解释器仅在管理员显式列入时允许（TechnicalSolution.md - 6.7 Sandbox 检查）。 */
     private void checkShellCommand(String command) {
         // TODO: 精确比对可执行文件白名单
     }
 
-    /** 解析 host 后与 http.allowed_domains 做通配符匹配（TS 6.7）。 */
+    /** 解析 host 后与 http.allowed_domains 做通配符匹配（TechnicalSolution.md - 6.7 Sandbox 检查）。 */
     private void checkHttpUrl(String url) {
         // TODO: 解析 host 后做通配符匹配
     }
 
-    /** 校验独立的 notify.allowed_domains，不复用 http.allowed_domains（TS 6.7）。 */
+    /** 校验独立的 notify.allowed_domains，不复用 http.allowed_domains（TechnicalSolution.md - 6.7 Sandbox 检查）。 */
     private void checkNotifyUrl(String url) {
         // TODO: 校验 notify 独立白名单
     }

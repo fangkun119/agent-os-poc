@@ -15,7 +15,7 @@
 
 - 主页八个板块（Hero / Stats / 运行原理 / 核心能力 / 使用场景 / 路线图 / CTA / Footer），中英双语
 - 站点骨架：VitePress 配置、自定义主题（主页组件 + 全局换皮样式）
-- 品牌资产：文字版 logo.svg、favicon.svg、AgentOS 架构图 architecture.svg（自绘 SVG）
+- 品牌资产：文字版 logo.svg、favicon.svg、AgentOS 架构图 architecture-zh.svg / architecture-en.svg（自绘 SVG，按 locale 各一份）
 - 本地 dev 预览验证（桌面/移动/双语截图）+ 生产构建通过
 
 **范围外（本期不做）**：
@@ -54,10 +54,10 @@
 
 | 数字 | 内容 | 出处 |
 | --- | --- | --- |
-| 9 | Maven 模块（core/provider/memory/tool/channel-cli/web/storage/cli/boot） | TS 10 |
+| 9 | Maven 模块（core/provider/memory/tool/channel-cli/web/storage/cli/agentos-boot） | TS 10 |
 | 9 | 内置 Tool，5 组：FileTools×3（read_file/write_file/list_dir）、ShellTools×1（shell）、HttpTools×2（http_get/http_post）、MemoryTools×2（save_memory/recall_memory）、NotifyTools×1（notify） | TS 6.2 / DA 5.6 |
 | 18 | REST 端点 = 基础 10（sessions×4、agents/{name}/invoke×1、profiles/memory/tools 查询×3、health/info×2）+ 收尾 8（notify-channels CRUD×4、schedules×4） | TS 7.2 / DA 5.8 |
-| 12 | CLI 子命令：init/status/chat/serve/gateway/profile list\|create\|show\|delete/provider list/tool list/session list | TS 8.7 / DA 5.11 |
+| 13 | CLI 子命令：init/status/chat/serve/gateway/profile list\|create\|show\|delete/provider list/tool list/session list/session show | TS 8.7 / DA 5.11 |
 | 3 | 触发源（CLI / Web API / AgentScheduler 定时）汇入同一 AgentService.process | DA 9 / TS 2 |
 | 2 | 审计表（tool_invocations / llm_calls）核心阶段 day one 落库 | TS 1.1 决策七 |
 | 3 档 | Plugin Tool 接入：零代码（AGENT.md 目录+现成 MCP，主推）→ 轻代码（任意语言 MCP server）→ 重代码（@Tool Bean）；原则「能用一不用二，能用二不用三」 | TS 6 / DA 5.6 |
@@ -74,16 +74,17 @@
   （ProfileContext ThreadLocal）（DA 5.4 / TS 1.1 决策一三 / TS 4.2）
 - **Memory**：MemoryService 统一门面（会话=SessionManager/SQLite，长期=LongTermMemoryStore/MEMORY.md，
   情景=扩展阶段）；MEMORY.md 双分区「核心记忆（永不截断）/ 归档记忆（按需截断）」（TS 5 / 5.1）
-- **Provider**：name → ChatModel 显式映射、禁止类型扫描；DeepSeek/通义/Kimi/智谱/Anthropic/OpenAI 等
-  主流 connector；协议转换覆盖 OpenAI/Anthropic/Gemini 三家 tools 格式。注意：核心阶段 Provider 走
-  application.yaml 配置，**没有**运行时 CRUD/fallback（TS 3 / DA 5.3）
+- **Provider**：name → ChatModel 显式映射、禁止类型扫描；现行 MiniMax / OpenAI / Anthropic / 智谱四家
+  经 Spring AI 官方 starter 接入（DeepSeek / Kimi 为预留新增）；协议转换覆盖 OpenAI / Anthropic /
+  Gemini 三家 tools 格式。注意：核心阶段 Provider 走 application.yaml 配置，**没有**运行时
+  CRUD/fallback（TS 3 / DA 5.3）
 - **Sandbox**：四类白名单（文件路径 / Shell 命令 / HTTP 域名 / 通知独立域名），应用层「劝阻级」防线，
   违规拦截并写审计；容器/microVM 隔离是扩展阶段升级路径（TS 6.7）
-- **MCP**：原生 MCP Client，`mcp_servers.yaml` 声明，stdio/SSE 双传输，启动即发现工具注册进
-  ToolRegistry（TS 6.4）
+- **MCP**：原生 MCP Client，`mcp-servers.yaml` 声明，核心阶段 stdio 传输（SSE 传输放扩展阶段），
+  启动即发现工具注册进 ToolRegistry（TS 6.4）
 - **Notify**：notify 一个 Tool 推企微/飞书/钉钉群机器人；渠道是 SQLite 全局注册表 notify_channels，
   webhook 地址不进对话，「消息怎么进来有 Channel，结果怎么出去有 Notify」（TS 6.8）
-- **调度**：AGENT.md frontmatter 写 schedules（id/cron/timezone/message）到点自动运行；状态与执行历史
+- **调度**：AGENT.md frontmatter 写 schedules（id/cron/timezone/message/user）到点自动运行；状态与执行历史
   落 SQLite 重启不丢；同任务重叠触发自动跳过（TS 8.5）
 - **Web Service**：默认 8080，springdoc OpenAPI 3.0 暴露在 /swagger-ui，任何能发 HTTP 的语言可接入
   （TS 7.1 / 7.6）
@@ -153,9 +154,9 @@ docs/design/ 权威文档（DA/TS/AG/IR）为官网内容唯一事实来源；�
    GitHub=`github.com/fangkun119/agent-os-poc`）→ 仿终端演示
    （`agentos init` → `profile create` → `chat --profile` 记忆对话演示，
    命令以 TS 8.1/8.7 为准；`chat` 的 `--profile` flag 出处为 DA 5.11）
-2. **Stats 条**：9 模块 / 9 内置 Tool / 18 REST 端点 / 12 CLI 命令 / 3 触发源；
+2. **Stats 条**：9 模块 / 9 内置 Tool / 18 REST 端点 / 13 CLI 命令 / 3 触发源；
    脚注小字：性能为验收目标（≥100 并发 Session · P99<200ms · 30 分钟部署，DA 8.1/13）
-3. **运行原理**：标签 HOW IT WORKS，h2「人推钟推，同一条链路。」，配 `architecture.svg`
+3. **运行原理**：标签 HOW IT WORKS，h2「人推钟推，同一条链路。」，配 `architecture-zh.svg` / `architecture-en.svg`（按 locale 取用）
 4. **核心能力 ×6**：五大核心能力（DA 1.2）+「一个目录 = 一个 Agent」形态卡；每卡编号+标题+描述+代码片段
 5. **使用场景 ×8**：运维/客服/HR/知识管理/销售助手（DA 1.1 名单）+ PR 日报（零代码）+
    每日天气穿搭推送 + 每日科技日报（DA 13 Demo）
@@ -178,8 +179,8 @@ docs/design/ 权威文档（DA/TS/AG/IR）为官网内容唯一事实来源；�
      → ToolExecutor（超时 30s · 审计落库）
    → 能力列：ToolRegistry（9 内置 + MCP）· MemoryService（三层门面）· Sandbox（四类白名单）
      · Notify（Webhook 注册表）
-   → 存储列：SQLite：sessions · scheduled_tasks · task_executions · tool_invocations ·
-     llm_calls · notify_channels
+   → 存储列：SQLite：sessions · session_messages · scheduled_tasks · task_executions ·
+     tool_invocations · llm_calls · notify_channels
 ```
 
 ---
@@ -192,7 +193,7 @@ docs/design/ 权威文档（DA/TS/AG/IR）为官网内容唯一事实来源；�
 | --- | --- |
 | 文档仲裁：实现以 TS 为准、需求/验收以 DA 13 为准 | §2 事实基线全部带出处；页面数字仅取自 §2 |
 | 阅读注记：并发数字非承诺值 | Stats 脚注强制标注「验收目标」 |
-| 红线：敏感凭证 `${ENV_VAR}` 注入、不明文 | 终端示例只用 `export DEEPSEEK_API_KEY=...` 占位 |
+| 红线：敏感凭证 `${ENV_VAR}` 注入、不明文 | 终端示例只用 `export MINIMAX_API_KEY=your-key-here` 占位 |
 | 红线：跑通优先于完美 | Phase 4 验证不过不收尾；先桌面后移动逐项修 |
 | 红线：超时/映射等机制表述 | 能力卡机制文案以 §2.3 为准，不得简写失真 |
 
@@ -294,11 +295,11 @@ website/
 ### Phase 5 收尾
 
 - [x] 5.1 回填本清单勾选状态与变更记录
-- [x] 5.2 向用户汇报：截图 + 文件清单 + 遗留开放问题（开放项移交 chat/temp/website-todo.md）
+- [x] 5.2 向用户汇报：截图 + 文件清单 + 遗留开放问题（开放项集中登记于本文第 7 章 开放问题，随本文归档）
 
 ---
 
-## 7. 开放问题（不阻塞实施，移交 chat/temp/website-todo.md 统一处理）
+## 7. 开放问题（不阻塞实施，集中登记于本章，随本文归档）
 
 | 问题 | 当前处理 |
 | --- | --- |
@@ -328,5 +329,12 @@ website/
   误创建目录一并丢失；现按会话内完整编辑历史在 website/docs/plan.md 重建为最终状态，
   §2.5 / §5 / §6 中已失效的「website/docs 快照」描述同步更新为解耦后现状。
 - 2026-08-31：视觉刷新立项并实施完成（v3「机房 LED」色板——初选琥珀荧光同日改选——+
-  工作台结构 + 自托管字体 + 唯一编排时刻），独立文档见 chat/consolidate/20260830-website-visual-refresh-{spec,plan,
-  claudemd-change}.md；本计划的事实基线（§2）继续作为内容红线有效。
+  工作台结构 + 自托管字体 + 唯一编排时刻）；该次视觉刷新的独立设计文档属会话过程稿，随过程稿归档、不再保留目录指针；
+  本计划的事实基线（§2）继续作为内容红线有效。
+- 2026-11-07：对照现行 `docs/design/` 权威文档同步事实基线（§2.2 / §2.3 / §3.3 / §3.4 / §4.1）：CLI 子命令
+  12 → 13（补 `session show --session-id=<SID>`，2026-09-21 Session 重构裁决 S4）；Provider 清单改为现行
+  MiniMax / OpenAI / Anthropic / 智谱四家、DeepSeek / Kimi 标注为预留新增；`schedules` 字段补 `user`；
+  MCP 配置文件名的现行写法为 `mcp-servers.yaml`、核心阶段传输为 stdio（SSE 传输放扩展阶段，
+  `spike/008-mcp` 的 D2 决议）；§3.4 架构图的存储列补 `session_messages`；终端示例的密钥变量随站点
+  实际实现改为 `MINIMAX_API_KEY`；架构图资产名按实际实现记为 `architecture-zh.svg` /
+  `architecture-en.svg`（`website/public/images/architecture.svg` 为历史留档、站点不引用）。

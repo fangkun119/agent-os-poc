@@ -1,7 +1,7 @@
 package com.agentos.core.lifecycle;
 
 /**
- * Agent 生命周期编排（TS 10 / 11.3，<b>扩展阶段交付</b>）：
+ * Agent 生命周期编排（TechnicalSolution.md - 10 项目工程结构 / 11.3 扩展阶段，<b>扩展阶段交付</b>）：
  * 定义一个 Agent = Agent 目录落盘 + deriveProfile + 注册 + Scheduler 注册。
  *
  * <p>核心阶段先立好 ProfileRegistry（register/remove/exists）与 AgentScheduler
@@ -10,5 +10,5 @@ package com.agentos.core.lifecycle;
  */
 public class AgentLifecycleService {
 
-    // TODO: 扩展阶段实现（TS 11.3）：generate / create / update / delete / register(agentDir)
+    // TODO: 扩展阶段实现（TechnicalSolution.md - 11.3 扩展阶段）：generate / create / update / delete / register(agentDir)
 }

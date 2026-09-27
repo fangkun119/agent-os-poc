@@ -26,7 +26,7 @@
 
   <!-- col 2: agent core (highlight) -->
   <g>
-    <rect x="274" y="56" width="226" height="40" rx="8" fill="rgba(47,224,122,0.11)" stroke="#2fe07a"/>
+    <rect x="274" y="56" width="226" height="40" rx="8" fill="#0f2a1d" stroke="#2fe07a"/>
     <text x="387" y="81" text-anchor="middle" font-size="13" font-weight="700" fill="#edf5ef">AgentService.process</text>
 
     <rect x="274" y="112" width="226" height="54" rx="8" fill="#101b14" stroke="#2f4739"/>
@@ -97,6 +97,11 @@
       <rect x="806" y="286" width="3" height="34" rx="1.5" fill="#2fe07a" opacity="0.5"/>
       <text x="919" y="307" text-anchor="middle" font-size="12" fill="#cfe3d6">notify_channels</text>
     </g>
+    <g>
+      <rect x="806" y="332" width="226" height="34" rx="8" fill="#101b14" stroke="#23372b"/>
+      <rect x="806" y="332" width="3" height="34" rx="1.5" fill="#2fe07a" opacity="0.5"/>
+      <text x="919" y="353" text-anchor="middle" font-size="12" fill="#cfe3d6">session_messages</text>
+    </g>
   </g>
 
   <!-- flow arrows between columns -->
@@ -113,10 +118,10 @@
 
   <!-- ReAct loop-back: ToolExecutor → ReActLoop (max 10 iterations) -->
   <g>
-    <path d="M500 343 C 526 343 526 307 508 307" fill="none" stroke="#2fe07a" stroke-width="1.5" stroke-dasharray="4 3"/>
-    <path d="M508 302 L498 307 L508 312 Z" fill="#2fe07a"/>
-    <text x="527" y="329" text-anchor="middle" font-size="10" fill="#2fe07a">≤10</text>
+    <path d="M500 343 C 513 343 513 288 500 288" fill="none" stroke="#2fe07a" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <path d="M500 288 L512 282 L512 294 Z" fill="#2fe07a"/>
+    <text x="525" y="329" text-anchor="middle" font-size="10" fill="#2fe07a">≤10</text>
   </g>
 
-  <text x="520" y="530" text-anchor="middle" font-size="11" fill="#708578">synchronous · virtual threads · one process() chain — identical audit and session semantics for all triggers</text>
+  <text x="520" y="410" text-anchor="middle" font-size="11" fill="#708578">synchronous · virtual threads · one process() chain — identical audit and session semantics for all triggers</text>
 </svg>

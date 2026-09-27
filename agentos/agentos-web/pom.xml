@@ -13,7 +13,7 @@
 
   <artifactId>agentos-web</artifactId>
   <name>agentos-web</name>
-  <description>核心能力五（TS 10）：WebServer、8 个 ApiController（NotifyChannel/Schedule 随第四周收尾交付）、GlobalExceptionHandler、OpenAPI 文档（springdoc 第三周引入）。默认端口 8080，Java 21 virtual thread（TS 7.1）。</description>
+  <description>核心能力五（TechnicalSolution.md - 10 项目工程结构）：WebServer、8 个 ApiController（NotifyChannel/Schedule 随第四周收尾交付）、GlobalExceptionHandler、OpenAPI 文档（springdoc 第三周引入）。默认端口 8080，Java 21 virtual thread（TechnicalSolution.md - 7.1 模块组成）。</description>
 
   <dependencies>
     <dependency>

@@ -1,12 +1,14 @@
 # Temp File
 draft/
-chat/
+chat/*
 .venv/
 .playwright-mcp/
 **/.DS_Store
 docs/**/workspace/
 **/logs/
 **/log/
+.ignore
+.opencode/loop-history/
 
 # AgentOS runtime workspace (agentos init 产物：agents/ skills/ memory/ logs/ agentos.db)
 .agentos/
@@ -48,3 +50,6 @@ target/
 hs_err_pid*
 replay_pid*
 .firecrawl/
+
+# deepwork 会话状态（本地进度文件，不入库）
+.slim/deepwork/

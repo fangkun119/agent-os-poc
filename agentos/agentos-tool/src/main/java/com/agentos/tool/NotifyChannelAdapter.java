@@ -1,9 +1,9 @@
 package com.agentos.tool;
 
 /**
- * 出站通知抽象接口（TS 6.8，接口先行）。
+ * 出站通知抽象接口（TechnicalSolution.md - 6.8 通知推送，接口先行）。
  *
- * <p>表达"把一条内容送到某个通知目标"这个意图，不携带具体渠道细节。与入站 ChannelAdapter（TS 8.4）
+ * <p>表达"把一条内容送到某个通知目标"这个意图，不携带具体渠道细节。与入站 ChannelAdapter（TechnicalSolution.md - 8.4 Channel 接入）
  * 语义方向相反、分开建模：入站解决"什么触发 Agent 开始跑"，出站解决"Agent 跑完把结果送到哪"，
  * 不合并成一个抽象。
  */

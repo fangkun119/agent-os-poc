@@ -18,5 +18,5 @@
   <path d="M675,140 L675,200 L145,200 L145,144" fill="none" stroke="#f59e0b" stroke-width="2" marker-end="url(#tram1)"/>
   <text x="410" y="222" fill="#b45309" font-size="13" text-anchor="middle">还没完成 → 带着新状态回到 Reason</text>
   <line x1="145" y1="140" x2="145" y2="264" stroke="#94a3b8" stroke-width="2" marker-end="url(#trgy1)"/>
-  <text x="150" y="286" fill="#64748b" font-size="13" text-anchor="start">这轮没有工具调用 → 返回最终响应   ｜   转够最大轮数（默认 10）→ 强制结束</text>
+  <text x="150" y="286" fill="#64748b" font-size="13" text-anchor="start">这次迭代没有工具调用 → 返回最终响应   ｜   转够最大迭代次数（默认 10）→ 强制结束</text>
 </svg>
