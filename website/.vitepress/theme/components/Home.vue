@@ -37,7 +37,7 @@ const stats = computed(() => [
   { num: '9', label: t('Maven 模块', 'Maven modules') },
   { num: '9', label: t('内置 Tool', 'built-in tools') },
   { num: '18', label: t('REST 端点', 'REST endpoints') },
-  { num: '12', label: t('CLI 命令', 'CLI commands') },
+  { num: '13', label: t('CLI 命令', 'CLI commands') },
   { num: '3', label: t('触发源，一个入口', 'triggers, one entry') },
 ])
 
@@ -64,18 +64,18 @@ const capabilities = computed(() => [
     entry: 'providers/',
     title: t('对接主流大模型', 'Mainstream LLM providers'),
     desc: t(
-      'Provider 抽象对接 DeepSeek、通义、Kimi、智谱、Anthropic、OpenAI 等主流模型；provider name → ChatModel 显式映射，多 Provider 并存路由无歧义，OpenAI / Anthropic / Gemini 三家 tools 协议差异由适配层吸收。',
-      'The provider abstraction connects DeepSeek, Qwen, Kimi, GLM, Anthropic, OpenAI and more; explicit name → ChatModel mapping keeps multi-provider routing unambiguous, and tool-call protocol differences (OpenAI / Anthropic / Gemini) are absorbed by adapters.'
+      '经 Spring AI 官方 starter 接入 MiniMax、OpenAI、Anthropic、智谱（DeepSeek、Kimi 为预留新增）；provider name → ChatModel 显式映射，多 Provider 并存路由无歧义，OpenAI / Anthropic / Gemini 三家 tools 协议差异由适配层吸收。',
+      'Official Spring AI starters connect MiniMax, OpenAI, Anthropic, and GLM (DeepSeek and Kimi are planned additions); explicit name → ChatModel mapping keeps multi-provider routing unambiguous, and tool-call protocol differences (OpenAI / Anthropic / Gemini) are absorbed by adapters.'
     ),
-    code: `# application.yaml — keys via env
-providers:
-  deepseek:
-    api-key: \${DEEPSEEK_API_KEY}
+    code: `# application.yaml — key via env, never plain text
+spring:
+  ai:
+    minimax:
+      api-key: \${MINIMAX_API_KEY}
 
 # AGENT.md (frontmatter)
 provider:
-  name: deepseek
-  model: deepseek-chat`,
+  name: minimax`,
     source: docRefs(['TS 3', 'DA 5.3']),
   },
   {
@@ -199,7 +199,7 @@ const roadmapPhases = computed(() => [
     items: [
       t('五大核心能力', 'Five core capabilities'),
       t('9 个内置 Tool + MCP', '9 built-in tools + MCP'),
-      t('18 个 REST 端点 / 12 个 CLI 命令', '18 REST endpoints / 12 CLI commands'),
+      t('18 个 REST 端点 / 13 个 CLI 命令', '18 REST endpoints / 13 CLI commands'),
       t('审计表 day one 落库', 'Audit tables from day one'),
     ],
   },
@@ -233,20 +233,20 @@ const roadmapPhases = computed(() => [
 const heroLines = computed(() => [
   { type: 'cmd', text: 'agentos init' },
   { type: 'ok', text: t('✓ 工作区已初始化：.agentos/', '✓ Workspace initialized at .agentos/') },
-  { type: 'dim', text: 'agents/ · skills/ · memory/ · mcp_servers.yaml · agentos.db' },
+  { type: 'dim', text: 'agents/ · skills/ · memory/ · logs/ · mcp-servers.yaml' },
   { type: 'dim', text: t('+ Bootstrap：AGENTS.md · SOUL.md · USER.md', '+ bootstraps: AGENTS.md · SOUL.md · USER.md') },
   { type: 'spacer' },
   { type: 'cmd', text: 'agentos profile create ops-agent' },
   { type: 'ok', text: t('✓ 已生成最小 AGENT.md', '✓ Minimal AGENT.md generated') },
   { type: 'spacer' },
   { type: 'cmd', text: 'agentos chat --profile ops-agent' },
-  { type: 'dim', text: t('已加载 Profile：ops-agent（deepseek-chat）', 'Loaded profile: ops-agent (deepseek-chat)') },
+  { type: 'dim', text: t('已加载 Profile：ops-agent（MiniMax-M2.7）', 'Loaded profile: ops-agent (MiniMax-M2.7)') },
   { type: 'spacer' },
   { type: 'user', text: t('记住：周报每周五 17:00 发出', 'Remember: the weekly report goes out Friday 17:00') },
   { type: 'spacer' },
   { type: 'agent', text: t('[ops-agent] 思考中…', '[ops-agent] Thinking...') },
   { type: 'dim', text: '  → Tool: save_memory' },
-  { type: 'dim', text: t('  → 沙箱白名单：✓ 放行，已写审计', '  → sandbox whitelist: ✓ allowed, audited') },
+  { type: 'dim', text: t('  → 记忆工具：✓ 直写长期记忆，已写审计', '  → memory tool: ✓ wrote long-term memory, audited') },
   { type: 'agent', text: t('[ops-agent] 已写入长期记忆（MEMORY.md），下次会话我会记得。', '[ops-agent] Saved to long-term memory (MEMORY.md). See you next session.') },
   { type: 'spacer' },
   { type: 'cursor' },
@@ -257,7 +257,7 @@ const ctaLines = computed(() => [
   { type: 'cmd', text: 'agentos init' },
   { type: 'spacer' },
   { type: 'comment', text: '# 2. configure a provider — keys via env, never plain text' },
-  { type: 'cmd', text: 'export DEEPSEEK_API_KEY=your-key-here' },
+  { type: 'cmd', text: 'export MINIMAX_API_KEY=your-key-here' },
   { type: 'spacer' },
   { type: 'comment', text: '# 3. create your first agent' },
   { type: 'cmd', text: 'agentos profile create ops-agent' },
@@ -359,8 +359,8 @@ onMounted(() => {
           <span class="status-note-tag"># note:</span>
           {{
             t(
-              '性能为验收目标，非承诺值：单节点 ≥100 并发 Session · Session 创建 P99 < 200ms · 新手 30 分钟单节点部署',
-              'Acceptance targets, not promises: ≥100 concurrent sessions per node · session creation P99 < 200ms · a 30-minute first deployment'
+              '性能为验收目标，非承诺值：单节点 ≥100 并发 Session · Session 创建 P99 ≤ 200ms · 新手 30 分钟单节点部署',
+              'Acceptance targets, not promises: ≥100 concurrent sessions per node · session creation P99 ≤ 200ms · a 30-minute first deployment'
             )
           }}
         </p>

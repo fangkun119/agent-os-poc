@@ -1,14 +1,14 @@
 package com.agentos.tool;
 
 /**
- * Sandbox 受控动作类型（TS 6.7），五值：
+ * Sandbox 受控动作类型（TechnicalSolution.md - 6.7 Sandbox 检查），五值：
  *
  * <ul>
  *   <li>文件读 FILE_READ / 文件写 FILE_WRITE——读写分开，便于未来按读/写分权限；
  *       SandboxChecker.check 将两 case 同路由到 checkFilePath</li>
  *   <li>Shell 命令 SHELL_COMMAND</li>
  *   <li>HTTP 请求 HTTP_REQUEST</li>
- *   <li>通知推送 NOTIFY——出站通知独立动作，走独立的 notify.allowed_domains 白名单（TS 6.8）</li>
+ *   <li>通知推送 NOTIFY——出站通知独立动作，走独立的 notify.allowed_domains 白名单（TechnicalSolution.md - 6.8 通知推送）</li>
  * </ul>
  */
 public enum ActionType {

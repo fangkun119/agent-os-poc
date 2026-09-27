@@ -1,12 +1,13 @@
 # Temp File
 draft/
-chat/
+chat/*
 .venv/
 .playwright-mcp/
 **/.DS_Store
 docs/**/workspace/
 **/logs/
 **/log/
+.ignore
 
 # AgentOS runtime workspace (agentos init 产物：agents/ skills/ memory/ logs/ agentos.db)
 .agentos/
@@ -14,6 +15,10 @@ docs/**/workspace/
 # IDE
 .idea/
 .vscode/
+.zcode/
+.commandcode/
+.claude/
+.opencode/
 
 # Eclipse / JDT（jdtls 导入 Maven 工程自动生成）
 .project
@@ -48,3 +53,6 @@ target/
 hs_err_pid*
 replay_pid*
 .firecrawl/
+
+# deepwork 会话状态（本地进度文件，不入库）
+.slim/deepwork/

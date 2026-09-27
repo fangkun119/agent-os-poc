@@ -6,7 +6,7 @@ spring:
       max-attempts: 1        # 显式关停重试链（agentos/CLAUDE.md §1 C-32：默认 10 次退避会把超时兜底吃掉；spike 单次调用语义更利于证据归因）
     openai:
       api-key: ${OPENAI_API_KEY:placeholder}        # 密钥：环境变量（红线）；离线项用占位默认值即可启动
-      base-url: https://api.minimax.cn              # 非敏感：明文 yaml，不带 /v1（定稿 5.3——带 /v1 会双写 404）
+      base-url: https://api.minimax.cn              # 非敏感：明文 yaml，不带 /v1（model-config.md - 5.3 MiniMax 两份文档是同一个端点——带 /v1 会双写 404）
       chat:
         options:
           model: ${OPENAI_DEFAULT_MODEL:MiniMax-M2.7}

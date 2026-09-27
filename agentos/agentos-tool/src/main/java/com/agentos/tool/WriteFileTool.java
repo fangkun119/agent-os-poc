@@ -4,7 +4,7 @@ import com.agentos.core.tool.AgentOSTool;
 import com.agentos.core.tool.ToolResult;
 
 /**
- * 内置 Tool：write_file（TS 6.2 FileTools 组）。
+ * 内置 Tool：write_file（TechnicalSolution.md - 6.2 内置 Tool 的 FileTools 组）。
  *
  * <p>向指定路径写入内容。execute 开头先
  * {@code Sandbox.check(new SandboxAction(ActionType.FILE_WRITE, path))} 做路径白名单校验，
@@ -31,6 +31,6 @@ public class WriteFileTool implements AgentOSTool {
 
     @Override
     public ToolResult execute(String jsonInput) {
-        throw new UnsupportedOperationException("尚未实现：WriteFileTool.execute（TS 6.2）");
+        throw new UnsupportedOperationException("尚未实现：WriteFileTool.execute（TechnicalSolution.md - 6.2 内置 Tool）");
     }
 }

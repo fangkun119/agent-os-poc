@@ -4,11 +4,15 @@ import com.agentos.core.tool.AgentOSTool;
 import com.agentos.core.tool.ToolResult;
 
 /**
- * 内置 Tool {@code save_memory}：把内容追加到长期记忆（TS 5.1 MemoryTools / TS 6.2）。
+ * 内置 Tool {@code save_memory}：把内容追加到长期记忆（TechnicalSolution.md - 5.1 模块组成的 MemoryTools / 6.2 内置 Tool）。
  *
  * <p>归 Memory 模块，但作为内置 Tool 注册到 ToolRegistry，跟其他内置 Tool 一视同仁。
  * 分区由 Agent 经 {@code scope} 参数显式指定（CORE / ARCHIVAL，默认 ARCHIVAL），系统不猜；
- * 核心阶段不做自动抽取，写入时机和 scope 完全由 Agent 手动决定（TS 5.1）。
+ * 核心阶段不做自动抽取，写入时机和 scope 完全由 Agent 手动决定（TechnicalSolution.md - 5.1 模块组成）。
+ *
+ * <p>sandboxActions 申报空清单：记忆读写无涉外动作可申报——存储路径由底座按
+ * {@code <Agent, user>} 身份派生、模型入参（content/scope）不含路径面
+ * （TechnicalSolution.md - 6.7 Sandbox 检查，设计评审 Q5 裁决 2026-09-24）。
  */
 public class SaveMemoryTool implements AgentOSTool {
 
@@ -46,7 +50,7 @@ public class SaveMemoryTool implements AgentOSTool {
 
     @Override
     public ToolResult execute(String jsonInput) {
-        // TODO: 实施阶段补 LongTermMemoryStore.append 调用（TS 5.1）
-        throw new UnsupportedOperationException("尚未实现：SaveMemoryTool.execute（TS 5.1）");
+        // TODO: 实施阶段补 LongTermMemoryStore.append 调用（TechnicalSolution.md - 5.1 模块组成）
+        throw new UnsupportedOperationException("尚未实现：SaveMemoryTool.execute（TechnicalSolution.md - 5.1 模块组成）");
     }
 }

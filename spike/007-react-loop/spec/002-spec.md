@@ -27,14 +27,14 @@
 | D1-D4 / D5+ | D1-D4=第一组四项决议（007 README 第二节）；本轮新决议建议从 D5 起编号（req 4.2 第 5 条） |
 | 工程包 | 本轮新代码的 Java 包 `spike.reactloop`（方案 B 后工作区唯一包；第一组代码已从工作区移除，保留于 git 历史） |
 | 占位符 | 配置文件里的 `${环境变量名:默认值}` 写法：运行时从环境变量取值，取不到用默认值；密钥真实值永不进仓库（req 4.1 第 1 条） |
-| 四元组 | 一个 Provider 一组四个环境变量：`*_API_KEY` / `*_BASE_URL` / `*_DEFAULT_MODEL` / `*_MODEL_LIST`（定稿 §2） |
+| 四元组 | 一个 Provider 一组四个环境变量：`*_API_KEY` / `*_BASE_URL` / `*_DEFAULT_MODEL` / `*_MODEL_LIST`（model-config.md - 2 环境变量命名规则） |
 | 双腿 starter | 第一组现行接法：Spring AI 官方 openai 与 anthropic 两个 starter，各自指向 MiniMax 的协议兼容端点（007 README D2） |
 | 手动循环 | `internalToolExecutionEnabled(false)` 关掉框架自动执行后，由自研循环自己执行工具、自己组装下一轮请求（007 README D3） |
 | 双执行 | 同一次工具调用被执行两次（框架一遍 + 自研循环一遍）。本项目红线（req 4.1 第 3 条） |
 | E3 计数法 | 第一组 E3 的判定方法：给工具加执行计数器，"工具执行次数 = 日志中模型发起工具调用的轮数"即无双执行 |
-| 显式映射 / 类型扫描 | 显式映射=`Map<provider 名, ChatModel>` 按名取用；类型扫描=扫描容器里所有同类型 Bean 找实现。本项目禁类型扫描（TS 3.2；req 4.1 第 2 条） |
+| 显式映射 / 类型扫描 | 显式映射=`Map<provider 名, ChatModel>` 按名取用；类型扫描=扫描容器里所有同类型 Bean 找实现。本项目禁类型扫描（TechnicalSolution.md - 3.2 Provider 名到 ChatModel 的显式映射；req 4.1 第 2 条） |
 | usage | 模型调用消耗的 token 计量数（输入/输出各多少） |
-| `<think>` 标签 | MiniMax-M3 把思考过程混在返回正文里、包在 `<think>...</think>` 中；断言前先剥离（定稿 §5.4） |
+| `<think>` 标签 | MiniMax-M3 把思考过程混在返回正文里、包在 `<think>...</think>` 中；断言前先剥离（model-config.md - 5.4 MiniMax 工具调用与思考标签） |
 | ThinkStripper | 第一组的 `<think>` 剥离工具类（`spike/reactloop/util/ThinkStripper.java`）；本轮参照其正则思路重写为 ThinkStripper |
 | live 测试 | 需要真实 API key、产生真实模型调用的测试，标 JUnit `@Tag("live")`（第一组同款约定） |
 | `@Qualifier` | Spring 按名字注入指定 Bean 的注解——第一组用它实现显式映射（007 README 第五节样例） |
@@ -49,8 +49,8 @@
 | 本文 / 002-spec | `spike/007-react-loop/spec/002-spec.md`（本文件） |
 | 第一组规格三件套 | `spec/001-expirement.md`（git 历史 2a01bee / edfadf3 可恢复）；`001-spec.md` / `001-plan.md`（从未提交，2026-09-15 删除；已被 002- 替代，确认不再保留） |
 | 007 README | `spike/007-react-loop/README.md` |
-| 定稿 | `docs/design/detail-supplement/001-model-config-export.md` |
-| TS / DA / AG（此式引用） | `docs/design/TechnicalSolution.md` / `DemandAnalysis.md` / `AiProgrammingGuide.md` 的对应章节号 |
+| model-config.md | `docs/design/detail/model-config.md`（2026-10-03 起"定稿"别名停用） |
+| 章节全名形引用 | `docs/design/` 四文档的章节引用一律用"文件名 - 编号 标题主干"全名形（如 TechnicalSolution.md - 3.2 Provider 名到 ChatModel 的显式映射；2026-10-03 起 TS / DA / AG 简称式停用） |
 | 根 CLAUDE.md / spike/CLAUDE.md | 仓库根 `/CLAUDE.md` / `spike/CLAUDE.md` |
 
 ## 1. 工程形态：改什么、不改什么
@@ -157,9 +157,9 @@ spring:
 | # | 决定 | 理由 |
 |---|---|---|
 | 1 | `application.yaml` 为 工程唯一配置（方案 B：第一组 application.yaml 已随 src/ 归档） | 四腿全量自含，无 profile 叠加机制；文件名即标准名，测试无需 @ActiveProfiles |
-| 2 | **不**把 `${MINIMAX_BASE_URL}` 映射给 `spring.ai.minimax.base-url` | 脚本里 `MINIMAX_BASE_URL='https://api.minimax.cn/v1'`（SDK 惯例值带 `/v1`，定稿 §7 附录脚本全文 282 行）——与 OPENAI/ANTHROPIC 两腿同一条 ⚠️ 规则（定稿 §2.3）：带 `/v1` 的值直映射有双写风险。base-url 非敏感，明文写 yaml，密钥才走环境变量 |
-| 3 | 模型占位符用 `MINIMAX_DEFAULT_MODEL`（当前值 MiniMax-M2.7） | 三级选择的第 1 级（环境变量缺省模型，定稿 §5.2）；V3-V5 用 per-call options 覆盖成 MiniMax-M3（第 3 级），两级都覆盖到 |
-| 4 | `MINIMAX_MODEL_LIST` 不进 yaml | 定稿 §2.3：MODEL_LIST 无对应 Spring AI 属性，只做校验与发现（req 4.1 第 7 条同口径） |
+| 2 | **不**把 `${MINIMAX_BASE_URL}` 映射给 `spring.ai.minimax.base-url` | 脚本里 `MINIMAX_BASE_URL='https://api.minimax.cn/v1'`（SDK 惯例值带 `/v1`，model-config.md - 7 附录：脚本全文 282 行）——与 OPENAI/ANTHROPIC 两腿同一条 ⚠️ 规则（model-config.md - 2.3 导出的环境变量 → Spring AI 属性对照）：带 `/v1` 的值直映射有双写风险。base-url 非敏感，明文写 yaml，密钥才走环境变量 |
+| 3 | 模型占位符用 `MINIMAX_DEFAULT_MODEL`（当前值 MiniMax-M2.7） | 三级选择的第 1 级（环境变量缺省模型，model-config.md - 5.2 多 model 支持）；V3-V5 用 per-call options 覆盖成 MiniMax-M3（第 3 级），两级都覆盖到 |
+| 4 | `MINIMAX_MODEL_LIST` 不进 yaml | model-config.md - 2.3 导出的环境变量 → Spring AI 属性对照：MODEL_LIST 无对应 Spring AI 属性，只做校验与发现（req 4.1 第 7 条同口径） |
 | 5 | anthropic 腿直接配置国内站 `https://api.minimax.cn/anthropic` | 落实用户 2026-09-14"全部只用国内站"决议；可达性未经实测，由 V6 顺带验证并落盘；若实测不通，yaml 改回国际站值并另报评审（spec §7.2 ⑥ 约定） |
 | 6 | 记录路径 B 的长期维护风险（事实注记，2026-09-14 核验）：Spring AI 2.0 main 分支已移除 minimax 源码模块（完整树核查仅剩文档页）；starter 目标老代 MiniMax API——默认模型为 ABAB 6.5 代枚举（`abab6.5g-chat`）、文档链接为 V2 代 API（v1.1.8 tag 源码 `MiniMaxApiConstants` 17 行 / `MiniMaxApi` 58 行） | 2.0 线禁入的补充证据；"新模型名 M2.7/M3 能否经 options 传入、现行 key 是否被原生路径接受"即 V2/V3 的核心实测点；V8 决议若选路径 B，本风险随决议进 README |
 | 7 | `spring.ai.retry.max-attempts: 1`（工程专用，关闭默认重试链） | Spring AI 默认 10 次退避重试会把 V2 负向探针拖满 surefire 180 秒；也保证 V6 的 duration 无隐式重试污染（一次调用 ↔ 一组计时）。出处口径：agentos/CLAUDE.md 第 36 条记载的默认值；正式实现按该条显式设计重试与三档预算的关系，spike 从简 |
@@ -282,7 +282,7 @@ V0、V1 是入口项；V2 依赖 V1；V3-V7 依赖 V1+V2；V8 收口。V1 失败
 
 ### 7.2 README 全新创建的必含内容（req 4.4 对齐；2026-09-15 用户删除旧 README 后修订）
 
-README.md 全新创建，分两节：**第一节"第一组结论存档"**——D1-D4 决议与 E1-E9 打勾表自 git 历史原文恢复（引用链"007 README 的 D1-D4"保持有效，根 CLAUDE.md 的 W1 指针不断链，且明确标注为存档节、非本轮产物）；**第二节"第二组结论（模型接入路径重验）"**：① V0-V8 打勾表（通过/失败/未执行 + 原因）；② 决议（D5 起）+ 正式实现落点；③ 路径 B 属性表（V2）；④ 路径 C 检索过程（V0 已判出局）；⑤ req 5.2 / 5.3 / 5.4 联动清单命中情况逐条勾选；⑥ 域名口径变更：anthropic 兼容端点由国际站（第一组 E8 实测值 `api.minimaxi.com/anthropic`）迁至国内站 `api.minimax.cn/anthropic`（2026-09-14 用户决议）。定稿 §1 / §2.3 / §7 与根 CLAUDE.md「模型接入环境变量」节已经用户指示于 2026-09-14 同步为国内站；国内站 /anthropic 路径可达性由 V6 实测确认，若实测不通需回改这三处并另报评审。
+README.md 全新创建，分两节：**第一节"第一组结论存档"**——D1-D4 决议与 E1-E9 打勾表自 git 历史原文恢复（引用链"007 README 的 D1-D4"保持有效，根 CLAUDE.md 的 W1 指针不断链，且明确标注为存档节、非本轮产物）；**第二节"第二组结论（模型接入路径重验）"**：① V0-V8 打勾表（通过/失败/未执行 + 原因）；② 决议（D5 起）+ 正式实现落点；③ 路径 B 属性表（V2）；④ 路径 C 检索过程（V0 已判出局）；⑤ req 5.2 / 5.3 / 5.4 联动清单命中情况逐条勾选；⑥ 域名口径变更：anthropic 兼容端点由国际站（第一组 E8 实测值 `api.minimaxi.com/anthropic`）迁至国内站 `api.minimax.cn/anthropic`（2026-09-14 用户决议）。model-config.md - 1 背景与密钥红线 / 2.3 导出的环境变量 → Spring AI 属性对照 / 7 附录：脚本全文 与根 CLAUDE.md「模型接入环境变量」节已经用户指示于 2026-09-14 同步为国内站；国内站 /anthropic 路径可达性由 V6 实测确认，若实测不通需回改这三处并另报评审。
 ⑦ 归档注记：第一组 `src/` 已于 2026-09-14 归档至 `git 历史（提交 2a01bee）`（方案 B，用户拍板），`logs/` 与本 README 原地保留；工作区代码自本日起 100% 为第二组新写（App 起）。结论引用格式照 req 4.2 第 5 条实名引用（如"spike/007-react-loop/README.md 的 D5 决议"）。
 
 ### 7.3 对下游 plan（建议名 `spec/002-plan.md`）的输入

@@ -1,12 +1,13 @@
 # AgentOS 应用配置（骨架版）。
-# 工程口径见 TS 9.2：SQLite 首建走 ddl-auto=update（update 在 SQLite 上只做 CREATE TABLE，
-# 其唯一可靠场景）；WAL + busy_timeout 在 JDBC 连接串透传（HikariCP 默认不透传 pragma）；
+# 工程口径见 TechnicalSolution.md - 9.2 SQLite 关系型数据：SQLite 首建走 ddl-auto=update（update 除建新表外实测亦能自动加列，
+# 治理口径 = 列变更只走手工迁移脚本、禁依赖自动加列）；WAL + busy_timeout + synchronous=FULL 在 JDBC 连接串透传（HikariCP 默认不透传 pragma；
+# FULL 保证进程崩溃与 OS 断电均不丢已提交事务，对应 DemandAnalysis.md - 8.2 可靠性"已写入的 Session 数据保证不丢"——同会话并发裁决 2026-09-25）；
 # 方言显式指定 org.hibernate.community.dialect.SQLiteDialect（Spring Boot 3 无 SQLite 官方方言）。
 spring:
   application:
     name: agentos
   datasource:
-    url: jdbc:sqlite:.agentos/agentos.db?journal_mode=WAL&busy_timeout=5000
+    url: jdbc:sqlite:.agentos/agentos.db?journal_mode=WAL&busy_timeout=5000&synchronous=FULL
     driver-class-name: org.sqlite.JDBC
   jpa:
     hibernate:
@@ -18,12 +19,16 @@ server:
   port: 8080
 
 agentos:
-  # 超时三档分步预算（TS 7.4）：默认值在此，可被 Profile 的 settings.timeout 按 Agent 覆盖。
-  # 红线：代码中不得硬编码超时（AG 3.4 / TS 7.4）。
+  # 超时三档分步预算（TechnicalSolution.md - 7.4 关键设计点）：默认值在此。Profile settings.timeout 按 Agent 覆盖仅限 tool/total 两档；
+  # llm-call 仅全局（Spring AI 客户端构建时定死，设计评审 Q5 裁决 2026-09-17，TechnicalSolution.md - 7.4 关键设计点）。
+  # 红线：代码中不得硬编码超时（AiProgrammingGuide.md - 3.4 /speckit.plan 的 plan review 清单 / TechnicalSolution.md - 7.4 关键设计点）。
   timeout:
     llm-call: 60s
     tool: 30s
     total: 300s
-  # Provider 凭证一律经环境变量占位注入（TS 8.8），不明文写配置。
-  # 具体结构按第一周 spike 结论回填 TS 3.2 后补充。
+  # Memory 归档区截断预算（字符数，TechnicalSolution.md - 5.1 模块组成）：仅全局、不按 Agent 覆盖；默认 20000，W1 按默认模型组合实测校准。
+  memory:
+    archival-max-chars: 20000
+  # Provider 凭证一律经环境变量占位注入（TechnicalSolution.md - 8.8 配置与密钥加载），不明文写配置。
+  # 具体结构按第一周 spike 结论回填 TechnicalSolution.md - 3.2 Provider 名到 ChatModel 的显式映射 后补充。
   provider: {}

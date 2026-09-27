@@ -1,7 +1,7 @@
 package spike.mcp.tool;
 
 /**
- * 工具执行结果统一结构（TS 6.1 四要素；002 §3.4）。
+ * 工具执行结果统一结构（TechnicalSolution.md - 6.1 AgentOSTool 抽象 的四要素；002 §3.4）。
  *
  * @param success   成功标识
  * @param content   结果内容（成功时为工具产出；多段 content 按 002 §3.5 拼接）

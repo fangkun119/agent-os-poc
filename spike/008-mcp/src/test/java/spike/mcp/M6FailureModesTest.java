@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * M6 失败模式三测（002 §4 M6 行，live）：
  * ①坏命令 → 连接阶段异常形态（其余 server 不受影响由 SpikeMcpClients.connectAll 跳过逻辑保证）
  * ②运行中 kill server 子进程 → 调用异常形态 + SDK 有无自动重连
- * ③requestTimeout 行为（默认值经 javap 常量 + 实测双重确认；正式实现对齐 TS 7.4 的说明写入 README）
+ * ③requestTimeout 行为（默认值经 javap 常量 + 实测双重确认；正式实现对齐 TechnicalSolution.md - 7.4 关键设计点 的说明写入 README）
  */
 @SpringBootTest
 @Tag("live")
@@ -104,7 +104,7 @@ class M6FailureModesTest {
      * ③requestTimeout：默认值实测 + 关键发现落盘。
      * 实测注记（M6③）：0.17.0 的 SyncSpec 有两个独立预算——requestTimeout（常规调用）与
      * initializationTimeout（initialize 握手）；M4 超时用例中 1s 卡死 initialize 的正解
-     * 就是分开设 initializationTimeout。正式实现超时对齐 TS 7.4 三档预算，此处取数仅供回填。
+     * 就是分开设 initializationTimeout。正式实现超时对齐 TechnicalSolution.md - 7.4 关键设计点 的三档预算，此处取数仅供回填。
      */
     @Test
     void defaultRequestTimeoutProbe() throws Exception {

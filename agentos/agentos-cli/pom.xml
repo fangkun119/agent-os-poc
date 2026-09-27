@@ -13,7 +13,7 @@
 
   <artifactId>agentos-cli</artifactId>
   <name>agentos-cli</name>
-  <description>命令行入口（TS 10）：Picocli 主入口、12 个子命令（init/status/chat/serve/gateway/profile×4/provider/tool/session）、ConfigLoader（${ENV_VAR} 占位解析，TS 8.8）</description>
+  <description>命令行入口（TechnicalSolution.md - 10 项目工程结构）：Picocli 主入口、13 个子命令（init/status/chat/serve/gateway/profile×4/provider/tool/session）、ConfigLoader（${ENV_VAR} 占位解析，TechnicalSolution.md - 8.8 配置与密钥加载）</description>
 
   <dependencies>
     <dependency>
